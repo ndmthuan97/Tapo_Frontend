@@ -14,6 +14,9 @@ import { AdminLayout }    from '@/features/admin/components/AdminLayout'
 import { DashboardPage }  from '@/features/admin/pages/DashboardPage'
 import { AdminUsersPage } from '@/features/admin/pages/AdminUsersPage'
 import { AdminProfilePage } from '@/features/admin/pages/AdminProfilePage'
+import { AdminProductsPage } from '@/features/admin/pages/AdminProductsPage'
+import { AdminCategoriesPage } from '@/features/admin/pages/AdminCategoriesPage'
+import { AdminBrandsPage } from '@/features/admin/pages/AdminBrandsPage'
 
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
@@ -44,9 +47,12 @@ function App() {
           <Route path="/profile/addresses" element={<PrivateRoute><AddressesPage /></PrivateRoute>} />
 
           {/* ── Admin panel ──────────────────────────────────────────── */}
-          <Route path="/admin"         element={<AdminPage><DashboardPage /></AdminPage>} />
-          <Route path="/admin/users"   element={<AdminPage><AdminUsersPage /></AdminPage>} />
-          <Route path="/admin/profile" element={<AdminPage><AdminProfilePage /></AdminPage>} />
+          <Route path="/admin"             element={<AdminPage><DashboardPage /></AdminPage>} />
+          <Route path="/admin/users"       element={<AdminPage><AdminUsersPage /></AdminPage>} />
+          <Route path="/admin/products"    element={<AdminPage><AdminProductsPage /></AdminPage>} />
+          <Route path="/admin/categories"  element={<AdminPage><AdminCategoriesPage /></AdminPage>} />
+          <Route path="/admin/brands"      element={<AdminPage><AdminBrandsPage /></AdminPage>} />
+          <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

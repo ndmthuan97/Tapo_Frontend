@@ -4,18 +4,16 @@ import {
   Shield,
   LockKeyhole,
   Unlock,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Users,
   UserCheck,
   UserX,
-  Search,
 } from 'lucide-react'
 import { useAdminUsers } from '@/features/admin/hooks/use-admin-users'
 import { cn } from '@/lib/utils'
 import { UserRole, UserStatus } from '@/lib/types/user/user.types'
 import type { UserDto } from '@/lib/types/user/user.types'
+import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
 
 const ROLE_BADGE: Record<string, string> = {
   ADMIN:
@@ -35,29 +33,6 @@ const ROLE_LABEL: Record<string, string> = {
   CUSTOMER: 'Customer',
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: typeof Users
-  label: string
-  value: number | string
-  color: string
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm transition-colors">
-      <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', color)}>
-        <Icon size={22} className="text-white" />
-      </div>
-      <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-      </div>
-    </div>
-  )
-}
 
 function AdminUsersPage() {
   const { t } = useTranslation()
@@ -131,33 +106,18 @@ function AdminUsersPage() {
           </p>
 
           {/* Search */}
-          <div className="relative flex items-center">
-            <Search size={14} className="absolute left-3 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
-              placeholder={t('adminUsers.searchPlaceholder')}
-              className="w-52 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 pl-8 pr-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400/30 transition"
-            />
-          </div>
+          <AdminSearchInput
+            value={searchQuery}
+            onChange={(v) => { setSearchQuery(v); setPage(1) }}
+            placeholder={t('adminUsers.searchPlaceholder')}
+          />
 
           {/* Role filter */}
-          <select
+          <AdminFilterSelect
             value={roleFilter ?? ''}
-            onChange={(e) =>
-              setRoleFilter(
-                (e.target.value as (typeof UserRole)[keyof typeof UserRole]) || undefined,
-              )
-            }
-            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 shadow-sm focus:border-orange-400 dark:focus:border-orange-500 focus:outline-none transition-colors cursor-pointer"
-          >
-            {ROLE_OPTIONS.map((opt) => (
-              <option key={String(opt.value)} value={opt.value ?? ''}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setRoleFilter((v as (typeof UserRole)[keyof typeof UserRole]) || undefined)}
+            options={ROLE_OPTIONS.map((opt) => ({ value: opt.value ?? '', label: opt.label }))}
+          />
         </div>
 
         {/* Table */}
@@ -295,42 +255,12 @@ function AdminUsersPage() {
         </div>
 
         {/* Footer / Pagination */}
-        {data && data.totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 px-5 py-3.5 transition-colors">
-            <span className="text-xs text-gray-400">
-              {t('adminUsers.page')} {page} / {data.totalPages}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-30 transition"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              {Array.from({ length: data.totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={cn(
-                    'inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition',
-                    p === page
-                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                      : 'border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5',
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                disabled={page >= data.totalPages}
-                onClick={() => setPage(page + 1)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-30 transition"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
+        {data && (
+          <AdminTablePagination
+            page={page}
+            totalPages={data.totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
     </div>

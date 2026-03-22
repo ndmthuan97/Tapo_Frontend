@@ -15,6 +15,9 @@ import {
   ChevronsRight,
   UserCircle,
   ChevronDown,
+  Package,
+  Tag,
+  Bookmark,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -30,10 +33,29 @@ interface NavItem {
   labelKey: string
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: '/admin', icon: LayoutDashboard, labelKey: 'admin.nav.dashboard' },
-  { to: '/admin/users', icon: Users, labelKey: 'admin.nav.users' },
+interface NavSection {
+  groupKey: string
+  items: NavItem[]
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    groupKey: 'admin.nav.management',
+    items: [
+      { to: '/admin',       icon: LayoutDashboard, labelKey: 'admin.nav.dashboard' },
+      { to: '/admin/users', icon: Users,           labelKey: 'admin.nav.users' },
+    ],
+  },
+  {
+    groupKey: 'admin.nav.catalog',
+    items: [
+      { to: '/admin/products',   icon: Package,  labelKey: 'admin.nav.products' },
+      { to: '/admin/categories', icon: Tag,      labelKey: 'admin.nav.categories' },
+      { to: '/admin/brands',     icon: Bookmark, labelKey: 'admin.nav.brands' },
+    ],
+  },
 ]
+
 
 function AdminLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation()
@@ -97,34 +119,39 @@ function AdminLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* Nav */}
-        <div className="flex-1 overflow-auto py-4 px-2">
-          {isExpanded && (
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-              {t('admin.nav.management')}
-            </p>
-          )}
-          <div className="space-y-0.5">
-            {NAV_ITEMS.map(({ to, icon: Icon, labelKey }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/admin'}
-                title={!isExpanded ? t(labelKey) : undefined}
-                className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-lg transition-all duration-150 overflow-hidden',
-                    !isExpanded ? 'justify-center px-0 py-2.5 mx-auto w-10' : 'px-3 py-2.5',
-                    isActive
-                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
-                  )
-                }
-              >
-                <Icon size={16} className="shrink-0" />
-                {isExpanded && <span className="text-sm font-medium whitespace-nowrap">{t(labelKey)}</span>}
-              </NavLink>
-            ))}
-          </div>
+        <div className="flex-1 overflow-auto py-4 px-2 space-y-4">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.groupKey}>
+              {isExpanded && (
+                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                  {t(section.groupKey)}
+                </p>
+              )}
+              {!isExpanded && <div className="my-1 mx-2 border-t border-gray-100 dark:border-white/5" />}
+              <div className="space-y-0.5">
+                {section.items.map(({ to, icon: Icon, labelKey }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/admin'}
+                    title={!isExpanded ? t(labelKey) : undefined}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 rounded-lg transition-all duration-150 overflow-hidden',
+                        !isExpanded ? 'justify-center px-0 py-2.5 mx-auto w-10' : 'px-3 py-2.5',
+                        isActive
+                          ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
+                      )
+                    }
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    {isExpanded && <span className="text-sm font-medium whitespace-nowrap">{t(labelKey)}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Footer */}
