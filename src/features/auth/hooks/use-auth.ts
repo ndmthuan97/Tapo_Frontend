@@ -41,7 +41,10 @@ export function useAuth() {
     toast.success(t('toast.loginSuccess'), {
       description: t('toast.loginSuccessDesc', { name: result.data.user.fullName }),
     })
-    navigate('/')
+
+    // Admin accounts go straight to the admin panel
+    const destination = result.data.user.role === 'ADMIN' ? '/admin/users' : '/'
+    navigate(destination)
   }
 
   async function register(data: RegisterRequest) {

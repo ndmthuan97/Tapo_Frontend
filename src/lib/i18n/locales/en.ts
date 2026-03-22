@@ -94,7 +94,106 @@ const en = {
     defaultError: 'Please check your information and try again',
   },
 
-  // ── API Error codes ───────────────────────────────────────────────────────
+  // ── Common ────────────────────────────────────────────────────────────────
+  common: {
+    save: 'Save changes',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    confirm: 'Confirm',
+  },
+
+  // ── Profile Page ──────────────────────────────────────────────────────────
+  profile: {
+    pageTitle: 'My Account',
+    pageSubtitle: 'Manage your personal information and account security',
+    tabProfile: 'Profile',
+    tabSecurity: 'Security',
+    infoTitle: 'Personal Information',
+    securityTitle: 'Change Password',
+    fullName: 'Full Name',
+    email: 'Email',
+    phone: 'Phone Number',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm New Password',
+    saveButton: 'Save Changes',
+    changePasswordButton: 'Change Password',
+    updateSuccess: 'Profile updated successfully!',
+    updateFailed: 'Update failed',
+    passwordSuccess: 'Password changed successfully!',
+    passwordFailed: 'Password change failed',
+  },
+
+  // ── Address Page ──────────────────────────────────────────────────────────
+  address: {
+    pageTitle: 'Delivery Addresses',
+    pageSubtitle: 'Manage your delivery addresses',
+    addButton: 'Add Address',
+    addTitle: 'Add New Address',
+    editTitle: 'Edit Address',
+    empty: 'You have no addresses yet. Add your first one!',
+    default: 'Default',
+    setDefault: 'Set as Default',
+    recipientName: 'Recipient Name',
+    phone: 'Phone Number',
+    street: 'Street Address',
+    district: 'District',
+    city: 'City / Province',
+    deleteConfirm: 'Are you sure you want to delete this address?',
+    addSuccess: 'Address added successfully!',
+    addFailed: 'Failed to add address',
+    updateSuccess: 'Address updated successfully!',
+    updateFailed: 'Failed to update address',
+    deleteSuccess: 'Address deleted',
+    deleteFailed: 'Failed to delete address',
+    defaultSuccess: 'Set as default address',
+    defaultFailed: 'Update failed',
+  },
+
+  // ── Admin Users Page ──────────────────────────────────────────────────────
+  adminUsers: {
+    pageTitle: 'User Management',
+    total: 'users',
+    page: 'Page',
+    noResult: 'No users found',
+    colName: 'Name',
+    colEmail: 'Email',
+    colRole: 'Role',
+    colStatus: 'Status',
+    colActions: 'Actions',
+    active: 'Active',
+    locked: 'Locked',
+    lock: 'Lock',
+    unlock: 'Unlock',
+    lockSuccess: 'Account locked',
+    lockFailed: 'Failed to lock account',
+    unlockSuccess: 'Account unlocked',
+    unlockFailed: 'Failed to unlock account',
+    filter: {
+      all: 'All',
+      customer: 'Customer',
+      sales: 'Sales Staff',
+      warehouse: 'Warehouse Staff',
+      admin: 'Administrator',
+    },
+  },
+
+  // ── Admin Sidebar ──────────────────────────────────────────────────────────
+  admin: {
+    goToShop: 'Go to Shop',
+    logout: 'Log out',
+    switchLight: 'Switch to Light',
+    switchDark: 'Switch to Dark',
+    nav: {
+      management: 'Management',
+      dashboard: 'Dashboard',
+      users: 'Users',
+      orders: 'Orders',
+      products: 'Products',
+    },
+  },
+
   error: {
     SUCCESS: 'Success',
     CREATED: 'Created successfully',

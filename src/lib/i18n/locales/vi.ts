@@ -94,7 +94,106 @@ const vi = {
     defaultError: 'Vui lòng kiểm tra lại thông tin',
   },
 
-  // ── API Error codes ───────────────────────────────────────────────────────
+  // ── Common ────────────────────────────────────────────────────────────────
+  common: {
+    save: 'Lưu thay đổi',
+    cancel: 'Hủy',
+    delete: 'Xóa',
+    edit: 'Chỉnh sửa',
+    confirm: 'Xác nhận',
+  },
+
+  // ── Profile Page ──────────────────────────────────────────────────────────
+  profile: {
+    pageTitle: 'Tài khoản của tôi',
+    pageSubtitle: 'Quản lý thông tin cá nhân và bảo mật tài khoản',
+    tabProfile: 'Thông tin cá nhân',
+    tabSecurity: 'Bảo mật',
+    infoTitle: 'Thông tin cá nhân',
+    securityTitle: 'Đổi mật khẩu',
+    fullName: 'Họ và tên',
+    email: 'Email',
+    phone: 'Số điện thoại',
+    currentPassword: 'Mật khẩu hiện tại',
+    newPassword: 'Mật khẩu mới',
+    confirmPassword: 'Xác nhận mật khẩu mới',
+    saveButton: 'Lưu thay đổi',
+    changePasswordButton: 'Đổi mật khẩu',
+    updateSuccess: 'Cập nhật thành công!',
+    updateFailed: 'Cập nhật thất bại',
+    passwordSuccess: 'Đổi mật khẩu thành công!',
+    passwordFailed: 'Đổi mật khẩu thất bại',
+  },
+
+  // ── Address Page ──────────────────────────────────────────────────────────
+  address: {
+    pageTitle: 'Địa chỉ nhận hàng',
+    pageSubtitle: 'Quản lý các địa chỉ giao hàng của bạn',
+    addButton: 'Thêm địa chỉ',
+    addTitle: 'Thêm địa chỉ mới',
+    editTitle: 'Chỉnh sửa địa chỉ',
+    empty: 'Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ đầu tiên!',
+    default: 'Mặc định',
+    setDefault: 'Đặt mặc định',
+    recipientName: 'Tên người nhận',
+    phone: 'Số điện thoại',
+    street: 'Địa chỉ cụ thể',
+    district: 'Quận / Huyện',
+    city: 'Tỉnh / Thành phố',
+    deleteConfirm: 'Bạn có chắc muốn xóa địa chỉ này?',
+    addSuccess: 'Thêm địa chỉ thành công!',
+    addFailed: 'Thêm địa chỉ thất bại',
+    updateSuccess: 'Cập nhật địa chỉ thành công!',
+    updateFailed: 'Cập nhật địa chỉ thất bại',
+    deleteSuccess: 'Đã xóa địa chỉ',
+    deleteFailed: 'Xóa địa chỉ thất bại',
+    defaultSuccess: 'Đã đặt làm địa chỉ mặc định',
+    defaultFailed: 'Cập nhật thất bại',
+  },
+
+  // ── Admin Users Page ──────────────────────────────────────────────────────
+  adminUsers: {
+    pageTitle: 'Quản lý người dùng',
+    total: 'người dùng',
+    page: 'Trang',
+    noResult: 'Không tìm thấy người dùng nào',
+    colName: 'Họ tên',
+    colEmail: 'Email',
+    colRole: 'Vai trò',
+    colStatus: 'Trạng thái',
+    colActions: 'Thao tác',
+    active: 'Hoạt động',
+    locked: 'Đã khóa',
+    lock: 'Khóa',
+    unlock: 'Mở khóa',
+    lockSuccess: 'Đã khóa tài khoản',
+    lockFailed: 'Khóa tài khoản thất bại',
+    unlockSuccess: 'Đã mở khóa tài khoản',
+    unlockFailed: 'Mở khóa thất bại',
+    filter: {
+      all: 'Tất cả',
+      customer: 'Khách hàng',
+      sales: 'Bán hàng',
+      warehouse: 'Kho',
+      admin: 'Quản trị viên',
+    },
+  },
+
+  // ── Admin Sidebar ──────────────────────────────────────────────────────────
+  admin: {
+    goToShop: 'Về trang shop',
+    logout: 'Đăng xuất',
+    switchLight: 'Chuyển sang sáng',
+    switchDark: 'Chuyển sang tối',
+    nav: {
+      management: 'Quản lý',
+      dashboard: 'Tổng quan',
+      users: 'Người dùng',
+      orders: 'Đơn hàng',
+      products: 'Sản phẩm',
+    },
+  },
+
   error: {
     SUCCESS: 'Thành công',
     CREATED: 'Tạo mới thành công',
