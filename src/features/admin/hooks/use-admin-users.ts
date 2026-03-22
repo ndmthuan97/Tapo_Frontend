@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { userApi } from '@/features/user/api/user.api'
+import { userApi } from '@/features/shop/user/api/user.api'
 import type { UserDto, UserPageResponse, UserStatus } from '@/lib/types/user/user.types'
 import type { UserRole } from '@/lib/types/user/user.types'
 

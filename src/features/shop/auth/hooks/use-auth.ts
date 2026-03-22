@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { authApi } from '@/features/auth/api/auth.api'
+import { authApi } from '@/features/shop/auth/api/auth.api'
 import { useAuthContext } from '@/lib/context/auth-context'
 import type { LoginRequest, RegisterRequest } from '@/lib/types/auth/auth.types'
 
@@ -76,6 +76,9 @@ export function useAuth() {
   }
 
   function logout() {
+    const refreshToken = localStorage.getItem('refreshToken')
+    // Fire-and-forget: revoke from Redis (ignore errors, we still clear locally)
+    if (refreshToken) authApi.logout(refreshToken)
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     clearUser()

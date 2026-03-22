@@ -1,4 +1,4 @@
-import { ShoppingCart, Search, User, Heart, Menu, X } from 'lucide-react'
+import { ShoppingCart, Search, User, Heart, Menu, X, Sun, Moon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -6,11 +6,13 @@ import { cn } from '@/lib/utils'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { UserAvatarMenu } from '@/components/common/UserAvatarMenu'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
+import { useShopTheme } from '@/hooks/use-shop-theme'
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user } = useAuthContext()
   const { t } = useTranslation()
+  const { isDark, toggleTheme } = useShopTheme()
 
   const NAV_LINKS = [
     { label: t('nav.home'), href: '/' },
@@ -20,7 +22,7 @@ function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-100 dark:border-white/5 bg-white/95 dark:bg-[#21232d]/95 backdrop-blur-md transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
@@ -59,6 +61,16 @@ function Header() {
             </button>
 
             {/* Avatar or Login link */}
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light' : 'Switch to dark'}
+              className="rounded-full p-2 text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
+            {/* Language */}
             <LanguageSwitcher />
             {user ? (
               <UserAvatarMenu />

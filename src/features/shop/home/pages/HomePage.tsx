@@ -1,10 +1,10 @@
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { HeroBanner } from '@/features/home/components/HeroBanner'
-import { ServiceFeatures } from '@/features/home/components/ServiceFeatures'
-import { CategoryPromotions } from '@/features/home/components/CategoryPromotions'
-import { BestSelling } from '@/features/home/components/BestSelling'
-import { FeaturedCollection } from '@/features/home/components/FeaturedCollection'
+import { HeroBanner } from '@/features/shop/home/components/HeroBanner'
+import { ServiceFeatures } from '@/features/shop/home/components/ServiceFeatures'
+import { CategoryPromotions } from '@/features/shop/home/components/CategoryPromotions'
+import { BestSelling } from '@/features/shop/home/components/BestSelling'
+import { FeaturedCollection } from '@/features/shop/home/components/FeaturedCollection'
 import { ScrollReveal } from '@/components/common/ScrollReveal'
 
 function HomePage() {

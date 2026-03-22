@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, MapPin, Star, Pencil, Trash2, Loader2, X } from 'lucide-react'
-import { useAddresses } from '@/features/user/hooks/use-addresses'
+import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { cn } from '@/lib/utils'

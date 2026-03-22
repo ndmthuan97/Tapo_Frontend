@@ -28,7 +28,7 @@ function CategoryPromotions() {
   }))
 
   return (
-    <section className="bg-gray-50 py-12">
+    <section className="bg-gray-50 dark:bg-[#21232d] py-12 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div ref={ref} className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {promotions.map((promo, i) => (
@@ -48,9 +48,9 @@ function CategoryPromotions() {
                 <span className={`text-xs font-semibold uppercase tracking-widest ${promo.accent}`}>
                   {promo.tag}
                 </span>
-                <h3 className="text-xl font-bold text-gray-900">{promo.title}</h3>
-                <p className="text-sm text-gray-600">{promo.subtitle}</p>
-                <Button size="sm" className="mt-1 w-fit rounded-full bg-gray-900 px-6 text-white hover:bg-orange-500">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{promo.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{promo.subtitle}</p>
+                <Button size="sm" className="mt-1 w-fit rounded-full bg-gray-900 dark:bg-white px-6 text-white dark:text-gray-900 hover:bg-orange-500 dark:hover:bg-orange-500 dark:hover:text-white">
                   {promo.cta}
                 </Button>
               </div>

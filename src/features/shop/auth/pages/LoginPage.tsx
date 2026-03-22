@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, Laptop, Zap, Shield, Headphones } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
-import { useAuth } from '@/features/auth/hooks/use-auth'
+import { useAuth } from '@/features/shop/auth/hooks/use-auth'
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -22,7 +22,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50/60 to-orange-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50/60 to-orange-100 dark:from-[#1a1c23] dark:via-[#21232d] dark:to-[#1a1c23] p-4 transition-colors">
       {/* Decorative blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-orange-200/50 blur-3xl" />
@@ -31,7 +31,7 @@ function LoginPage() {
       </div>
 
       {/* Card */}
-      <div className="relative z-10 flex w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl shadow-orange-200/40">
+      <div className="relative z-10 flex w-full max-w-5xl overflow-hidden rounded-3xl bg-white dark:bg-[#21232d] shadow-2xl shadow-orange-200/40 dark:shadow-black/40 transition-colors">
 
         {/* ── Left illustration panel ── */}
         <div className="relative hidden flex-1 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 p-12 lg:flex">
@@ -80,12 +80,12 @@ function LoginPage() {
 
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">{t('auth.login.title')}</h1>
-            <p className="mt-1 text-sm text-gray-500">{t('auth.login.subtitle')}</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('auth.login.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('auth.login.subtitle')}</p>
           </div>
 
           {/* Google */}
-          <button className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-shadow hover:shadow-md">
+          <button className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm transition-shadow hover:shadow-md">
             <svg width="18" height="18" viewBox="0 0 18 18">
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" />
               <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" />
@@ -101,7 +101,7 @@ function LoginPage() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">{t('auth.login.orSignInWith')}</span>
+              <span className="bg-white dark:bg-[#21232d] px-3 text-xs text-gray-400">{t('auth.login.orSignInWith')}</span>
             </div>
           </div>
 
@@ -141,7 +141,7 @@ function LoginPage() {
 
             {/* Remember + Forgot */}
             <div className="flex items-center justify-between">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <input
                   type="checkbox"
                   checked={rememberMe}

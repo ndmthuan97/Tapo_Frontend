@@ -46,13 +46,13 @@ function FeaturedCollection() {
       : FEATURED_PRODUCTS.filter((p) => p.category === activeTab)
 
   return (
-    <section className="bg-gray-50 py-14">
+    <section className="bg-gray-50 dark:bg-[#21232d] py-14 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
-          <h2 className="mb-2 text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mb-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             {t('home.featured.title')}
           </h2>
-          <p className="text-gray-500">{t('home.featured.subtitle')}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('home.featured.subtitle')}</p>
           <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-orange-500" />
         </div>
 
@@ -65,7 +65,7 @@ function FeaturedCollection() {
                 'rounded-full px-5 py-2 text-sm font-medium transition-all',
                 activeTab === tab.value
                   ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
-                  : 'bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500',
+                  : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:border-orange-300 hover:text-orange-500',
               )}
             >
               {tab.label}
@@ -82,7 +82,7 @@ function FeaturedCollection() {
         <div className="mt-10 text-center">
           <a
             href="/products"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-8 py-3 text-sm font-medium text-gray-700 transition-all hover:border-orange-500 hover:text-orange-500"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-8 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all hover:border-orange-500 hover:text-orange-500"
           >
             {t('home.featured.viewAll')}
           </a>

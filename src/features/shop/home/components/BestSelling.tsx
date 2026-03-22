@@ -19,13 +19,13 @@ function BestSelling() {
   const { t } = useTranslation()
 
   return (
-    <section className="bg-white py-14">
+    <section className="bg-white dark:bg-[#1a1c23] py-14 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center">
-          <h2 className="mb-2 text-3xl font-bold tracking-tight text-gray-900">
+          <h2 className="mb-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             {t('home.bestSelling.title')}
           </h2>
-          <p className="text-gray-500">{t('home.bestSelling.subtitle')}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('home.bestSelling.subtitle')}</p>
           <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-orange-500" />
         </div>
 
@@ -38,7 +38,7 @@ function BestSelling() {
         <div className="mt-10 text-center">
           <a
             href="/products"
-            className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-8 py-3 text-sm font-medium text-gray-700 transition-all hover:border-orange-500 hover:text-orange-500"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-white/20 px-8 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 transition-all hover:border-orange-500 hover:text-orange-500"
           >
             {t('home.bestSelling.viewAll')}
           </a>

@@ -17,14 +17,14 @@ function ServiceFeatures() {
   }))
 
   return (
-    <section className="border-b border-gray-100 bg-white py-10">
+    <section className="border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#1a1c23] py-10 transition-colors">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div ref={ref} className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map(({ icon: Icon, title, description }, i) => (
             <div
               key={title}
               className={cn(
-                'group flex items-center gap-4 rounded-xl p-4 transition-all duration-500 hover:bg-orange-50',
+                'group flex items-center gap-4 rounded-xl p-4 transition-all duration-500 hover:bg-orange-50 dark:hover:bg-orange-500/10',
                 inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8',
               )}
               style={{ transitionDelay: `${i * 100}ms` }}
@@ -33,8 +33,8 @@ function ServiceFeatures() {
                 <Icon size={22} />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-                <p className="text-xs text-gray-500">{description}</p>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
               </div>
             </div>
           ))}

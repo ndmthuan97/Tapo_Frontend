@@ -22,9 +22,17 @@ export const authApi = {
     )
   },
 
+  /** Requires both accessToken and refreshToken for identity cross-check */
   refreshToken(body: TokenRefreshRequest) {
     return apiCall<AuthResponse>(
       httpClient.post<ApiResponse<AuthResponse>>(`${AUTH_PATH}/refresh-token`, body),
+    )
+  },
+
+  /** Revoke the refresh token from Redis (single-device logout) */
+  logout(refreshToken: string) {
+    return apiCall<void>(
+      httpClient.post<ApiResponse<void>>(`${AUTH_PATH}/logout`, { refreshToken }),
     )
   },
 }
