@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, Laptop, Zap, Shield, Headphones } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
+import { useAuth } from '@/features/auth/hooks/use-auth'
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const { login, isLoading } = useAuth()
+  const { t } = useTranslation()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -14,7 +18,7 @@ function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: connect to auth API
+    login({ email: formData.email, password: formData.password })
   }
 
   return (
@@ -26,7 +30,7 @@ function LoginPage() {
         <div className="absolute bottom-32 left-1/4 h-40 w-40 rounded-full bg-orange-300/30 blur-2xl" />
       </div>
 
-      {/* Card — wider */}
+      {/* Card */}
       <div className="relative z-10 flex w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl shadow-orange-200/40">
 
         {/* ── Left illustration panel ── */}
@@ -43,10 +47,10 @@ function LoginPage() {
               <Laptop size={72} className="text-white drop-shadow-lg" />
             </div>
             <div className="absolute -right-20 top-4 flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-xs font-semibold text-orange-600 shadow-lg">
-              <Zap size={14} className="text-orange-500" /> Fast Delivery
+              <Zap size={14} className="text-orange-500" /> {t('auth.loginPanel.fastDelivery')}
             </div>
             <div className="absolute -left-20 bottom-6 flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-xs font-semibold text-orange-600 shadow-lg">
-              <Shield size={14} className="text-orange-500" /> Warranty
+              <Shield size={14} className="text-orange-500" /> {t('auth.loginPanel.warranty')}
             </div>
           </div>
 
@@ -59,8 +63,8 @@ function LoginPage() {
           </div>
 
           <div className="text-center">
-            <h2 className="mb-2 text-2xl font-bold text-white">Turn your ideas into reality.</h2>
-            <p className="text-sm text-orange-100">Start for free and get attractive offers from the community</p>
+            <h2 className="mb-2 text-2xl font-bold text-white">{t('auth.loginPanel.heading')}</h2>
+            <p className="text-sm text-orange-100">{t('auth.loginPanel.subtitle')}</p>
           </div>
         </div>
 
@@ -76,8 +80,8 @@ function LoginPage() {
 
           {/* Heading */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Login to your Account</h1>
-            <p className="mt-1 text-sm text-gray-500">See what is going on with your shopping</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('auth.login.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('auth.login.subtitle')}</p>
           </div>
 
           {/* Google */}
@@ -88,7 +92,7 @@ function LoginPage() {
               <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
               <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
             </svg>
-            Continue with Google
+            {t('auth.login.continueGoogle')}
           </button>
 
           {/* Divider */}
@@ -97,7 +101,7 @@ function LoginPage() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">or Sign in with Email</span>
+              <span className="bg-white px-3 text-xs text-gray-400">{t('auth.login.orSignInWith')}</span>
             </div>
           </div>
 
@@ -107,7 +111,7 @@ function LoginPage() {
               id="login-email"
               name="email"
               type="email"
-              label="Email"
+              label={t('auth.login.emailLabel')}
               autoComplete="email"
               required
               value={formData.email}
@@ -118,7 +122,7 @@ function LoginPage() {
               id="login-password"
               name="password"
               type={showPassword ? 'text' : 'password'}
-              label="Password"
+              label={t('auth.login.passwordLabel')}
               autoComplete="current-password"
               required
               value={formData.password}
@@ -144,25 +148,26 @@ function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300 accent-orange-500"
                 />
-                Remember Me
+                {t('auth.login.rememberMe')}
               </label>
               <Link to="/forgot-password" className="text-sm font-medium text-orange-500 hover:text-orange-600">
-                Forgot Password?
+                {t('auth.login.forgotPassword')}
               </Link>
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-300 active:scale-[0.99]"
+              disabled={isLoading}
+              className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-300 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Login
+              {isLoading ? t('auth.login.submitting') : t('auth.login.submitButton')}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-500">
-            Not Registered Yet?{' '}
+            {t('auth.login.noAccount')}{' '}
             <Link to="/register" className="font-semibold text-orange-500 hover:text-orange-600">
-              Create an account
+              {t('auth.login.createAccount')}
             </Link>
           </p>
         </div>

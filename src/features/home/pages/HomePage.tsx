@@ -5,19 +5,37 @@ import { ServiceFeatures } from '@/features/home/components/ServiceFeatures'
 import { CategoryPromotions } from '@/features/home/components/CategoryPromotions'
 import { BestSelling } from '@/features/home/components/BestSelling'
 import { FeaturedCollection } from '@/features/home/components/FeaturedCollection'
+import { ScrollReveal } from '@/components/common/ScrollReveal'
 
 function HomePage() {
   return (
     <>
       <Header />
       <main>
+        {/* Hero: no reveal — it's the first thing visible */}
         <HeroBanner />
-        <ServiceFeatures />
-        <CategoryPromotions />
-        <BestSelling />
-        <FeaturedCollection />
+
+        {/* Each section fades-up as it enters the viewport */}
+        <ScrollReveal variant="fade-up" delay={0}>
+          <ServiceFeatures />
+        </ScrollReveal>
+
+        <ScrollReveal variant="fade-up" delay={0}>
+          <CategoryPromotions />
+        </ScrollReveal>
+
+        <ScrollReveal variant="fade-up" delay={0}>
+          <BestSelling />
+        </ScrollReveal>
+
+        <ScrollReveal variant="fade-up" delay={0}>
+          <FeaturedCollection />
+        </ScrollReveal>
       </main>
-      <Footer />
+
+      <ScrollReveal variant="fade" delay={0} threshold={0.05}>
+        <Footer />
+      </ScrollReveal>
     </>
   )
 }

@@ -1,17 +1,23 @@
 import { ShoppingCart, Search, User, Heart, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-
-const NAV_LINKS = [
-  { label: 'Home', href: '/' },
-  { label: 'Shop', href: '/products' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Contact', href: '#' },
-]
+import { useAuthContext } from '@/lib/context/auth-context'
+import { UserAvatarMenu } from '@/components/common/UserAvatarMenu'
+import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user } = useAuthContext()
+  const { t } = useTranslation()
+
+  const NAV_LINKS = [
+    { label: t('nav.home'), href: '/' },
+    { label: t('nav.shop'), href: '/products' },
+    { label: t('nav.blog'), href: '/blog' },
+    { label: t('nav.contact'), href: '#' },
+  ]
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md">
@@ -51,13 +57,20 @@ function Header() {
             >
               <Heart size={20} />
             </button>
-            <Link
-              to="/login"
-              aria-label="Account"
-              className="hidden rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:flex"
-            >
-              <User size={20} />
-            </Link>
+
+            {/* Avatar or Login link */}
+            <LanguageSwitcher />
+            {user ? (
+              <UserAvatarMenu />
+            ) : (
+              <Link
+                to="/login"
+                aria-label="Account"
+                className="hidden rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:flex"
+              >
+                <User size={20} />
+              </Link>
+            )}
             <button
               aria-label="Cart"
               className="relative rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"

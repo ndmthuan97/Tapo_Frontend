@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, Laptop, Zap, Shield, Headphones } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
 
 function RegisterPage() {
+  const { t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [formData, setFormData] = useState({
@@ -48,10 +50,10 @@ function RegisterPage() {
               <Laptop size={72} className="text-white drop-shadow-lg" />
             </div>
             <div className="absolute -right-20 top-4 flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-xs font-semibold text-orange-600 shadow-lg">
-              <Zap size={14} className="text-orange-500" /> Fast Delivery
+              <Zap size={14} className="text-orange-500" /> {t('auth.register.fastDelivery')}
             </div>
             <div className="absolute -left-20 bottom-6 flex items-center gap-2 rounded-2xl bg-white/90 px-3 py-2 text-xs font-semibold text-orange-600 shadow-lg">
-              <Shield size={14} className="text-orange-500" /> Warranty
+              <Shield size={14} className="text-orange-500" /> {t('auth.register.warranty')}
             </div>
           </div>
 
@@ -64,8 +66,8 @@ function RegisterPage() {
           </div>
 
           <div className="text-center">
-            <h2 className="mb-2 text-2xl font-bold text-white">Join thousands of shoppers.</h2>
-            <p className="text-sm text-orange-100">Create your account and start exploring the best tech deals</p>
+            <h2 className="mb-2 text-2xl font-bold text-white">{t('auth.register.panelHeading')}</h2>
+            <p className="text-sm text-orange-100">{t('auth.register.panelSubtitle')}</p>
           </div>
         </div>
 
@@ -81,8 +83,8 @@ function RegisterPage() {
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Create an Account</h1>
-            <p className="mt-1 text-sm text-gray-500">Start your journey with thousands of tech products</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('auth.register.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('auth.register.subtitle')}</p>
           </div>
 
           {/* Google */}
@@ -93,7 +95,7 @@ function RegisterPage() {
               <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" />
               <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" />
             </svg>
-            Continue with Google
+            {t('auth.register.continueGoogle')}
           </button>
 
           {/* Divider */}
@@ -102,7 +104,7 @@ function RegisterPage() {
               <div className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">or Register with Email</span>
+              <span className="bg-white px-3 text-xs text-gray-400">{t('auth.register.orRegisterWith')}</span>
             </div>
           </div>
 
@@ -112,7 +114,7 @@ function RegisterPage() {
               id="reg-fullName"
               name="fullName"
               type="text"
-              label="Full Name"
+              label={t('auth.register.fullNameLabel')}
               autoComplete="name"
               required
               value={formData.fullName}
@@ -123,19 +125,18 @@ function RegisterPage() {
               id="reg-email"
               name="email"
               type="email"
-              label="Email"
+              label={t('auth.register.emailLabel')}
               autoComplete="email"
               required
               value={formData.email}
               onChange={handleChange}
             />
 
-            {/* Password — full row */}
             <FloatingInput
               id="reg-password"
               name="password"
               type={showPassword ? 'text' : 'password'}
-              label="Password"
+              label={t('auth.register.passwordLabel')}
               autoComplete="new-password"
               required
               value={formData.password}
@@ -152,12 +153,11 @@ function RegisterPage() {
               }
             />
 
-            {/* Confirm Password — full row */}
             <FloatingInput
               id="reg-confirmPassword"
               name="confirmPassword"
               type={showConfirm ? 'text' : 'password'}
-              label="Confirm Password"
+              label={t('auth.register.confirmPasswordLabel')}
               autoComplete="new-password"
               required
               value={formData.confirmPassword}
@@ -184,10 +184,14 @@ function RegisterPage() {
                 className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-orange-500"
               />
               <span>
-                I agree to the{' '}
-                <a href="#" className="font-medium text-orange-500 hover:text-orange-600">Terms of Service</a>
-                {' '}and{' '}
-                <a href="#" className="font-medium text-orange-500 hover:text-orange-600">Privacy Policy</a>
+                {t('auth.register.agreePrefix')}{' '}
+                <a href="#" className="font-medium text-orange-500 hover:text-orange-600">
+                  {t('auth.register.termsOfService')}
+                </a>
+                {' '}{t('auth.register.and')}{' '}
+                <a href="#" className="font-medium text-orange-500 hover:text-orange-600">
+                  {t('auth.register.privacyPolicy')}
+                </a>
               </span>
             </label>
 
@@ -195,14 +199,14 @@ function RegisterPage() {
               type="submit"
               className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-300 active:scale-[0.99]"
             >
-              Create Account
+              {t('auth.register.submitButton')}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{' '}
+            {t('auth.register.hasAccount')}{' '}
             <Link to="/login" className="font-semibold text-orange-500 hover:text-orange-600">
-              Sign in
+              {t('auth.register.loginLink')}
             </Link>
           </p>
         </div>

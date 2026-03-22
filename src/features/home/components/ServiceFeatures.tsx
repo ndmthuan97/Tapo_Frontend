@@ -1,37 +1,33 @@
+import { useTranslation } from 'react-i18next'
 import { Truck, Headphones, RotateCcw, ShieldCheck } from 'lucide-react'
+import { useInView } from '@/hooks/useInView'
+import { cn } from '@/lib/utils'
 
-const FEATURES = [
-  {
-    icon: Truck,
-    title: 'Free Shipping',
-    description: 'On orders over 1,000,000₫',
-  },
-  {
-    icon: Headphones,
-    title: '24/7 Support',
-    description: 'Our team is always ready to help',
-  },
-  {
-    icon: RotateCcw,
-    title: '30-Day Returns',
-    description: 'Full refund if not satisfied',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Official Warranty',
-    description: '12–24 month manufacturer warranty',
-  },
-]
+const SERVICE_ICONS = [Truck, Headphones, RotateCcw, ShieldCheck]
+const SERVICE_KEYS = ['shipping', 'support', 'returns', 'warranty'] as const
 
 function ServiceFeatures() {
+  const { t } = useTranslation()
+  const { ref, inView } = useInView({ threshold: 0.1 })
+
+  const features = SERVICE_KEYS.map((key, i) => ({
+    icon: SERVICE_ICONS[i],
+    title: t(`home.service.${key}.title`),
+    description: t(`home.service.${key}.desc`),
+  }))
+
   return (
     <section className="border-b border-gray-100 bg-white py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ icon: Icon, title, description }) => (
+        <div ref={ref} className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map(({ icon: Icon, title, description }, i) => (
             <div
               key={title}
-              className="group flex items-center gap-4 rounded-xl p-4 transition-colors hover:bg-orange-50"
+              className={cn(
+                'group flex items-center gap-4 rounded-xl p-4 transition-all duration-500 hover:bg-orange-50',
+                inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8',
+              )}
+              style={{ transitionDelay: `${i * 100}ms` }}
             >
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-500 transition-colors group-hover:bg-orange-500 group-hover:text-white">
                 <Icon size={22} />
