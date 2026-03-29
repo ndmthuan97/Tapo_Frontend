@@ -1,6 +1,6 @@
 import { httpClient } from '@/lib/http/http-client'
 import { apiCall } from '@/lib/http/http-client'
-import type { ProductDto, ProductPage, SimpleRefDto, ProductMeta } from '@/lib/types/product/product.types'
+import type { ProductDto, ProductPage, ProductMeta } from '@/lib/types/product/product.types'
 import type { ApiResponse } from '@/lib/types/common/api.types'
 
 const BASE = '/api/products'

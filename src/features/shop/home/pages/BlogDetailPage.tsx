@@ -123,7 +123,7 @@ function CommentCard({ comment }: { comment: Comment }) {
 
 function BlogDetailPage() {
   const { t } = useTranslation()
-  const { slug } = useParams()
+  const { slug: _slug } = useParams()
   const [bookmarked, setBookmarked] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(247)
