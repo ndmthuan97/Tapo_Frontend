@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
@@ -10,57 +10,34 @@ import {
   Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag,
   MessageSquare, ThumbsUp,
 } from 'lucide-react'
+import { productApi } from '@/lib/http/product.api'
+import type { ProductDto } from '@/lib/types/product/product.types'
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
+// ── Skeleton ───────────────────────────────────────────────────────────────────
 
-const MOCK_PRODUCT = {
-  id: 'demo-1',
-  name: 'Laptop Gaming ASUS ROG Strix G16 2024 - Intel Core i9',
-  slug: 'asus-rog-strix-g16-2024',
-  description: `Laptop gaming cao cấp với hiệu năng vượt trội từ Intel Core i9 thế hệ 14, GPU NVIDIA RTX 4070 Super. Thiết kế tản nhiệt ROG Intelligent Cooling tiên tiến giúp duy trì hiệu suất ổn định ngay cả trong những phiên chơi game dài. Màn hình 16" QHD 240Hz mang lại trải nghiệm hình ảnh mượt mà, chân thực.
-
-Bộ nhớ RAM 32GB DDR5 và ổ SSD NVMe 1TB PCIe 4.0 đảm bảo tốc độ nhanh chóng cho mọi tác vụ. Bàn phím RGB per-key Aura Sync với hành trình phím 1.9mm cho cảm giác gõ thoải mái.`,
-  price: 45990000,
-  originalPrice: 52000000,
-  stock: 12,
-  images: [
-    'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg',
-    'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    'https://assets2.razerzone.com/images/pnx.assets/f9d6d7ad5a483040c29cbc3f6f47da70/razer-blade-16-store-header-2024.jpg',
-    'https://i.rtings.com/assets/products/FzKiJcCR/asus-rog-strix-g17-2023/design-medium.jpg',
-  ],
-  avgRating: 4.6,
-  reviewCount: 128,
-  soldCount: 347,
-  categoryName: 'Laptop Gaming',
-  brandName: 'ASUS ROG',
-  specifications: {
-    'CPU': 'Intel Core i9-14900HX 5.8 GHz',
-    'GPU': 'NVIDIA GeForce RTX 4070 Super 8GB GDDR6',
-    'RAM': '32GB DDR5 4800MHz (Tối đa 64GB)',
-    'Ổ cứng': '1TB SSD NVMe PCIe 4.0 x4',
-    'Màn hình': '16" QHD 2560×1600, 240Hz, IPS, 100% DCI-P3',
-    'Âm thanh': 'Stereo 2W x2, Hi-Res Audio với Dolby Atmos',
-    'Pin': '90Wh, Sạc nhanh 240W',
-    'Kết nối': 'Wi-Fi 6E, Bluetooth 5.3, Thunderbolt 4',
-    'Trọng lượng': '2.3 kg',
-    'Kích thước': '354 × 259 × 23 mm',
-    'Hệ điều hành': 'Windows 11 Home bản quyền',
-    'Bảo hành': '24 tháng chính hãng ASUS',
-  },
+function DetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="aspect-[4/3] rounded-2xl bg-gray-100 dark:bg-white/5" />
+        <div className="space-y-4">
+          <div className="h-4 bg-gray-100 dark:bg-white/5 rounded-full w-32" />
+          <div className="h-7 bg-gray-100 dark:bg-white/5 rounded-full w-full" />
+          <div className="h-7 bg-gray-100 dark:bg-white/5 rounded-full w-3/4" />
+          <div className="h-20 bg-gray-100 dark:bg-white/5 rounded-2xl" />
+          <div className="h-12 bg-gray-100 dark:bg-white/5 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
-const MOCK_REVIEWS = [
-  { id: 1, user: 'Nguyễn Văn A', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user1`, rating: 5, date: '2025-03-15', comment: 'Máy chạy cực mạnh, chơi game không bị lag. Màn hình đẹp, tản nhiệt tốt. Rất hài lòng với sản phẩm!', helpful: 24 },
-  { id: 2, user: 'Trần Thị B', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user2`, rating: 4, date: '2025-02-28', comment: 'Pin hơi yếu khi chơi game nặng, nhưng bù lại hiệu năng rất tốt. Giao hàng nhanh, đóng gói cẩn thận.', helpful: 15 },
-  { id: 3, user: 'Phạm Minh C', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user3`, rating: 5, date: '2025-02-10', comment: 'Đây là lần đầu mua laptop gaming tầm này, thực sự bị wow bởi hiệu năng. Render video 4K rất nhanh!', helpful: 32 },
-]
+// ── Mock reviews (reviews API Sprint later) ───────────────────────────────────
 
-const MOCK_RELATED = [
-  { id: 'r1', name: 'ASUS ROG Zephyrus G14 2024', price: 38990000, originalPrice: 42000000, image: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', brand: 'ASUS ROG', avgRating: 4.4 },
-  { id: 'r2', name: 'Lenovo Legion 5i Pro Gen 8', price: 32990000, image: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', brand: 'Lenovo', avgRating: 4.5 },
-  { id: 'r3', name: 'MSI Raider GE78 HX 2024', price: 54990000, originalPrice: 60000000, image: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', brand: 'MSI', avgRating: 4.7 },
-  { id: 'r4', name: 'Dell Alienware m18 R2', price: 72990000, image: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', brand: 'Dell', avgRating: 4.8 },
+const MOCK_REVIEWS = [
+  { id: 1, user: 'Nguyễn Văn A', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user1`, rating: 5, date: '2025-03-15', comment: 'Sản phẩm tuyệt vời, hiệu năng mạnh mẽ. Rất hài lòng!', helpful: 24 },
+  { id: 2, user: 'Trần Thị B',   avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user2`, rating: 4, date: '2025-02-28', comment: 'Giao hàng nhanh, đóng gói cẩn thận. Sản phẩm đúng mô tả.', helpful: 15 },
+  { id: 3, user: 'Phạm Minh C',  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user3`, rating: 5, date: '2025-02-10', comment: 'Chất lượng vượt mong đợi, sẽ mua lại!', helpful: 32 },
 ]
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -138,31 +115,84 @@ function ImageGallery({ images }: { images: string[] }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 function ProductDetailPage() {
-  useParams<{ id: string }>()           // id reserved for future real API call
+  const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+
+  const [product, setProduct] = useState<ProductDto | null>(null)
+  const [related, setRelated] = useState<ProductDto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+
   const [quantity, setQuantity] = useState(1)
   const [wishlisted, setWishlisted] = useState(false)
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc')
 
-  const product = MOCK_PRODUCT
+  useEffect(() => {
+    if (!id) return
+    setIsLoading(true)
+    setNotFound(false)
+
+    productApi.getProduct(id).then(result => {
+      setIsLoading(false)
+      if (result.success && result.data) {
+        setProduct(result.data)
+        // Load related after product is found
+        productApi.getRelatedProducts(id).then(r => {
+          if (r.success && r.data) setRelated(r.data)
+        })
+      } else {
+        setNotFound(true)
+      }
+    })
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gray-50 dark:bg-[#191b22] transition-colors">
+          <DetailSkeleton />
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  if (notFound || !product) {
+    return (
+      <>
+        <Header />
+        <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-[#191b22] gap-4">
+          <p className="text-2xl font-bold text-gray-400">{t('productDetail.notFound')}</p>
+          <Link to="/products" className="text-sm font-medium text-orange-500 hover:underline">
+            {t('productDetail.backToProducts')}
+          </Link>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null
 
+  const images: string[] = product.thumbnailUrl ? [product.thumbnailUrl] : []
+
   const ratingDist = [
-    { stars: 5, count: 89 },
-    { stars: 4, count: 27 },
-    { stars: 3, count: 8 },
-    { stars: 2, count: 3 },
-    { stars: 1, count: 1 },
+    { stars: 5, count: Math.round(product.reviewCount * 0.65) },
+    { stars: 4, count: Math.round(product.reviewCount * 0.20) },
+    { stars: 3, count: Math.round(product.reviewCount * 0.10) },
+    { stars: 2, count: Math.round(product.reviewCount * 0.03) },
+    { stars: 1, count: Math.round(product.reviewCount * 0.02) },
   ]
   const totalReviews = ratingDist.reduce((acc, d) => acc + d.count, 0)
 
   const TRUST_BADGES = [
-    { icon: Shield, label: t('productDetail.trustedWarranty'), sub: t('productDetail.trustedWarrantySub') },
-    { icon: Truck,  label: t('productDetail.trustedShipping'), sub: t('productDetail.trustedShippingSub') },
-    { icon: RefreshCw, label: t('productDetail.trustedReturn'), sub: t('productDetail.trustedReturnSub') },
-    { icon: Award,  label: t('productDetail.trustedAuth'),     sub: t('productDetail.trustedAuthSub') },
+    { icon: Shield,    label: t('productDetail.trustedWarranty'),  sub: t('productDetail.trustedWarrantySub') },
+    { icon: Truck,     label: t('productDetail.trustedShipping'),  sub: t('productDetail.trustedShippingSub') },
+    { icon: RefreshCw, label: t('productDetail.trustedReturn'),    sub: t('productDetail.trustedReturnSub') },
+    { icon: Award,     label: t('productDetail.trustedAuth'),      sub: t('productDetail.trustedAuthSub') },
   ]
 
   return (
@@ -189,7 +219,7 @@ function ProductDetailPage() {
 
             {/* Gallery */}
             <div className="lg:sticky lg:top-24 lg:self-start">
-              <ImageGallery images={product.images} />
+              <ImageGallery images={images} />
             </div>
 
             {/* Info */}
@@ -211,7 +241,7 @@ function ProductDetailPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5">
                   <StarDisplay rating={product.avgRating} size={16} />
-                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{product.avgRating}</span>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{product.avgRating?.toFixed(1) ?? '0.0'}</span>
                 </div>
                 <span className="text-gray-200 dark:text-white/10">|</span>
                 <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-orange-500 transition-colors">
@@ -330,7 +360,7 @@ function ProductDetailPage() {
               {/* Description */}
               {activeTab === 'desc' && (
                 <div className="max-w-none text-gray-700 dark:text-gray-300">
-                  {product.description.split('\n\n').map((para, i) => (
+                  {(product.description ?? '').split('\n\n').map((para, i) => (
                     <p key={i} className="mb-4 leading-relaxed text-sm last:mb-0">{para}</p>
                   ))}
                 </div>
@@ -338,22 +368,26 @@ function ProductDetailPage() {
 
               {/* Specifications */}
               {activeTab === 'specs' && (
-                <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-white/5">
-                  {Object.entries(product.specifications ?? {}).map(([key, val], i) => (
-                    <div key={key} className={cn('flex gap-4 px-4 py-3 text-sm', i % 2 === 0 ? 'bg-gray-50 dark:bg-white/3' : 'bg-white dark:bg-transparent')}>
-                      <span className="w-44 shrink-0 font-medium text-gray-500 dark:text-gray-400">{key}</span>
-                      <span className="text-gray-800 dark:text-gray-200">{val}</span>
-                    </div>
-                  ))}
-                </div>
+                product.specifications && Object.keys(product.specifications).length > 0 ? (
+                  <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-white/5">
+                    {Object.entries(product.specifications).map(([key, val], i) => (
+                      <div key={key} className={cn('flex gap-4 px-4 py-3 text-sm', i % 2 === 0 ? 'bg-gray-50 dark:bg-white/3' : 'bg-white dark:bg-transparent')}>
+                        <span className="w-44 shrink-0 font-medium text-gray-500 dark:text-gray-400">{key}</span>
+                        <span className="text-gray-800 dark:text-gray-200">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">{t('productDetail.noSpecs')}</p>
+                )
               )}
 
-              {/* Reviews */}
+              {/* Reviews (mock until Sprint 6) */}
               {activeTab === 'reviews' && (
                 <div className="space-y-8">
                   <div className="flex flex-col gap-6 sm:flex-row">
                     <div className="flex flex-col items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/10 p-6 sm:w-44 shrink-0">
-                      <span className="text-5xl font-extrabold text-orange-500">{product.avgRating}</span>
+                      <span className="text-5xl font-extrabold text-orange-500">{product.avgRating?.toFixed(1) ?? '0.0'}</span>
                       <StarDisplay rating={product.avgRating} size={18} />
                       <span className="mt-1 text-xs text-gray-400">{t('productDetail.totalReviews', { count: totalReviews })}</span>
                     </div>
@@ -362,7 +396,7 @@ function ProductDetailPage() {
                         <div key={stars} className="flex items-center gap-3">
                           <span className="flex w-6 shrink-0 items-center gap-0.5 text-xs text-gray-500">{stars} <Star size={9} className="fill-amber-400 text-amber-400" /></span>
                           <div className="flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10 h-2">
-                            <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${(count / totalReviews) * 100}%` }} />
+                            <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${totalReviews > 0 ? (count / totalReviews) * 100 : 0}%` }} />
                           </div>
                           <span className="w-8 shrink-0 text-right text-xs text-gray-400">{count}</span>
                         </div>
@@ -398,31 +432,37 @@ function ProductDetailPage() {
         </div>
 
         {/* ── Related products ──────────────────────────────────────────────── */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16">
-          <h2 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">{t('productDetail.relatedTitle')}</h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {MOCK_RELATED.map(p => {
-              const disc = p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : null
-              return (
-                <Link to={`/products/${p.id}`} key={p.id} className="group overflow-hidden rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 hover:shadow-md transition-shadow">
-                  <div className="relative overflow-hidden bg-gray-50 dark:bg-white/5 h-44">
-                    <img src={p.image} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                    {disc && <span className="absolute left-2 top-2 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">-{disc}%</span>}
-                  </div>
-                  <div className="p-3">
-                    <span className="text-[10px] font-semibold text-orange-500 uppercase">{p.brand}</span>
-                    <h3 className="mt-0.5 line-clamp-2 text-xs font-medium text-gray-800 dark:text-gray-100 min-h-[2rem]">{p.name}</h3>
-                    <div className="mt-1.5 flex items-center gap-1">
-                      <StarDisplay rating={p.avgRating} size={10} />
-                      <span className="text-[10px] text-gray-400">{p.avgRating}</span>
+        {related.length > 0 && (
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16">
+            <h2 className="mb-6 text-lg font-bold text-gray-900 dark:text-white">{t('productDetail.relatedTitle')}</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {related.map(p => {
+                const disc = p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : null
+                return (
+                  <Link to={`/products/${p.id}`} key={p.id} className="group overflow-hidden rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 hover:shadow-md transition-shadow">
+                    <div className="relative overflow-hidden bg-gray-50 dark:bg-white/5 h-44">
+                      {p.thumbnailUrl ? (
+                        <img src={p.thumbnailUrl} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center"><ImageOff size={28} className="text-gray-200 dark:text-white/10" /></div>
+                      )}
+                      {disc && <span className="absolute left-2 top-2 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">-{disc}%</span>}
                     </div>
-                    <p className="mt-1 text-sm font-bold text-orange-500">{formatCurrency(p.price)}</p>
-                  </div>
-                </Link>
-              )
-            })}
+                    <div className="p-3">
+                      <span className="text-[10px] font-semibold text-orange-500 uppercase">{p.brandName}</span>
+                      <h3 className="mt-0.5 line-clamp-2 text-xs font-medium text-gray-800 dark:text-gray-100 min-h-[2rem]">{p.name}</h3>
+                      <div className="mt-1.5 flex items-center gap-1">
+                        <StarDisplay rating={p.avgRating} size={10} />
+                        <span className="text-[10px] text-gray-400">{p.avgRating?.toFixed(1)}</span>
+                      </div>
+                      <p className="mt-1 text-sm font-bold text-orange-500">{formatCurrency(p.price)}</p>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </main>
       <Footer />
     </>

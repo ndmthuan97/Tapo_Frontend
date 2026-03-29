@@ -3,45 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { useProducts } from '@/features/shop/home/hooks/use-products'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight, LayoutGrid, Star, ImageOff, Heart, ShoppingCart, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { useState } from 'react'
 import type { ProductDto } from '@/lib/types/product/product.types'
+import { productApi } from '@/lib/http/product.api'
+import type { SimpleRefDto } from '@/lib/types/product/product.types'
 
-// ── Mock category metadata ────────────────────────────────────────────────────
-
-const CATEGORY_META: Record<string, { name: string; nameEn: string; description: string; descriptionEn: string; color: string }> = {
-  default: {
-    name: 'Danh mục',
-    nameEn: 'Category',
-    description: 'Khám phá các sản phẩm trong danh mục này',
-    descriptionEn: 'Explore products in this category',
-    color: 'from-orange-500 to-amber-400',
-  },
-  'laptop-gaming': {
-    name: 'Laptop Gaming',
-    nameEn: 'Gaming Laptops',
-    description: 'Laptop gaming hiệu năng cao, thiết kế ấn tượng cho các game thủ đam mê',
-    descriptionEn: 'High-performance gaming laptops with impressive designs for passionate gamers',
-    color: 'from-orange-500 to-amber-400',
-  },
-  'laptop-van-phong': {
-    name: 'Laptop Văn Phòng',
-    nameEn: 'Business Laptops',
-    description: 'Siêu mỏng, pin trâu, hiệu năng ổn định cho công việc hàng ngày',
-    descriptionEn: 'Ultra-thin, long battery life, stable performance for daily work',
-    color: 'from-blue-500 to-indigo-400',
-  },
-  'phu-kien': {
-    name: 'Phụ Kiện',
-    nameEn: 'Accessories',
-    description: 'Tai nghe, chuột, bàn phím gaming và phụ kiện công nghệ cao cấp',
-    descriptionEn: 'Headsets, mice, gaming keyboards and premium tech accessories',
-    color: 'from-purple-500 to-pink-400',
-  },
-}
 
 // ── Product card (minimal reuse) ──────────────────────────────────────────────
 
@@ -102,22 +71,35 @@ function ProductCard({ product }: { product: ProductDto }) {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main page ────────────────────────────────────────────────────────────────────────────
 
 function CategoryPage() {
   const { slug = 'default' } = useParams<{ slug: string }>()
-  const { t, i18n } = useTranslation()
-  const isEn = i18n.language === 'en'
+  const { t } = useTranslation()
 
-  const meta = CATEGORY_META[slug] ?? CATEGORY_META['default']
+  // Resolve slug → category ID from metadata
+  const [categoryMeta, setCategoryMeta] = useState<SimpleRefDto | null>(null)
 
-  const { products, isLoading } = useProducts()
-
-  // Pre-filter by slug — in a real app we'd resolve categoryId from slug
   useEffect(() => {
-    // With real API: setFilter({ categorySlug: slug })
-    // For mock: load all products (no filter needed)
-  }, [slug])
+    productApi.getMetadata().then(r => {
+      if (r.data?.categories) {
+        // Try to match slug against category names
+        const slugNorm = slug.toLowerCase().replace(/-/g, ' ')
+        const match = r.data.categories.find(
+          c => c.name.toLowerCase().replace(/\s+/g, ' ').includes(slugNorm) ||
+               c.name.toLowerCase().replace(/\s+/g, '-') === slug,
+        )
+        setCategoryMeta(match ?? null)
+        // Apply filter immediately after resolving
+        setFilter({ categoryId: match?.id, size: 24 })
+      }
+    })
+  }, [slug]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { products, isLoading, totalItems, setFilter } = useProducts({ size: 24 })
+
+  const displayName = categoryMeta?.name ?? slug
+
 
   const skeletons = Array.from({ length: 8 })
 
@@ -133,13 +115,13 @@ function CategoryPage() {
               <ChevronRight size={12} />
               <Link to="/products" className="hover:text-orange-500 transition-colors">{t('productDetail.breadcrumbProducts')}</Link>
               <ChevronRight size={12} />
-              <span className="text-gray-600 dark:text-gray-300 font-medium">{isEn ? meta.nameEn : meta.name}</span>
+              <span className="text-gray-600 dark:text-gray-300 font-medium">{displayName}</span>
             </nav>
           </div>
         </div>
 
         {/* Category hero banner */}
-        <div className={cn('bg-gradient-to-r text-white', meta.color)}>
+        <div className="bg-gradient-to-r from-orange-500 to-amber-400 text-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex items-center gap-3 mb-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
@@ -147,14 +129,13 @@ function CategoryPage() {
               </div>
               <span className="text-sm font-semibold uppercase tracking-widest opacity-80">{t('category.categoryLabel')}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">
-              {isEn ? meta.nameEn : meta.name}
-            </h1>
-            <p className="text-sm opacity-80 max-w-lg">
-              {isEn ? meta.descriptionEn : meta.description}
+            <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">{displayName}</h1>
+            <p className="text-sm opacity-80">
+              {isLoading ? '...' : t('products.countResult', { count: totalItems })}
             </p>
           </div>
         </div>
+
 
         {/* Products grid */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -162,7 +143,7 @@ function CategoryPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {isLoading
                 ? t('products.loading')
-                : t('products.countResult', { count: products.length })}
+                : t('products.countResult', { count: totalItems })}
             </p>
             <Link to="/products" className="flex items-center gap-1.5 text-sm font-medium text-orange-500 hover:text-orange-600 transition-colors">
               <LayoutGrid size={14} /> {t('category.viewAll')}

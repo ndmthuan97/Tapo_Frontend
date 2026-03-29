@@ -20,7 +20,6 @@ export interface ProductFilterParams {
 export const productApi = {
   /** Paginated product list (public) */
   getProducts(params: ProductFilterParams = {}) {
-    // Strip undefined values
     const clean = Object.fromEntries(
       Object.entries({ page: 0, size: 16, status: 'ACTIVE', ...params }).filter(
         ([, v]) => v !== undefined && v !== '' && v !== null,
@@ -35,6 +34,15 @@ export const productApi = {
   getProduct(id: string) {
     return apiCall<ProductDto>(
       httpClient.get<ApiResponse<ProductDto>>(`${BASE}/${id}`),
+    )
+  },
+
+  /** Related products by product ID (same category) */
+  getRelatedProducts(productId: string, limit = 8) {
+    return apiCall<ProductDto[]>(
+      httpClient.get<ApiResponse<ProductDto[]>>(`${BASE}/${productId}/related`, {
+        params: { limit },
+      }),
     )
   },
 
