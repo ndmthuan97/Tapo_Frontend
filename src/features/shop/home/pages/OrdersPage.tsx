@@ -1,96 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
-import { ChevronRight, Package, ImageOff, Search, X } from 'lucide-react'
+import { orderApi } from '@/lib/http/order.api'
+import type { OrderSummary, OrderStatus, OrderPage } from '@/lib/types/order/order.types'
+import { ChevronRight, Package, ImageOff, Search, X, Loader2 } from 'lucide-react'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-
-type OrderItem = {
-  name: string
-  thumbnailUrl: string
-  price: number
-  quantity: number
-}
-
-type Order = {
-  id: string
-  createdAt: string
-  status: OrderStatus
-  items: OrderItem[]
-  total: number
-  paymentMethod: string
-}
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ORD-A1B2C3',
-    createdAt: '2025-03-25T10:30:00Z',
-    status: 'delivered',
-    paymentMethod: 'COD',
-    total: 49280000,
-    items: [
-      { name: 'Laptop Gaming ASUS ROG Strix G16 2024', thumbnailUrl: 'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg', price: 45990000, quantity: 1 },
-      { name: 'Tai nghe HyperX Cloud III', thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', price: 3290000, quantity: 1 },
-    ],
-  },
-  {
-    id: 'ORD-D4E5F6',
-    createdAt: '2025-03-20T14:00:00Z',
-    status: 'shipped',
-    paymentMethod: 'VNPay',
-    total: 32990000,
-    items: [
-      { name: 'Lenovo Legion 5i Pro Gen 8', thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', price: 32990000, quantity: 1 },
-    ],
-  },
-  {
-    id: 'ORD-G7H8I9',
-    createdAt: '2025-03-10T09:15:00Z',
-    status: 'cancelled',
-    paymentMethod: 'MoMo',
-    total: 3990000,
-    items: [
-      { name: 'Tai nghe Sony WH-1000XM5', thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', price: 3990000, quantity: 1 },
-    ],
-  },
-  {
-    id: 'ORD-J1K2L3',
-    createdAt: '2025-03-28T17:45:00Z',
-    status: 'processing',
-    paymentMethod: 'Bank',
-    total: 54990000,
-    items: [
-      { name: 'MSI Raider GE78 HX 2024', thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', price: 54990000, quantity: 1 },
-    ],
-  },
-  {
-    id: 'ORD-M4N5O6',
-    createdAt: '2025-03-29T08:00:00Z',
-    status: 'pending',
-    paymentMethod: 'COD',
-    total: 8990000,
-    items: [
-      { name: 'Màn hình Gaming ASUS ROG Swift 27"', thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg', price: 8990000, quantity: 1 },
-    ],
-  },
-]
-
-// ── Status helpers ────────────────────────────────────────────────────────────
+// ── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<OrderStatus, { color: string; bgColor: string; dotColor: string }> = {
-  pending:    { color: 'text-amber-700 dark:text-amber-400',   bgColor: 'bg-amber-50 dark:bg-amber-500/10',   dotColor: 'bg-amber-500' },
-  processing: { color: 'text-blue-700 dark:text-blue-400',    bgColor: 'bg-blue-50 dark:bg-blue-500/10',     dotColor: 'bg-blue-500' },
-  shipped:    { color: 'text-indigo-700 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10', dotColor: 'bg-indigo-500' },
-  delivered:  { color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', dotColor: 'bg-emerald-500' },
-  cancelled:  { color: 'text-red-600 dark:text-red-400',      bgColor: 'bg-red-50 dark:bg-red-500/10',       dotColor: 'bg-red-500' },
+  PENDING:    { color: 'text-amber-700 dark:text-amber-400',    bgColor: 'bg-amber-50 dark:bg-amber-500/10',    dotColor: 'bg-amber-500' },
+  CONFIRMED:  { color: 'text-blue-700 dark:text-blue-400',     bgColor: 'bg-blue-50 dark:bg-blue-500/10',      dotColor: 'bg-blue-500' },
+  PROCESSING: { color: 'text-indigo-700 dark:text-indigo-400', bgColor: 'bg-indigo-50 dark:bg-indigo-500/10',  dotColor: 'bg-indigo-500' },
+  SHIPPING:   { color: 'text-purple-700 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-500/10',  dotColor: 'bg-purple-500' },
+  DELIVERED:  { color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-500/10', dotColor: 'bg-emerald-500' },
+  CANCELLED:  { color: 'text-red-600 dark:text-red-400',       bgColor: 'bg-red-50 dark:bg-red-500/10',        dotColor: 'bg-red-500' },
+  RETURNED:   { color: 'text-gray-600 dark:text-gray-400',     bgColor: 'bg-gray-100 dark:bg-white/5',         dotColor: 'bg-gray-400' },
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
@@ -99,14 +27,14 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   return (
     <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold', cfg.color, cfg.bgColor)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dotColor)} />
-      {t(`orders.status.${status}`)}
+      {t(`orders.status.${status.toLowerCase()}`)}
     </span>
   )
 }
 
 // ── Order card ────────────────────────────────────────────────────────────────
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order }: { order: OrderSummary }) {
   const { t } = useTranslation()
   const date = new Date(order.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
@@ -115,9 +43,8 @@ function OrderCard({ order }: { order: Order }) {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-3 bg-gray-50 dark:bg-white/3">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{order.id}</span>
+          <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{order.orderCode}</span>
           <span className="text-xs text-gray-400">{date}</span>
-          <span className="text-xs text-gray-400">• {order.paymentMethod}</span>
         </div>
         <StatusBadge status={order.status} />
       </div>
@@ -125,24 +52,20 @@ function OrderCard({ order }: { order: Order }) {
       {/* Items preview */}
       <div className="px-5 py-4 flex gap-3 flex-wrap">
         <div className="flex gap-2">
-          {order.items.slice(0, 3).map((item, i) => (
-            <div key={i} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
-              {item.thumbnailUrl
-                ? <img src={item.thumbnailUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
-                : <div className="flex h-full items-center justify-center"><ImageOff size={20} className="text-gray-300" /></div>
-              }
+          {order.firstProductThumbnail ? (
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
+              <img src={order.firstProductThumbnail} alt={order.firstProductName} loading="lazy" className="h-full w-full object-cover" />
             </div>
-          ))}
-          {order.items.length > 3 && (
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 text-xs font-semibold text-gray-500">
-              +{order.items.length - 3}
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-50 dark:bg-white/5">
+              <ImageOff size={20} className="text-gray-300" />
             </div>
           )}
         </div>
         <div className="flex flex-1 flex-col justify-center min-w-0">
-          <p className="line-clamp-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{order.items[0].name}</p>
-          {order.items.length > 1 && (
-            <p className="text-xs text-gray-400">{t('orders.andMore', { count: order.items.length - 1 })}</p>
+          <p className="line-clamp-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{order.firstProductName}</p>
+          {order.totalQty > 1 && (
+            <p className="text-xs text-gray-400">{t('orders.andMore', { count: order.totalQty - 1 })}</p>
           )}
         </div>
       </div>
@@ -151,7 +74,7 @@ function OrderCard({ order }: { order: Order }) {
       <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 px-5 py-3">
         <div>
           <span className="text-xs text-gray-400">{t('orders.total')}: </span>
-          <span className="text-base font-bold text-orange-500">{formatCurrency(order.total)}</span>
+          <span className="text-base font-bold text-orange-500">{formatCurrency(order.totalAmount)}</span>
         </div>
         <Link
           to={`/orders/${order.id}`}
@@ -166,18 +89,44 @@ function OrderCard({ order }: { order: Order }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const ALL_STATUSES: (OrderStatus | 'all')[] = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled']
+const ALL_STATUSES: (OrderStatus | 'ALL')[] = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED']
 
 function OrdersPage() {
   const { t } = useTranslation()
-  const [activeStatus, setActiveStatus] = useState<OrderStatus | 'all'>('all')
+  const [activeStatus, setActiveStatus] = useState<OrderStatus | 'ALL'>('ALL')
   const [search, setSearch] = useState('')
 
-  const filtered = MOCK_ORDERS.filter(o => {
-    const matchStatus = activeStatus === 'all' || o.status === activeStatus
-    const matchSearch = !search || o.id.toLowerCase().includes(search.toLowerCase()) || o.items.some(i => i.name.toLowerCase().includes(search.toLowerCase()))
-    return matchStatus && matchSearch
-  })
+  const [page, setPage] = useState<OrderPage | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+
+  const loadOrders = useCallback(async () => {
+    setIsLoading(true)
+    const result = await orderApi.getMyOrders({
+      page: currentPage,
+      size: 10,
+      status: activeStatus === 'ALL' ? undefined : activeStatus,
+    })
+    setIsLoading(false)
+    if (result.success && result.data) setPage(result.data)
+  }, [currentPage, activeStatus])
+
+  useEffect(() => { loadOrders() }, [loadOrders])
+
+  // Reset to page 0 when filter changes
+  function handleStatusChange(s: OrderStatus | 'ALL') {
+    setActiveStatus(s)
+    setCurrentPage(0)
+  }
+
+  // Client-side search on loaded items
+  const orders = page?.content ?? []
+  const filtered = search
+    ? orders.filter(o =>
+        o.orderCode.toLowerCase().includes(search.toLowerCase()) ||
+        o.firstProductName.toLowerCase().includes(search.toLowerCase()),
+      )
+    : orders
 
   return (
     <>
@@ -198,6 +147,7 @@ function OrdersPage() {
           <div className="mb-6 flex items-center gap-3">
             <Package size={22} className="text-orange-500" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.pageTitle')}</h1>
+            {isLoading && <Loader2 size={16} className="animate-spin text-orange-400 ml-auto" />}
           </div>
 
           {/* Search */}
@@ -221,7 +171,7 @@ function OrdersPage() {
             {ALL_STATUSES.map(s => (
               <button
                 key={s}
-                onClick={() => setActiveStatus(s)}
+                onClick={() => handleStatusChange(s)}
                 className={cn(
                   'shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-all',
                   activeStatus === s
@@ -229,17 +179,16 @@ function OrdersPage() {
                     : 'bg-white dark:bg-[#21232d] border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-orange-300 hover:text-orange-500',
                 )}
               >
-                {s === 'all' ? t('orders.statusAll') : t(`orders.status.${s}`)}
-                {s !== 'all' && (
-                  <span className="ml-1.5 text-[10px] opacity-70">
-                    ({MOCK_ORDERS.filter(o => o.status === s).length})
-                  </span>
-                )}
+                {s === 'ALL' ? t('orders.statusAll') : t(`orders.status.${s.toLowerCase()}`)}
               </button>
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-24">
+              <Loader2 size={36} className="animate-spin text-orange-400" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">
                 <Package size={28} className="text-gray-300 dark:text-white/20" />
@@ -253,6 +202,29 @@ function OrdersPage() {
           ) : (
             <div className="space-y-4">
               {filtered.map(o => <OrderCard key={o.id} order={o} />)}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {page && page.totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm disabled:opacity-40 hover:border-orange-300 hover:text-orange-500 transition-colors"
+              >
+                ← Trước
+              </button>
+              <span className="text-sm text-gray-500">
+                {currentPage + 1} / {page.totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(page.totalPages - 1, p + 1))}
+                disabled={currentPage >= page.totalPages - 1}
+                className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm disabled:opacity-40 hover:border-orange-300 hover:text-orange-500 transition-colors"
+              >
+                Sau →
+              </button>
             </div>
           )}
         </div>

@@ -1,66 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
+import { orderApi } from '@/lib/http/order.api'
+import type { AddressDto } from '@/lib/types/user/user.types'
 import {
   ChevronRight, MapPin, CreditCard, CheckCircle2,
   ShieldCheck, Truck, ChevronLeft, ImageOff, Check,
+  Loader2, AlertCircle,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Step = 1 | 2 | 3
-
-type AddressForm = {
-  fullName: string
-  phone: string
-  province: string
-  district: string
-  ward: string
-  address: string
-  note: string
-}
-
 type PaymentMethod = 'cod' | 'bank' | 'vnpay' | 'momo'
-
-// ── Mock cart ─────────────────────────────────────────────────────────────────
-
-const CART_ITEMS = [
-  {
-    id: 'ci1',
-    name: 'Laptop Gaming ASUS ROG Strix G16 2024',
-    thumbnailUrl: 'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg',
-    price: 45990000,
-    originalPrice: 52000000,
-    quantity: 1,
-    brandName: 'ASUS ROG',
-  },
-  {
-    id: 'ci2',
-    name: 'Tai nghe Gaming HyperX Cloud III Wireless',
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    price: 3290000,
-    originalPrice: 3990000,
-    quantity: 1,
-    brandName: 'HyperX',
-  },
-]
-
-const subtotal = CART_ITEMS.reduce((s, i) => s + i.price * i.quantity, 0)
-const shipping = 0
-const total = subtotal + shipping
 
 // ── Step indicator ────────────────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: Step }) {
   const { t } = useTranslation()
   const steps = [
-    { n: 1 as Step, icon: MapPin,     label: t('checkout.step1') },
-    { n: 2 as Step, icon: CreditCard, label: t('checkout.step2') },
-    { n: 3 as Step, icon: CheckCircle2,label: t('checkout.step3') },
+    { n: 1 as Step, icon: MapPin,      label: t('checkout.step1') },
+    { n: 2 as Step, icon: CreditCard,  label: t('checkout.step2') },
+    { n: 3 as Step, icon: CheckCircle2, label: t('checkout.step3') },
   ]
 
   return (
@@ -96,27 +64,30 @@ function StepIndicator({ current }: { current: Step }) {
 
 // ── Order summary sidebar ─────────────────────────────────────────────────────
 
-function OrderSummary() {
+function CartSummary() {
   const { t } = useTranslation()
+  const { cart } = useCart()
+  const { items, subtotal } = cart
+  const shipping = 30_000 // match backend SHIPPING_FEE
 
   return (
     <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 p-5">
       <h3 className="mb-4 text-sm font-bold text-gray-800 dark:text-gray-100">{t('checkout.summaryTitle')}</h3>
       <div className="space-y-3 divide-y divide-gray-100 dark:divide-white/5">
-        {CART_ITEMS.map(item => (
+        {items.map(item => (
           <div key={item.id} className="flex gap-3 pt-3 first:pt-0">
             <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
               {item.thumbnailUrl
-                ? <img src={item.thumbnailUrl} alt={item.name} className="h-full w-full object-cover" />
+                ? <img src={item.thumbnailUrl} alt={item.productName} className="h-full w-full object-cover" />
                 : <div className="flex h-full items-center justify-center"><ImageOff size={20} className="text-gray-300" /></div>
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="line-clamp-2 text-xs font-medium text-gray-700 dark:text-gray-300">{item.name}</p>
+              <p className="line-clamp-2 text-xs font-medium text-gray-700 dark:text-gray-300">{item.productName}</p>
               <p className="mt-0.5 text-[10px] text-orange-500 font-semibold">{item.brandName}</p>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[11px] text-gray-400">x{item.quantity}</span>
-                <span className="text-xs font-bold text-orange-500">{formatCurrency(item.price * item.quantity)}</span>
+                <span className="text-xs font-bold text-orange-500">{formatCurrency(item.lineTotal)}</span>
               </div>
             </div>
           </div>
@@ -130,29 +101,26 @@ function OrderSummary() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray-500 dark:text-gray-400">{t('cart.shipping')}</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">{t('cart.freeShipping')}</span>
+          <span className="font-medium text-gray-800 dark:text-gray-100">{formatCurrency(shipping)}</span>
         </div>
         <div className="flex justify-between font-bold text-base border-t border-gray-100 dark:border-white/5 pt-2 mt-2">
           <span className="text-gray-900 dark:text-white">{t('cart.total')}</span>
-          <span className="text-orange-500">{formatCurrency(total)}</span>
+          <span className="text-orange-500">{formatCurrency(subtotal + shipping)}</span>
         </div>
       </div>
     </div>
   )
 }
 
-// ── Step 1 — Shipping address ─────────────────────────────────────────────────
+// ── Step 1 — Pick address ─────────────────────────────────────────────────────
 
-function Step1Form({ data, onChange, onNext }: {
-  data: AddressForm
-  onChange: (k: keyof AddressForm, v: string) => void
+function Step1Address({ selected, onSelect, onNext }: {
+  selected: AddressDto | null
+  onSelect: (a: AddressDto) => void
   onNext: () => void
 }) {
   const { t } = useTranslation()
-
-  const inputCls = 'w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3.5 py-2.5 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition'
-
-  const isValid = data.fullName && data.phone && data.province && data.district && data.ward && data.address
+  const { addresses, isLoading } = useAddresses()
 
   return (
     <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 p-6">
@@ -160,46 +128,64 @@ function Step1Form({ data, onChange, onNext }: {
         <MapPin size={17} className="text-orange-500" /> {t('checkout.shippingTitle')}
       </h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.fullName')} *</label>
-          <input value={data.fullName} onChange={e => onChange('fullName', e.target.value)} placeholder={t('checkout.fullNamePh')} className={inputCls} />
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 size={28} className="animate-spin text-orange-400" />
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.phone')} *</label>
-          <input value={data.phone} onChange={e => onChange('phone', e.target.value)} placeholder="0901 234 567" className={inputCls} type="tel" />
+      ) : addresses.length === 0 ? (
+        <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-white/10 py-10 text-center">
+          <AlertCircle size={28} className="mx-auto mb-2 text-orange-300" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('address.empty')}</p>
+          <Link
+            to="/profile/addresses"
+            target="_blank"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600"
+          >
+            {t('checkout.addAddress')} <ChevronRight size={12} />
+          </Link>
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.province')} *</label>
-          <select value={data.province} onChange={e => onChange('province', e.target.value)} className={inputCls}>
-            <option value="">{t('checkout.selectProvince')}</option>
-            {['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ', 'Bình Dương'].map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
+      ) : (
+        <div className="space-y-3">
+          {addresses.map(addr => (
+            <button
+              key={addr.id}
+              onClick={() => onSelect(addr)}
+              className={cn(
+                'w-full text-left rounded-xl border-2 p-4 transition-all',
+                selected?.id === addr.id
+                  ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/5'
+                  : 'border-gray-100 dark:border-white/10 hover:border-gray-200 dark:hover:border-white/20',
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all',
+                  selected?.id === addr.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300 dark:border-white/20',
+                )}>
+                  {selected?.id === addr.id && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    {addr.recipientName}
+                    {addr.isDefault && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-500/10 px-2 py-0.5 text-[10px] font-semibold text-orange-600 dark:text-orange-400">
+                        {t('address.default')}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{addr.phoneNumber}</p>
+                  <p className="text-xs text-gray-400">{addr.address}, {addr.district}, {addr.city}</p>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.district')} *</label>
-          <input value={data.district} onChange={e => onChange('district', e.target.value)} placeholder={t('checkout.districtPh')} className={inputCls} />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.ward')} *</label>
-          <input value={data.ward} onChange={e => onChange('ward', e.target.value)} placeholder={t('checkout.wardPh')} className={inputCls} />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.address')} *</label>
-          <input value={data.address} onChange={e => onChange('address', e.target.value)} placeholder={t('checkout.addressPh')} className={inputCls} />
-        </div>
-        <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">{t('checkout.note')}</label>
-          <textarea value={data.note} onChange={e => onChange('note', e.target.value)} rows={2} placeholder={t('checkout.notePh')} className={cn(inputCls, 'resize-none')} />
-        </div>
-      </div>
+      )}
 
       <div className="mt-6 flex justify-end">
         <button
           onClick={onNext}
-          disabled={!isValid}
+          disabled={!selected}
           className="flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-3 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-orange-200/50"
         >
           {t('checkout.continuePayment')} <ChevronRight size={16} />
@@ -275,9 +261,10 @@ function Step2Payment({ selected, onSelect, onBack, onNext }: {
 
 // ── Step 3 — Review ───────────────────────────────────────────────────────────
 
-function Step3Review({ address, paymentId, onBack, onConfirm }: {
-  address: AddressForm
+function Step3Review({ address, paymentId, isSubmitting, onBack, onConfirm }: {
+  address: AddressDto
   paymentId: PaymentMethod
+  isSubmitting: boolean
   onBack: () => void
   onConfirm: () => void
 }) {
@@ -291,9 +278,8 @@ function Step3Review({ address, paymentId, onBack, onConfirm }: {
           <MapPin size={14} className="text-orange-500" /> {t('checkout.shippingTitle')}
         </h3>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
-          <p className="font-semibold text-gray-800 dark:text-gray-100">{address.fullName} • {address.phone}</p>
-          <p>{address.address}, {address.ward}, {address.district}, {address.province}</p>
-          {address.note && <p className="text-xs italic">"{address.note}"</p>}
+          <p className="font-semibold text-gray-800 dark:text-gray-100">{address.recipientName} • {address.phoneNumber}</p>
+          <p>{address.address}, {address.district}, {address.city}</p>
         </div>
       </div>
 
@@ -313,9 +299,11 @@ function Step3Review({ address, paymentId, onBack, onConfirm }: {
         </button>
         <button
           onClick={onConfirm}
-          className="flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-3.5 text-sm font-extrabold text-white hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200/60"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-3.5 text-sm font-extrabold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors shadow-lg shadow-orange-200/60"
         >
-          <CheckCircle2 size={18} /> {t('checkout.placeOrder')}
+          {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+          {t('checkout.placeOrder')}
         </button>
       </div>
     </div>
@@ -358,22 +346,57 @@ function SuccessScreen({ orderId }: { orderId: string }) {
 
 function CheckoutPage() {
   const { t } = useTranslation()
+  const { cart } = useCart()
   const [step, setStep] = useState<Step>(1)
   const [done, setDone] = useState(false)
-  const [orderId] = useState('ORD-' + Math.random().toString(36).slice(2, 9).toUpperCase())
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const [address, setAddress] = useState<AddressForm>({
-    fullName: '', phone: '', province: '', district: '', ward: '', address: '', note: '',
-  })
+  const [selectedAddress, setSelectedAddress] = useState<AddressDto | null>(null)
   const [payment, setPayment] = useState<PaymentMethod>('cod')
 
-  function updateAddress(k: keyof AddressForm, v: string) {
-    setAddress(prev => ({ ...prev, [k]: v }))
-  }
+  // Auto-push to step 1 when address auto-selected
+  const { addresses } = useAddresses()
+  useEffect(() => {
+    if (!selectedAddress && addresses.length > 0) {
+      const def = addresses.find(a => a.isDefault) ?? addresses[0]
+      setSelectedAddress(def)
+    }
+  }, [addresses, selectedAddress])
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    if (!selectedAddress) return
+    setIsSubmitting(true)
+    const result = await orderApi.createOrder({
+      addressId: selectedAddress.id,
+      customerNote: '',
+    })
+    setIsSubmitting(false)
+    if (!result.success || !result.data) {
+      toast.error(t('checkout.orderFailed'), { description: result.error?.message })
+      return
+    }
+    setCreatedOrderId(result.data.id)
     setDone(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // If cart empty before checkout
+  if (!done && cart.items.length === 0 && !isSubmitting) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gray-50 dark:bg-[#191b22] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-500 dark:text-gray-400 mb-4">{t('cart.emptyTitle')}</p>
+            <Link to="/products" className="rounded-full bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600">
+              {t('cart.continueShopping')}
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
   }
 
   return (
@@ -394,9 +417,9 @@ function CheckoutPage() {
         </div>
 
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
-          {done ? (
+          {done && createdOrderId ? (
             <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5">
-              <SuccessScreen orderId={orderId} />
+              <SuccessScreen orderId={createdOrderId} />
             </div>
           ) : (
             <>
@@ -408,19 +431,29 @@ function CheckoutPage() {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2">
                   {step === 1 && (
-                    <Step1Form data={address} onChange={updateAddress} onNext={() => setStep(2)} />
+                    <Step1Address
+                      selected={selectedAddress}
+                      onSelect={setSelectedAddress}
+                      onNext={() => setStep(2)}
+                    />
                   )}
                   {step === 2 && (
                     <Step2Payment selected={payment} onSelect={setPayment} onBack={() => setStep(1)} onNext={() => setStep(3)} />
                   )}
-                  {step === 3 && (
-                    <Step3Review address={address} paymentId={payment} onBack={() => setStep(2)} onConfirm={handleConfirm} />
+                  {step === 3 && selectedAddress && (
+                    <Step3Review
+                      address={selectedAddress}
+                      paymentId={payment}
+                      isSubmitting={isSubmitting}
+                      onBack={() => setStep(2)}
+                      onConfirm={handleConfirm}
+                    />
                   )}
                 </div>
 
                 <div className="lg:col-span-1">
                   <div className="sticky top-24 space-y-4">
-                    <OrderSummary />
+                    <CartSummary />
                     <div className="flex flex-col gap-2">
                       {[
                         { icon: ShieldCheck, txt: t('cart.trustSecure') },

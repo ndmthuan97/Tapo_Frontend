@@ -1,64 +1,16 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { toast } from 'sonner'
 import {
   ShoppingCart, Trash2, ChevronRight, ImageOff, Plus, Minus,
-  Tag, Shield, Truck, ArrowRight,
+  Tag, Shield, Truck, ArrowRight, Loader2,
 } from 'lucide-react'
-
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-type CartItem = {
-  id: string
-  productId: string
-  name: string
-  price: number
-  originalPrice: number | null
-  thumbnailUrl: string
-  brandName: string
-  quantity: number
-  stock: number
-}
-
-const INITIAL_CART: CartItem[] = [
-  {
-    id: 'ci1',
-    productId: 'p1',
-    name: 'Laptop Gaming ASUS ROG Strix G16 2024',
-    price: 45990000,
-    originalPrice: 52000000,
-    thumbnailUrl: 'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg',
-    brandName: 'ASUS ROG',
-    quantity: 1,
-    stock: 12,
-  },
-  {
-    id: 'ci2',
-    productId: 'p2',
-    name: 'Lenovo Legion 5i Pro Gen 8',
-    price: 32990000,
-    originalPrice: null,
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    brandName: 'Lenovo',
-    quantity: 2,
-    stock: 5,
-  },
-  {
-    id: 'ci3',
-    productId: 'p3',
-    name: 'Tai nghe Gaming HyperX Cloud III Wireless',
-    price: 3290000,
-    originalPrice: 3990000,
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    brandName: 'HyperX',
-    quantity: 1,
-    stock: 20,
-  },
-]
+import { useState } from 'react'
+import type { CartItemDto } from '@/lib/types/cart/cart.types'
 
 // ── Cart item row ─────────────────────────────────────────────────────────────
 
@@ -67,12 +19,12 @@ function CartItemRow({
   onRemove,
   onQuantityChange,
 }: {
-  item: CartItem
-  onRemove: (id: string) => void
-  onQuantityChange: (id: string, qty: number) => void
+  item: CartItemDto
+  onRemove: (productId: string) => void
+  onQuantityChange: (productId: string, qty: number) => void
 }) {
   const { t } = useTranslation()
-  const discount = item.originalPrice
+  const discount = item.originalPrice && item.originalPrice > item.price
     ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
     : null
 
@@ -81,7 +33,7 @@ function CartItemRow({
       {/* Image */}
       <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
         {item.thumbnailUrl ? (
-          <img src={item.thumbnailUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" />
+          <img src={item.thumbnailUrl} alt={item.productName} loading="lazy" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center">
             <ImageOff size={24} className="text-gray-300 dark:text-white/20" />
@@ -101,12 +53,12 @@ function CartItemRow({
             <span className="text-[10px] font-semibold uppercase text-orange-500 tracking-wide">{item.brandName}</span>
             <Link to={`/products/${item.productId}`}>
               <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:text-orange-500 transition-colors leading-snug">
-                {item.name}
+                {item.productName}
               </h3>
             </Link>
           </div>
           <button
-            onClick={() => onRemove(item.id)}
+            onClick={() => onRemove(item.productId)}
             className="shrink-0 rounded-full p-1.5 text-gray-300 dark:text-white/20 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-colors"
           >
             <Trash2 size={14} />
@@ -117,7 +69,7 @@ function CartItemRow({
           {/* Quantity stepper */}
           <div className="flex items-center overflow-hidden rounded-xl border border-gray-200 dark:border-white/10">
             <button
-              onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+              onClick={() => onQuantityChange(item.productId, item.quantity - 1)}
               disabled={item.quantity <= 1}
               className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-40"
             >
@@ -127,7 +79,7 @@ function CartItemRow({
               {item.quantity}
             </span>
             <button
-              onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+              onClick={() => onQuantityChange(item.productId, item.quantity + 1)}
               disabled={item.quantity >= item.stock}
               className="flex h-8 w-8 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors disabled:opacity-40"
             >
@@ -137,7 +89,7 @@ function CartItemRow({
 
           {/* Price */}
           <div className="text-right">
-            <p className="text-base font-bold text-orange-500">{formatCurrency(item.price * item.quantity)}</p>
+            <p className="text-base font-bold text-orange-500">{formatCurrency(item.lineTotal)}</p>
             {item.quantity > 1 && (
               <p className="text-[10px] text-gray-400">{formatCurrency(item.price)} / {t('cart.each')}</p>
             )}
@@ -152,27 +104,37 @@ function CartItemRow({
 
 function CartPage() {
   const { t } = useTranslation()
-  const [items, setItems] = useState<CartItem[]>(INITIAL_CART)
+  const { cart, isLoading, updateQuantity, removeItem, clearCart } = useCart()
+  const { items, subtotal } = cart
   const [coupon, setCoupon] = useState('')
   const [couponApplied, setCouponApplied] = useState(false)
 
-  function handleRemove(id: string) {
-    setItems(prev => prev.filter(i => i.id !== id))
+  async function handleRemove(productId: string) {
+    await removeItem(productId)
+    toast.success(t('cart.removeSuccess'))
   }
 
-  function handleQuantityChange(id: string, qty: number) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(1, Math.min(i.stock, qty)) } : i))
+  async function handleQuantityChange(productId: string, qty: number) {
+    if (qty < 1) return
+    await updateQuantity(productId, qty)
+  }
+
+  async function handleClear() {
+    await clearCart()
+    toast.success(t('cart.clearSuccess'))
   }
 
   function handleCoupon() {
     if (coupon.trim().toUpperCase() === 'TAPO10') {
       setCouponApplied(true)
+      toast.success(t('cart.couponApplied'))
+    } else {
+      toast.error(t('cart.couponInvalid'))
     }
   }
 
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0)
   const discount = couponApplied ? Math.round(subtotal * 0.1) : 0
-  const shipping = subtotal >= 2000000 ? 0 : 50000
+  const shipping = subtotal >= 2_000_000 ? 0 : 50_000
   const total = subtotal - discount + shipping
 
   return (
@@ -196,12 +158,17 @@ function CartPage() {
               <ShoppingCart size={22} className="text-orange-500" />
               {t('cart.pageTitle')}
             </h1>
-            {items.length > 0 && (
+            {isLoading && <Loader2 size={18} className="animate-spin text-orange-400" />}
+            {!isLoading && items.length > 0 && (
               <span className="text-sm text-gray-400">{t('cart.count', { count: items.length })}</span>
             )}
           </div>
 
-          {items.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-32">
+              <Loader2 size={40} className="animate-spin text-orange-400" />
+            </div>
+          ) : items.length === 0 ? (
             /* Empty state */
             <div className="flex flex-col items-center justify-center py-28 text-center">
               <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10">
@@ -236,7 +203,7 @@ function CartPage() {
                   <Link to="/products" className="flex items-center gap-1.5 text-sm text-orange-500 hover:text-orange-600 transition-colors font-medium">
                     ← {t('cart.continueShopping')}
                   </Link>
-                  <button onClick={() => setItems([])} className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                  <button onClick={handleClear} className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
                     <Trash2 size={12} /> {t('cart.clearCart')}
                   </button>
                 </div>
@@ -253,9 +220,7 @@ function CartPage() {
                     {couponApplied ? (
                       <div className="flex items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3 py-2">
                         <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">TAPO10 — {t('cart.couponApplied')}</span>
-                        <button onClick={() => { setCouponApplied(false); setCoupon('') }} className="text-xs text-gray-400 hover:text-red-500">
-                          ✕
-                        </button>
+                        <button onClick={() => { setCouponApplied(false); setCoupon('') }} className="text-xs text-gray-400 hover:text-red-500">✕</button>
                       </div>
                     ) : (
                       <div className="flex gap-2">
