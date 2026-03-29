@@ -27,5 +27,6 @@ export interface RegisterRequest {
 }
 
 export interface TokenRefreshRequest {
+  accessToken: string
   refreshToken: string
 }

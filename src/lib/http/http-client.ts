@@ -1,4 +1,4 @@
-import axios, { type AxiosError, type AxiosResponse } from 'axios'
+import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '@/lib/types/common/api.types'
 import { getMessageForCode } from '@/lib/constants/custom-code'
 import i18n from '@/lib/i18n'
@@ -11,7 +11,7 @@ export const httpClient = axios.create({
   timeout: 10_000,
 })
 
-// ── Request: auto-attach access token ──────────────────────────────────────
+// ── Request: auto-attach access token ────────────────────────────────────────
 httpClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token) {
@@ -20,38 +20,115 @@ httpClient.interceptors.request.use((config) => {
   return config
 })
 
-// ── Response: normalize error messages using CustomCode → i18n ─────────────
+// ── Response: 401 → attempt silent token refresh, then retry ─────────────────
+let isRefreshing = false
+let failedQueue: { resolve: (v: unknown) => void; reject: (e: unknown) => void }[] = []
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error)
+    } else {
+      resolve(token)
+    }
+  })
+  failedQueue = []
+}
+
 httpClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError<ApiResponse<unknown>>) => {
-    const serverData = error.response?.data
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    const status = error.response?.status
 
-    if (serverData?.statusCode) {
-      return Promise.reject({
-        statusCode: serverData.statusCode,
-        message: getMessageForCode(serverData.statusCode),
-        errors: serverData.errors ?? [],
-        raw: serverData,
-      })
+    // 401 on any request that is NOT the refresh endpoint itself
+    if (status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/refresh-token')) {
+      const accessToken  = localStorage.getItem('accessToken')
+      const refreshToken = localStorage.getItem('refreshToken')
+
+      if (!accessToken || !refreshToken) {
+        // No tokens at all — hard logout
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        return Promise.reject(normalizeError(error))
+      }
+
+      if (isRefreshing) {
+        // Queue requests while a refresh is already in-flight
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then((newToken) => {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          return httpClient(originalRequest)
+        })
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        // Call refresh with BOTH tokens (new backend contract)
+        const refreshResponse = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
+          `${BASE_URL}/api/auth/refresh-token`,
+          { accessToken, refreshToken },
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+
+        const data = refreshResponse.data.data!
+        localStorage.setItem('accessToken',  data.accessToken)
+        localStorage.setItem('refreshToken', data.refreshToken)
+
+        processQueue(null, data.accessToken)
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+        return httpClient(originalRequest)
+      } catch (refreshErr) {
+        processQueue(refreshErr, null)
+        // Refresh failed → force logout
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        return Promise.reject(refreshErr)
+      } finally {
+        isRefreshing = false
+      }
     }
 
-    if (!error.response) {
-      return Promise.reject({
-        statusCode: 0,
-        message: i18n.t('error.NETWORK'),
-        errors: [],
-      })
-    }
-
-    return Promise.reject({
-      statusCode: error.response.status,
-      message: i18n.t('error.UNKNOWN'),
-      errors: [],
-    })
+    return Promise.reject(normalizeError(error))
   },
 )
 
-// ── Typed wrapper ───────────────────────────────────────────────────────────
+// ── Error normalization ───────────────────────────────────────────────────────
+function normalizeError(error: AxiosError<ApiResponse<unknown>>) {
+  const serverData = error.response?.data
+
+  if (serverData?.statusCode) {
+    return {
+      statusCode: serverData.statusCode,
+      message: getMessageForCode(serverData.statusCode),
+      errors: serverData.errors ?? [],
+      raw: serverData,
+    }
+  }
+
+  if (!error.response) {
+    return {
+      statusCode: 0,
+      message: i18n.t('error.NETWORK'),
+      errors: [],
+    }
+  }
+
+  return {
+    statusCode: error.response.status,
+    message: i18n.t('error.UNKNOWN'),
+    errors: [],
+  }
+}
+
+// ── Typed wrapper ─────────────────────────────────────────────────────────────
 export interface ApiError {
   statusCode: number
   message: string

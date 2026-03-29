@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User, ChevronDown } from 'lucide-react'
+import { LogOut, User, ChevronDown, Package } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { useAuthContext, DEFAULT_AVATAR } from '@/lib/context/auth-context'
@@ -73,6 +73,14 @@ function UserAvatarMenu() {
           >
             <User size={16} />
             {t('userMenu.viewProfile')}
+          </button>
+
+          <button
+            onClick={() => { setOpen(false); navigate('/orders') }}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-gray-700 transition-colors hover:bg-orange-50 hover:text-orange-600"
+          >
+            <Package size={16} />
+            {t('orders.pageTitle')}
           </button>
 
           <div className="my-1 border-t border-gray-100" />
