@@ -18,6 +18,8 @@ import {
   Package,
   Tag,
   Bookmark,
+  ShoppingBag,
+  Mail,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -49,9 +51,16 @@ const NAV_SECTIONS: NavSection[] = [
   {
     groupKey: 'admin.nav.catalog',
     items: [
-      { to: '/admin/products',   icon: Package,  labelKey: 'admin.nav.products' },
-      { to: '/admin/categories', icon: Tag,      labelKey: 'admin.nav.categories' },
-      { to: '/admin/brands',     icon: Bookmark, labelKey: 'admin.nav.brands' },
+      { to: '/admin/products',   icon: Package,     labelKey: 'admin.nav.products' },
+      { to: '/admin/categories', icon: Tag,         labelKey: 'admin.nav.categories' },
+      { to: '/admin/brands',     icon: Bookmark,    labelKey: 'admin.nav.brands' },
+    ],
+  },
+  {
+    groupKey: 'admin.nav.sales',
+    items: [
+      { to: '/admin/orders',   icon: ShoppingBag, labelKey: 'admin.nav.orders' },
+      { to: '/admin/messages', icon: Mail,        labelKey: 'admin.nav.messages' },
     ],
   },
 ]

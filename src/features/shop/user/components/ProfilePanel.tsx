@@ -43,10 +43,21 @@ function FieldInput({ value, onChange, type = 'text', placeholder, readOnly, req
 
 // ── ProfilePanel ─────────────────────────────────────────────────────────────
 
-function ProfilePanel() {
+function ProfilePanel({
+  initialTab = 'profile',
+  onTabChange,
+}: {
+  initialTab?: Tab
+  onTabChange?: (t: Tab) => void
+} = {}) {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<Tab>('profile')
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [isEditing, setIsEditing] = useState(false)
+
+  function handleTabChange(newTab: Tab) {
+    setTab(newTab)
+    onTabChange?.(newTab)
+  }
 
   // Profile
   const { profile, isLoading, isSaving, updateProfile, changePassword } = useProfile()
@@ -152,7 +163,7 @@ function ProfilePanel() {
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => { setTab(id); setIsEditing(false) }}
+                onClick={() => { handleTabChange(id); setIsEditing(false) }}
                 className={cn(
                   'flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors text-left',
                   tab === id

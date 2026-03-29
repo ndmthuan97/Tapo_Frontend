@@ -1,72 +1,186 @@
+import { Link } from 'react-router-dom'
+import { Star, ShoppingCart, Heart, ImageOff, ArrowLeftRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
+import { useState } from 'react'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ProductCardProps {
   id: string
   name: string
   price: number
-  originalPrice?: number
+  originalPrice?: number | null
   image: string
   discountPercent?: number
+  avgRating?: number
+  reviewCount?: number
+  soldCount?: number
+  brandName?: string
+  categoryName?: string
+  inStock?: boolean
   className?: string
 }
 
+// ── Star display ──────────────────────────────────────────────────────────────
+
+function Stars({ rating, size = 11 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex gap-px">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          size={size}
+          className={cn(
+            i < Math.floor(rating)
+              ? 'fill-amber-400 text-amber-400'
+              : i < rating
+              ? 'fill-amber-400/50 text-amber-400'
+              : 'fill-transparent text-gray-200 dark:text-white/10',
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ── ProductCard ───────────────────────────────────────────────────────────────
+
 function ProductCard({
+  id,
   name,
   price,
   originalPrice,
   image,
   discountPercent,
+  avgRating = 0,
+  reviewCount = 0,
+  soldCount,
+  brandName,
+  inStock = true,
   className,
 }: ProductCardProps) {
-  const isOnSale = originalPrice !== undefined && originalPrice > price
+  const [wishlisted, setWishlisted] = useState(false)
+
+  const disc =
+    discountPercent ??
+    (originalPrice && originalPrice > price
+      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+      : null)
 
   return (
     <div
       className={cn(
-        'group relative cursor-pointer overflow-hidden rounded-lg border border-gray-100 bg-white transition-shadow hover:shadow-md',
+        'group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 dark:border-white/5',
+        'bg-white dark:bg-[#21232d] shadow-sm transition-all hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/30',
+        'hover:-translate-y-0.5',
         className,
       )}
     >
-      {/* Discount badge */}
-      {discountPercent !== undefined && (
-        <div className="absolute left-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-          -{discountPercent}%
-        </div>
-      )}
+      {/* Image area */}
+      <div className="relative overflow-hidden bg-gray-50 dark:bg-white/5">
+        <Link to={`/products/${id}`} className="block">
+          {image ? (
+            <img
+              src={image}
+              alt={name}
+              loading="lazy"
+              className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-48 items-center justify-center">
+              <ImageOff size={36} className="text-gray-300 dark:text-white/10" />
+            </div>
+          )}
+        </Link>
 
-      {/* Product image */}
-      <div className="relative overflow-hidden bg-gray-50 p-4">
-        <img
-          src={image}
-          alt={name}
-          loading="lazy"
-          className="h-48 w-full object-contain transition-transform duration-300 group-hover:scale-105"
-        />
+        {/* Discount badge */}
+        {disc && (
+          <span className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-[10px] font-extrabold text-white shadow">
+            -{disc}%
+          </span>
+        )}
+
+        {/* Out of stock overlay */}
+        {!inStock && (
+          <div className="absolute inset-0 flex items-end bg-black/30">
+            <span className="w-full bg-black/60 py-1.5 text-center text-xs font-semibold text-white backdrop-blur-sm">
+              Hết hàng
+            </span>
+          </div>
+        )}
+
+        {/* Hover actions */}
+        <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-all duration-200 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+          {/* Wishlist */}
+          <button
+            onClick={() => setWishlisted(w => !w)}
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all',
+              wishlisted
+                ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-500'
+                : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-400 hover:border-red-300 hover:text-red-400',
+            )}
+          >
+            <Heart size={13} className={wishlisted ? 'fill-current' : ''} />
+          </button>
+
+          {/* Compare */}
+          <Link
+            to={`/compare?ids=${id}`}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-400 shadow-sm hover:border-orange-300 hover:text-orange-500 transition-all"
+          >
+            <ArrowLeftRight size={12} />
+          </Link>
+        </div>
       </div>
 
-      {/* Product info */}
-      <div className="p-4">
-        <h3 className="mb-2 line-clamp-2 text-sm font-medium text-gray-800">
-          {name}
-        </h3>
+      {/* Info */}
+      <div className="flex flex-1 flex-col p-4">
+        {brandName && (
+          <span className="mb-1 text-[10px] font-bold uppercase tracking-wide text-orange-500">
+            {brandName}
+          </span>
+        )}
 
-        <div className="flex flex-col gap-1">
-          {isOnSale ? (
-            <>
-              <span className="text-sm text-gray-400 line-through">
-                {formatCurrency(originalPrice!)}
-              </span>
-              <span className="text-base font-bold text-orange-500">
-                {formatCurrency(price)}
-              </span>
-            </>
-          ) : (
-            <span className="text-base font-bold text-gray-900">
-              {formatCurrency(price)}
-            </span>
+        <Link to={`/products/${id}`} className="flex-1">
+          <h3 className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:text-orange-500 transition-colors leading-snug">
+            {name}
+          </h3>
+        </Link>
+
+        {/* Rating */}
+        {reviewCount > 0 && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <Stars rating={avgRating} />
+            <span className="text-[10px] text-gray-400">({reviewCount.toLocaleString()})</span>
+            {soldCount != null && soldCount > 0 && (
+              <span className="text-[10px] text-gray-400 ml-0.5">• Đã bán {soldCount.toLocaleString()}</span>
+            )}
+          </div>
+        )}
+
+        {/* Price */}
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-base font-extrabold text-orange-500">{formatCurrency(price)}</span>
+          {originalPrice && originalPrice > price && (
+            <span className="text-xs text-gray-400 line-through">{formatCurrency(originalPrice)}</span>
           )}
         </div>
+
+        {/* Add to cart */}
+        <button
+          disabled={!inStock}
+          className={cn(
+            'mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all',
+            inStock
+              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200/60 active:scale-[0.98]'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed',
+          )}
+        >
+          <ShoppingCart size={13} />
+          {inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+        </button>
       </div>
     </div>
   )
