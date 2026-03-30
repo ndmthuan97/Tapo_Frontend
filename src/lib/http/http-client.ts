@@ -85,11 +85,20 @@ httpClient.interceptors.response.use(
         return httpClient(originalRequest)
       } catch (refreshErr) {
         processQueue(refreshErr, null)
-        // Refresh failed → force logout
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
+
+        const refreshStatus = (refreshErr as AxiosError)?.response?.status
+        const isAuthError = refreshStatus === 401 || refreshStatus === 403
+
+        if (isAuthError) {
+          // Token truly invalid → hard logout
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('user')
+          window.location.href = '/login'
+        }
+        // 5xx / network error → do NOT logout, just reject the original request
+        // User keeps their session; the failed request will surface as an error in UI
+
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false
