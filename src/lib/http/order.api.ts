@@ -1,6 +1,6 @@
 import { httpClient, apiCall } from '@/lib/http/http-client'
 import type {
-  OrderDto, OrderSummary, OrderPage,
+  OrderDto, OrderPage,
   CreateOrderRequest, OrderStatus,
 } from '@/lib/types/order/order.types'
 import type { ApiResponse } from '@/lib/types/common/api.types'
@@ -29,6 +29,24 @@ export const orderApi = {
   cancelOrder(id: string) {
     return apiCall<OrderDto>(
       httpClient.put<ApiResponse<OrderDto>>(`${BASE}/${id}/cancel`, {}),
+    )
+  },
+
+  // ── Admin ──────────────────────────────────────────────────────────────────
+
+  adminGetAllOrders(params: { page?: number; size?: number; status?: OrderStatus } = {}) {
+    return apiCall<OrderPage>(
+      httpClient.get<ApiResponse<OrderPage>>('/api/admin/orders', { params }),
+    )
+  },
+
+  adminUpdateStatus(id: string, status: OrderStatus, note?: string) {
+    return apiCall<OrderDto>(
+      httpClient.put<ApiResponse<OrderDto>>(
+        `/api/admin/orders/${id}/status`,
+        null,
+        { params: { status, ...(note ? { note } : {}) } },
+      ),
     )
   },
 }

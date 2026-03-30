@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
 import {
-  Star, Heart, ShoppingCart, ChevronRight, ChevronLeft, Share2,
+  Star, Heart, ShoppingCart, ChevronRight, ChevronLeft, Share2, ArrowLeftRight,
   Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag,
-  MessageSquare, ThumbsUp,
+  MessageSquare, ThumbsUp, Check, Loader2,
 } from 'lucide-react'
 import { productApi } from '@/lib/http/product.api'
 import type { ProductDto } from '@/lib/types/product/product.types'
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { toast } from 'sonner'
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
@@ -117,6 +119,8 @@ function ImageGallery({ images }: { images: string[] }) {
 function ProductDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { addItem } = useCart()
 
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [related, setRelated] = useState<ProductDto[]>([])
@@ -126,6 +130,29 @@ function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [wishlisted, setWishlisted] = useState(false)
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc')
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
+
+  async function handleAddToCart() {
+    if (!product || addingToCart) return
+    setAddingToCart(true)
+    const result = await addItem(product.id, quantity)
+    setAddingToCart(false)
+    if (result.success) {
+      setJustAdded(true)
+      toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`)
+      setTimeout(() => setJustAdded(false), 2500)
+    } else {
+      toast.error('Thêm vào giỏ thất bại', { description: result.error?.message })
+    }
+  }
+
+  async function handleBuyNow() {
+    if (!product || addingToCart) return
+    const result = await addItem(product.id, quantity)
+    if (result.success) navigate('/cart')
+    else toast.error('Thêm vào giỏ thất bại', { description: result.error?.message })
+  }
 
   useEffect(() => {
     if (!id) return
@@ -302,10 +329,26 @@ function ProductDetailPage() {
 
               {/* CTAs */}
               <div className="flex gap-3">
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-orange-500 py-3 text-sm font-bold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors">
-                  <ShoppingCart size={17} /> {t('productDetail.addToCart')}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0 || addingToCart}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-bold transition-all',
+                    product.stock === 0
+                      ? 'border-gray-200 dark:border-white/10 text-gray-400 cursor-not-allowed'
+                      : justAdded
+                      ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'
+                      : 'border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10',
+                  )}
+                >
+                  {addingToCart ? <Loader2 size={17} className="animate-spin" /> : justAdded ? <Check size={17} /> : <ShoppingCart size={17} />}
+                  {justAdded ? t('productDetail.addedToCart') : t('productDetail.addToCart')}
                 </button>
-                <button className="flex-1 rounded-xl bg-orange-500 py-3 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-md shadow-orange-200/60">
+                <button
+                  onClick={handleBuyNow}
+                  disabled={product.stock === 0 || addingToCart}
+                  className="flex-1 rounded-xl bg-orange-500 py-3 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-md shadow-orange-200/60 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {t('productDetail.buyNow')}
                 </button>
                 <button
@@ -314,6 +357,13 @@ function ProductDetailPage() {
                 >
                   <Heart size={18} className={wishlisted ? 'fill-current' : ''} />
                 </button>
+                <Link
+                  to={`/compare?ids=${product.id}`}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-gray-200 dark:border-white/10 text-gray-400 hover:border-orange-300 hover:text-orange-500 dark:hover:text-orange-400 transition-all"
+                  title={t('productDetail.compare', 'So sánh')}
+                >
+                  <ArrowLeftRight size={18} />
+                </Link>
                 <button className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 border-gray-200 dark:border-white/10 text-gray-400 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300 transition-all">
                   <Share2 size={18} />
                 </button>

@@ -7,10 +7,7 @@ import { useAuthContext } from '@/lib/context/auth-context'
 import { UserAvatarMenu } from '@/components/common/UserAvatarMenu'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useShopTheme } from '@/hooks/use-shop-theme'
-
-// Mock cart/wishlist badge counts — replace with real context later
-const CART_COUNT = 3
-const WISH_COUNT = 4
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -21,6 +18,7 @@ function Header() {
   const { user } = useAuthContext()
   const { t } = useTranslation()
   const { isDark, toggleTheme } = useShopTheme()
+  const { totalCount: cartCount } = useCart()
 
   const NAV_LINKS = [
     { label: t('nav.home'),    href: '/' },
@@ -101,11 +99,7 @@ function Header() {
               className="relative hidden rounded-full p-2 text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white sm:flex"
             >
               <Heart size={20} />
-              {WISH_COUNT > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                  {WISH_COUNT}
-                </span>
-              )}
+
             </Link>
 
             {/* Theme toggle */}
@@ -140,9 +134,9 @@ function Header() {
               className="relative rounded-full p-2 text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
             >
               <ShoppingCart size={20} />
-              {CART_COUNT > 0 && (
+              {cartCount > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
-                  {CART_COUNT}
+                  {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
             </Link>

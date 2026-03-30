@@ -14,3 +14,6 @@ export interface PaginatedResponse<T> {
   totalPages: number
   last: boolean
 }
+
+// Alias used by new Sprint 5 API files
+export type PageResponse<T> = PaginatedResponse<T>

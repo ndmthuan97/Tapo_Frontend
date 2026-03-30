@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
-import { Star, ShoppingCart, Heart, ImageOff, ArrowLeftRight } from 'lucide-react'
+import { Star, ShoppingCart, Heart, ImageOff, ArrowLeftRight, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { wishlistApi } from '@/lib/http/wishlist.api'
+import { useAuthContext } from '@/lib/context/auth-context'
+import { toast } from 'sonner'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,6 +65,45 @@ function ProductCard({
   className,
 }: ProductCardProps) {
   const [wishlisted, setWishlisted] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [justAdded, setJustAdded] = useState(false)
+  const { addItem } = useCart()
+  const { user } = useAuthContext()
+
+  const handleToggleWishlist = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!user) { toast.error('Vui lòng đăng nhập để thêm vào yêu thích'); return }
+    if (wishlistLoading) return
+    setWishlistLoading(true)
+    const optimistic = !wishlisted
+    setWishlisted(optimistic)
+    const result = optimistic
+      ? await wishlistApi.addToWishlist(id)
+      : await wishlistApi.removeFromWishlist(id)
+    setWishlistLoading(false)
+    if (!result.success) {
+      setWishlisted(!optimistic) // revert
+      toast.error('Thao tác yêu thích thất bại')
+    } else {
+      toast.success(optimistic ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích')
+    }
+  }, [id, user, wishlisted, wishlistLoading])
+
+  async function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault()
+    if (!inStock || addingToCart) return
+    setAddingToCart(true)
+    const result = await addItem(id, 1)
+    setAddingToCart(false)
+    if (result.success) {
+      setJustAdded(true)
+      toast.success('Đã thêm vào giỏ hàng')
+      setTimeout(() => setJustAdded(false), 2000)
+    } else {
+      toast.error('Thêm vào giỏ thất bại', { description: result.error?.message })
+    }
+  }
 
   const disc =
     discountPercent ??
@@ -114,7 +157,8 @@ function ProductCard({
         <div className="absolute right-2 top-2 flex flex-col gap-1.5 opacity-0 transition-all duration-200 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
           {/* Wishlist */}
           <button
-            onClick={() => setWishlisted(w => !w)}
+            onClick={handleToggleWishlist}
+            disabled={wishlistLoading}
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all',
               wishlisted
@@ -170,16 +214,19 @@ function ProductCard({
 
         {/* Add to cart */}
         <button
-          disabled={!inStock}
+          onClick={handleAddToCart}
+          disabled={!inStock || addingToCart}
           className={cn(
             'mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition-all',
             inStock
-              ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200/60 active:scale-[0.98]'
+              ? justAdded
+                ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-200/60'
+                : 'bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200/60 active:scale-[0.98]'
               : 'bg-gray-100 dark:bg-white/5 text-gray-400 cursor-not-allowed',
           )}
         >
-          <ShoppingCart size={13} />
-          {inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+          {justAdded ? <Check size={13} /> : <ShoppingCart size={13} />}
+          {!inStock ? 'Hết hàng' : justAdded ? 'Đã thêm!' : addingToCart ? '...' : 'Thêm vào giỏ'}
         </button>
       </div>
     </div>

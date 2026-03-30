@@ -1,76 +1,29 @@
-import { useState } from 'react'
+import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { Heart, ShoppingCart, Trash2, Star, ChevronRight, ImageOff } from 'lucide-react'
+import { Heart, ShoppingCart, Trash2, Star, ChevronRight, ImageOff, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_WISHLIST = [
-  {
-    id: 'w1',
-    name: 'Laptop Gaming ASUS ROG Strix G16 2024 - Intel Core i9',
-    price: 45990000,
-    originalPrice: 52000000,
-    thumbnailUrl: 'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg',
-    brandName: 'ASUS ROG',
-    categoryName: 'Laptop Gaming',
-    avgRating: 4.6,
-    reviewCount: 128,
-    stock: 12,
-  },
-  {
-    id: 'w2',
-    name: 'Lenovo Legion 5i Pro Gen 8 - Intel Core i7',
-    price: 32990000,
-    originalPrice: null,
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    brandName: 'Lenovo',
-    categoryName: 'Laptop Gaming',
-    avgRating: 4.5,
-    reviewCount: 87,
-    stock: 5,
-  },
-  {
-    id: 'w3',
-    name: 'MSI Raider GE78 HX 2024 - Intel Core i9 Ultra',
-    price: 54990000,
-    originalPrice: 60000000,
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    brandName: 'MSI',
-    categoryName: 'Laptop Gaming',
-    avgRating: 4.7,
-    reviewCount: 62,
-    stock: 0,
-  },
-  {
-    id: 'w4',
-    name: 'Dell XPS 15 9530 - Intel Core i7 13700H',
-    price: 38990000,
-    originalPrice: 42000000,
-    thumbnailUrl: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    brandName: 'Dell',
-    categoryName: 'Laptop Văn phòng',
-    avgRating: 4.8,
-    reviewCount: 154,
-    stock: 8,
-  },
-]
+import { useWishlist } from '@/features/shop/home/hooks/use-wishlist'
+import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import type { WishlistItemDto } from '@/lib/http/wishlist.api'
+import { toast } from 'sonner'
 
 // ── Wish card ─────────────────────────────────────────────────────────────────
 
 function WishlistCard({
   item,
   onRemove,
+  onAddToCart,
 }: {
-  item: typeof MOCK_WISHLIST[0]
-  onRemove: (id: string) => void
+  item: WishlistItemDto
+  onRemove: (productId: string) => void
+  onAddToCart: (productId: string) => void
 }) {
   const { t } = useTranslation()
-  const discount = item.originalPrice
+  const discount = item.originalPrice && item.originalPrice > item.price
     ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
     : null
 
@@ -79,63 +32,76 @@ function WishlistCard({
       {/* Image */}
       <div className="relative w-full sm:w-40 h-36 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
         {item.thumbnailUrl ? (
-          <img src={item.thumbnailUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <img src={item.thumbnailUrl} alt={item.productName}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
           <div className="flex h-full items-center justify-center">
-            <ImageOff size={32} className="text-gray-300 dark:text-white/20" />
+            <ImageOff size={28} className="text-gray-300 dark:text-white/20" />
           </div>
         )}
         {discount && (
-          <span className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
             -{discount}%
           </span>
         )}
       </div>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col justify-between min-w-0">
-        <div>
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-orange-500">{item.brandName}</span>
-            <button
-              onClick={() => onRemove(item.id)}
-              className="shrink-0 rounded-full p-1.5 text-gray-300 dark:text-white/20 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 transition-colors"
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-          <Link to={`/products/${item.id}`}>
-            <h3 className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:text-orange-500 transition-colors leading-snug">
-              {item.name}
-            </h3>
+      <div className="flex flex-1 flex-col min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <Link to={`/products/${item.productSlug}`}
+            className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-gray-100 hover:text-orange-500 transition-colors leading-snug">
+            {item.productName}
           </Link>
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <div className="flex">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} size={10} className={cn(i < Math.round(item.avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-white/10')} />
-              ))}
-            </div>
-            <span className="text-[10px] text-gray-400">({item.reviewCount})</span>
-          </div>
+          <button
+            onClick={() => onRemove(item.productId)}
+            className="mt-0.5 shrink-0 rounded-full p-1.5 text-gray-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
 
-        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+        {item.brandName && (
+          <p className="mt-1 text-xs text-gray-400">{item.brandName} · {item.categoryName}</p>
+        )}
+
+        {/* Rating */}
+        {item.avgRating > 0 && (
+          <div className="mt-2 flex items-center gap-1.5">
+            <div className="flex">
+              {[1,2,3,4,5].map(s => (
+                <Star key={s} size={11}
+                  className={cn(s <= Math.round(item.avgRating) ? 'fill-orange-400 text-orange-400' : 'text-gray-200 dark:text-white/10')} />
+              ))}
+            </div>
+            <span className="text-[11px] text-gray-400">({item.reviewCount?.toLocaleString()})</span>
+          </div>
+        )}
+
+        {/* Price row */}
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-3">
           <div>
-            <span className="text-lg font-bold text-orange-500">{formatCurrency(item.price)}</span>
-            {item.originalPrice && (
-              <span className="ml-2 text-xs text-gray-400 line-through">{formatCurrency(item.originalPrice)}</span>
+            <p className="text-base font-bold text-orange-500">{formatCurrency(item.price)}</p>
+            {item.originalPrice && item.originalPrice > item.price && (
+              <p className="text-xs text-gray-400 line-through">{formatCurrency(item.originalPrice)}</p>
             )}
           </div>
 
-          {item.stock > 0 ? (
-            <button className="flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors shadow-sm shadow-orange-200/50">
-              <ShoppingCart size={13} /> {t('wishlist.addToCart')}
-            </button>
-          ) : (
-            <span className="rounded-full bg-gray-100 dark:bg-white/5 px-4 py-2 text-xs font-medium text-gray-400">
-              {t('wishlist.outOfStock')}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {item.stock === 0 ? (
+              <span className="rounded-full bg-gray-100 dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-400">
+                {t('productDetail.outOfStock')}
+              </span>
+            ) : (
+              <button
+                onClick={() => onAddToCart(item.productId)}
+                className="flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-colors shadow-sm shadow-orange-200/50"
+              >
+                <ShoppingCart size={13} />
+                {t('productDetail.addToCart')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -146,15 +112,33 @@ function WishlistCard({
 
 function WishlistPage() {
   const { t } = useTranslation()
-  const [items, setItems] = useState(MOCK_WISHLIST)
+  const { wishlist, isLoading, toggle, reload } = useWishlist()
+  const { addItem } = useCart()
 
-  function handleRemove(id: string) {
-    setItems(prev => prev.filter(i => i.id !== id))
-  }
+  const handleRemove = useCallback(async (productId: string) => {
+    await toggle(productId)
+    toast.success('Đã xóa khỏi danh sách yêu thích')
+  }, [toggle])
 
-  function handleClear() {
-    setItems([])
-  }
+  const handleAddToCart = useCallback(async (productId: string) => {
+    const result = await addItem(productId, 1)
+    if (result.success) {
+      toast.success('Đã thêm vào giỏ hàng')
+    } else {
+      toast.error('Không thể thêm vào giỏ hàng')
+    }
+  }, [addItem])
+
+  const handleAddAllToCart = useCallback(async () => {
+    const inStock = wishlist.content.filter(w => w.stock > 0)
+    for (const item of inStock) {
+      await addItem(item.productId, 1)
+    }
+    toast.success(`Đã thêm ${inStock.length} sản phẩm vào giỏ hàng`)
+    reload()
+  }, [wishlist.content, addItem, reload])
+
+  const items = wishlist.content
 
   return (
     <>
@@ -180,26 +164,26 @@ function WishlistPage() {
                 {t('wishlist.pageTitle')}
               </h1>
               {items.length > 0 && (
-                <p className="mt-0.5 text-sm text-gray-400">{t('wishlist.count', { count: items.length })}</p>
+                <p className="mt-0.5 text-sm text-gray-400">{t('wishlist.count', { count: wishlist.totalElements })}</p>
               )}
             </div>
             {items.length > 0 && (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleClear}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1"
+                  onClick={handleAddAllToCart}
+                  className="flex items-center gap-1.5 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-md shadow-orange-200/50"
                 >
-                  <Trash2 size={13} /> {t('wishlist.clearAll')}
-                </button>
-                <button className="flex items-center gap-1.5 rounded-full bg-orange-500 px-5 py-2 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-md shadow-orange-200/50">
                   <ShoppingCart size={15} /> {t('wishlist.addAllToCart')}
                 </button>
               </div>
             )}
           </div>
 
-          {items.length === 0 ? (
-            /* Empty state */
+          {isLoading ? (
+            <div className="flex items-center justify-center py-28">
+              <Loader2 size={36} className="animate-spin text-orange-500" />
+            </div>
+          ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-center">
               <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">
                 <Heart size={36} className="text-red-300 dark:text-red-400" />
@@ -217,7 +201,12 @@ function WishlistPage() {
           ) : (
             <div className="space-y-3">
               {items.map(item => (
-                <WishlistCard key={item.id} item={item} onRemove={handleRemove} />
+                <WishlistCard
+                  key={item.wishlistId}
+                  item={item}
+                  onRemove={handleRemove}
+                  onAddToCart={handleAddToCart}
+                />
               ))}
             </div>
           )}
