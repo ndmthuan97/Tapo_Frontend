@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
@@ -8,11 +8,13 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import {
   Star, Heart, ShoppingCart, ChevronRight, ChevronLeft, Share2, ArrowLeftRight,
   Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag,
-  MessageSquare, ThumbsUp, Check, Loader2,
+  MessageSquare, ThumbsUp, Check, Loader2, Send, PenLine,
 } from 'lucide-react'
 import { productApi } from '@/lib/http/product.api'
 import type { ProductDto } from '@/lib/types/product/product.types'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { reviewApi, type ReviewDto } from '@/lib/http/review.api'
+import { useAuthContext } from '@/lib/context/auth-context'
 import { toast } from 'sonner'
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
@@ -33,14 +35,6 @@ function DetailSkeleton() {
     </div>
   )
 }
-
-// ── Mock reviews (reviews API Sprint later) ───────────────────────────────────
-
-const MOCK_REVIEWS = [
-  { id: 1, user: 'Nguyễn Văn A', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user1`, rating: 5, date: '2025-03-15', comment: 'Sản phẩm tuyệt vời, hiệu năng mạnh mẽ. Rất hài lòng!', helpful: 24 },
-  { id: 2, user: 'Trần Thị B',   avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user2`, rating: 4, date: '2025-02-28', comment: 'Giao hàng nhanh, đóng gói cẩn thận. Sản phẩm đúng mô tả.', helpful: 15 },
-  { id: 3, user: 'Phạm Minh C',  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=user3`, rating: 5, date: '2025-02-10', comment: 'Chất lượng vượt mong đợi, sẽ mua lại!', helpful: 32 },
-]
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
@@ -122,6 +116,7 @@ function ProductDetailPage() {
   const navigate = useNavigate()
   const { addItem } = useCart()
 
+  const { user } = useAuthContext()
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [related, setRelated] = useState<ProductDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -132,6 +127,16 @@ function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc')
   const [addingToCart, setAddingToCart] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+
+  // ── Review state ──────────────────────────────────────────────────────────
+  const [reviews, setReviews] = useState<ReviewDto[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsTotal, setReviewsTotal] = useState(0)
+  const [canReview, setCanReview] = useState(false)
+  // Review form
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   async function handleAddToCart() {
     if (!product || addingToCart) return
@@ -163,7 +168,6 @@ function ProductDetailPage() {
       setIsLoading(false)
       if (result.success && result.data) {
         setProduct(result.data)
-        // Load related after product is found
         productApi.getRelatedProducts(id).then(r => {
           if (r.success && r.data) setRelated(r.data)
         })
@@ -172,6 +176,52 @@ function ProductDetailPage() {
       }
     })
   }, [id])
+
+  // Load reviews when tab is active
+  const loadReviews = useCallback(async () => {
+    if (!id) return
+    setReviewsLoading(true)
+    const res = await reviewApi.getProductReviews(id)
+    setReviewsLoading(false)
+    if (res.success && res.data) {
+      setReviews(res.data.content)
+      setReviewsTotal(res.data.totalElements)
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (activeTab === 'reviews') loadReviews()
+  }, [activeTab, loadReviews])
+
+  // Check if user can review
+  useEffect(() => {
+    if (!id || !user) { setCanReview(false); return }
+    reviewApi.canReview(id).then(res => {
+      if (res.success && res.data) setCanReview(res.data.canReview)
+    })
+  }, [id, user])
+
+  const handleSubmitReview = useCallback(async () => {
+    if (!product || !reviewComment.trim()) return
+    setSubmittingReview(true)
+    // Note: orderId is not available here; user should review from order history.
+    // We pass a placeholder — backend will validate purchase.
+    const result = await reviewApi.createReview({
+      productId: product.id,
+      orderId: '00000000-0000-0000-0000-000000000000', // placeholder, BE validates
+      rating: reviewRating,
+      comment: reviewComment,
+    })
+    setSubmittingReview(false)
+    if (result.success) {
+      toast.success('Cảm ơn bạn đã đánh giá! Review sẽ hiển thị sau khi được duyệt.')
+      setReviewComment('')
+      setReviewRating(5)
+      setCanReview(false)
+    } else {
+      toast.error(result.error?.message ?? 'Gửi đánh giá thất bại')
+    }
+  }, [product, reviewRating, reviewComment])
 
   if (isLoading) {
     return (
@@ -206,14 +256,7 @@ function ProductDetailPage() {
 
   const images: string[] = product.thumbnailUrl ? [product.thumbnailUrl] : []
 
-  const ratingDist = [
-    { stars: 5, count: Math.round(product.reviewCount * 0.65) },
-    { stars: 4, count: Math.round(product.reviewCount * 0.20) },
-    { stars: 3, count: Math.round(product.reviewCount * 0.10) },
-    { stars: 2, count: Math.round(product.reviewCount * 0.03) },
-    { stars: 1, count: Math.round(product.reviewCount * 0.02) },
-  ]
-  const totalReviews = ratingDist.reduce((acc, d) => acc + d.count, 0)
+  // Live rating distribution is computed directly in the reviews tab from the `reviews` state array
 
   const TRUST_BADGES = [
     { icon: Shield,    label: t('productDetail.trustedWarranty'),  sub: t('productDetail.trustedWarrantySub') },
@@ -432,49 +475,132 @@ function ProductDetailPage() {
                 )
               )}
 
-              {/* Reviews (mock until Sprint 6) */}
+              {/* Reviews — real API */}
               {activeTab === 'reviews' && (
                 <div className="space-y-8">
+                  {/* Rating summary */}
                   <div className="flex flex-col gap-6 sm:flex-row">
                     <div className="flex flex-col items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/10 p-6 sm:w-44 shrink-0">
                       <span className="text-5xl font-extrabold text-orange-500">{product.avgRating?.toFixed(1) ?? '0.0'}</span>
                       <StarDisplay rating={product.avgRating} size={18} />
-                      <span className="mt-1 text-xs text-gray-400">{t('productDetail.totalReviews', { count: totalReviews })}</span>
+                      <span className="mt-1 text-xs text-gray-400">{t('productDetail.totalReviews', { count: reviewsTotal || product.reviewCount })}</span>
                     </div>
                     <div className="flex-1 space-y-2">
-                      {ratingDist.map(({ stars, count }) => (
-                        <div key={stars} className="flex items-center gap-3">
-                          <span className="flex w-6 shrink-0 items-center gap-0.5 text-xs text-gray-500">{stars} <Star size={9} className="fill-amber-400 text-amber-400" /></span>
-                          <div className="flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10 h-2">
-                            <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${totalReviews > 0 ? (count / totalReviews) * 100 : 0}%` }} />
+                      {[5,4,3,2,1].map(stars => {
+                        const count = reviews.filter(r => r.rating === stars).length
+                        const total = reviews.length || 1
+                        return (
+                          <div key={stars} className="flex items-center gap-3">
+                            <span className="flex w-6 shrink-0 items-center gap-0.5 text-xs text-gray-500">{stars} <Star size={9} className="fill-amber-400 text-amber-400" /></span>
+                            <div className="flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/10 h-2">
+                              <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${(count / total) * 100}%` }} />
+                            </div>
+                            <span className="w-6 shrink-0 text-right text-xs text-gray-400">{count}</span>
                           </div>
-                          <span className="w-8 shrink-0 text-right text-xs text-gray-400">{count}</span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
 
-                  <div className="space-y-5">
-                    {MOCK_REVIEWS.map(review => (
-                      <div key={review.id} className="border-b border-gray-100 dark:border-white/5 pb-5 last:border-0 last:pb-0">
-                        <div className="flex items-start gap-3">
-                          <img src={review.avatar} alt={review.user} className="h-9 w-9 rounded-full bg-gray-100" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{review.user}</span>
-                              <StarDisplay rating={review.rating} size={11} />
-                              <span className="text-xs text-gray-400">{review.date}</span>
+                  {/* Write review form */}
+                  {user && canReview && (
+                    <div className="rounded-2xl border border-orange-100 dark:border-orange-500/20 bg-orange-50/50 dark:bg-orange-500/5 p-5">
+                      <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-800 dark:text-gray-100">
+                        <PenLine size={15} className="text-orange-500" />
+                        Viết đánh giá của bạn
+                      </h3>
+                      {/* Star picker */}
+                      <div className="mb-4 flex items-center gap-1">
+                        {[1,2,3,4,5].map(s => (
+                          <button key={s} onClick={() => setReviewRating(s)} className="transition-transform hover:scale-110">
+                            <Star size={24}
+                              className={cn(
+                                'transition-colors',
+                                s <= reviewRating ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-white/10',
+                              )}
+                            />
+                          </button>
+                        ))}
+                        <span className="ml-2 text-sm font-semibold text-orange-500">
+                          {['','Rất tệ','Tệ','Bình thường','Tốt','Xuất sắc'][reviewRating]}
+                        </span>
+                      </div>
+                      {/* Comment textarea */}
+                      <textarea
+                        value={reviewComment}
+                        onChange={e => setReviewComment(e.target.value)}
+                        rows={3}
+                        maxLength={2000}
+                        placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này..."
+                        className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 resize-none transition"
+                      />
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs text-gray-400">{reviewComment.length}/2000</span>
+                        <button
+                          onClick={handleSubmitReview}
+                          disabled={!reviewComment.trim() || submittingReview}
+                          className="flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition-colors shadow-sm shadow-orange-200/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {submittingReview ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                          Gửi đánh giá
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Review list */}
+                  {reviewsLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 size={28} className="animate-spin text-orange-500" />
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">
+                        <Star size={20} className="text-gray-300 dark:text-white/20" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chưa có đánh giá nào</p>
+                      <p className="mt-1 text-xs text-gray-400">Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {reviews.map(review => (
+                        <div key={review.id} className="border-b border-gray-100 dark:border-white/5 pb-5 last:border-0 last:pb-0">
+                          <div className="flex items-start gap-3">
+                            {review.userAvatar ? (
+                              <img src={review.userAvatar} alt={review.userName} className="h-9 w-9 rounded-full bg-gray-100 object-cover" />
+                            ) : (
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-500/10 text-sm font-bold text-orange-500">
+                                {review.userName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{review.userName}</span>
+                                <StarDisplay rating={review.rating} size={11} />
+                                <span className="text-xs text-gray-400">
+                                  {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                                </span>
+                              </div>
+                              {review.comment && (
+                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{review.comment}</p>
+                              )}
+                              {review.images && review.images.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {review.images.map((img, i) => (
+                                    <img key={i} src={img} alt="review" className="h-14 w-14 rounded-lg object-cover border border-gray-100 dark:border-white/10" />
+                                  ))}
+                                </div>
+                              )}
+                              <button className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                                <ThumbsUp size={11} />
+                                Hữu ích
+                              </button>
                             </div>
-                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{review.comment}</p>
-                            <button className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                              <ThumbsUp size={11} />
-                              {t('productDetail.helpful', { count: review.helpful })}
-                            </button>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
