@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { cartApi } from '@/lib/http/cart.api'
-import { useAuth } from '@/features/shop/auth/hooks/use-auth'
+import { useAuthContext } from '@/lib/context/auth-context'
 import type { CartItemDto, CartResponse } from '@/lib/types/cart/cart.types'
 
 const EMPTY_CART: CartResponse = { items: [], totalItems: 0, subtotal: 0 }
 
 export function useCart() {
-  const { isAuthenticated } = useAuth()
+  const { user } = useAuthContext()
+  const isAuthenticated = !!user
   const [cart, setCart] = useState<CartResponse>(EMPTY_CART)
   const [isLoading, setIsLoading] = useState(false)
 

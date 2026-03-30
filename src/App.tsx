@@ -35,6 +35,7 @@ import { AdminCategoriesPage } from '@/features/admin/pages/AdminCategoriesPage'
 import { AdminBrandsPage }  from '@/features/admin/pages/AdminBrandsPage'
 import { AdminOrdersPage }  from '@/features/admin/pages/AdminOrdersPage'
 import { AdminMessagesPage } from '@/features/admin/pages/AdminMessagesPage'
+import { AdminReviewsPage } from '@/features/admin/pages/AdminReviewsPage'
 
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
@@ -87,6 +88,7 @@ function App() {
           <Route path="/admin/brands"      element={<AdminPage><AdminBrandsPage /></AdminPage>} />
           <Route path="/admin/orders"      element={<AdminPage><AdminOrdersPage /></AdminPage>} />
           <Route path="/admin/messages"    element={<AdminPage><AdminMessagesPage /></AdminPage>} />
+          <Route path="/admin/reviews"     element={<AdminPage><AdminReviewsPage /></AdminPage>} />
           <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />
           {/* ── 404 catch-all ─────────────────────────── */}
           <Route path="*" element={<NotFoundPage />} />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
@@ -6,34 +6,15 @@ import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
 import {
   ChevronRight, ImageOff, RotateCcw, CheckCircle2, Upload, X,
-  AlertCircle, Package,
+  AlertCircle, Package, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { orderApi } from '@/lib/http/order.api'
+import { returnRequestApi } from '@/lib/http/return-request.api'
+import type { OrderDto } from '@/lib/types/order/order.types'
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_ORDER = {
-  id: 'ORD-2025-0012',
-  items: [
-    {
-      id: 'i1',
-      name: 'Laptop Gaming ASUS ROG Strix G16 2024',
-      brand: 'ASUS ROG',
-      price: 45990000,
-      quantity: 1,
-      image: 'https://cdn.mos.cms.futurecdn.net/p2dQ2JLpBJMstStcCkuGQB-1200-80.jpg',
-    },
-    {
-      id: 'i2',
-      name: 'Tai nghe Gaming HyperX Cloud III Wireless',
-      brand: 'HyperX',
-      price: 3290000,
-      quantity: 1,
-      image: 'https://laptopdell.com.vn/wp-content/uploads/2022/07/laptop_lenovo_legion_s7_8.jpg',
-    },
-  ],
-}
 
 const RETURN_REASONS_KEY = [
   'return.reasonDefective',
@@ -46,6 +27,16 @@ const RETURN_REASONS_KEY = [
 
 type Step = 'select' | 'details' | 'confirm' | 'success'
 
+// Vietnamese labels for reason keys (sent as plain text to backend)
+const REASON_LABELS: Record<string, string> = {
+  'return.reasonDefective':      'Sản phẩm lỗi / không hoạt động',
+  'return.reasonWrongItem':      'Giao sai sản phẩm',
+  'return.reasonNotAsDescribed': 'Không đúng mô tả',
+  'return.reasonChanged':        'Đổi ý / không còn nhu cầu',
+  'return.reasonDamaged':        'Hư hỏng trong quá trình vận chuyển',
+  'return.reasonOther':          'Lý do khác',
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 function OrderReturnPage() {
@@ -53,14 +44,24 @@ function OrderReturnPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
+  const [order, setOrder] = useState<OrderDto | null>(null)
+  const [isLoadingOrder, setIsLoadingOrder] = useState(true)
   const [step, setStep] = useState<Step>('select')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
   const [images, setImages] = useState<{ id: string; url: string; name: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [createdReturnId, setCreatedReturnId] = useState<string | null>(null)
 
-  const order = MOCK_ORDER
+  // Load real order
+  useEffect(() => {
+    if (!id) return
+    orderApi.getOrderDetail(id).then(res => {
+      setIsLoadingOrder(false)
+      if (res.success && res.data) setOrder(res.data)
+    })
+  }, [id])
 
   function toggleItem(itemId: string) {
     setSelectedItems(prev =>
@@ -78,15 +79,56 @@ function OrderReturnPage() {
   }
 
   async function handleSubmit() {
+    if (!id || !order) return
+    const reasonText = REASON_LABELS[reason] ?? reason
+    const fullReason = note.trim() ? `${reasonText} — ${note.trim()}` : reasonText
+
     setSubmitting(true)
-    await new Promise(r => setTimeout(r, 1500))
+    const res = await returnRequestApi.create(id, {
+      reason: fullReason,
+      evidenceImages: images.map(i => i.url),
+    })
     setSubmitting(false)
-    setStep('success')
-    toast.success(t('return.submitSuccess'))
+
+    if (res.success && res.data) {
+      setCreatedReturnId(res.data.id)
+      setStep('success')
+      toast.success(t('return.submitSuccess'))
+    } else {
+      toast.error(res.error?.message ?? 'Có lỗi xảy ra khi gửi yêu cầu')
+    }
   }
 
-  const selectedItemObjects = order.items.filter(i => selectedItems.includes(i.id))
-  const totalRefund = selectedItemObjects.reduce((s, i) => s + i.price * i.quantity, 0)
+  const selectedItemObjects = order?.items.filter(i => selectedItems.includes(i.id)) ?? []
+  const totalRefund = selectedItemObjects.reduce((s, i) => s + i.totalPrice, 0)
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (isLoadingOrder) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gray-50 dark:bg-[#191b22] flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-orange-500" />
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  if (!order) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen bg-gray-50 dark:bg-[#191b22] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-500 mb-4">Không tìm thấy đơn hàng.</p>
+            <Link to="/orders" className="text-orange-500 font-semibold hover:underline">Về trang đơn hàng</Link>
+          </div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   // ── Success screen ─────────────────────────────────────────────────────────
   if (step === 'success') {
@@ -101,10 +143,12 @@ function OrderReturnPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('return.successTitle')}</h1>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('return.successDesc')}</p>
             <div className="mt-6 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 text-left space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('return.requestId')}</span>
-                <span className="font-mono font-semibold text-gray-800 dark:text-gray-100">RTN-{Date.now().toString().slice(-6)}</span>
-              </div>
+              {createdReturnId && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">{t('return.requestId')}</span>
+                  <span className="font-mono font-semibold text-gray-800 dark:text-gray-100 text-xs">{createdReturnId.slice(0, 8).toUpperCase()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">{t('return.refundAmount')}</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalRefund)}</span>
@@ -228,8 +272,8 @@ function OrderReturnPage() {
                           </div>
 
                           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-white/5">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                            {item.productThumbnail ? (
+                              <img src={item.productThumbnail} alt={item.productName} className="h-full w-full object-cover" />
                             ) : (
                               <div className="flex h-full items-center justify-center">
                                 <ImageOff size={18} className="text-gray-300" />
@@ -238,11 +282,10 @@ function OrderReturnPage() {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold uppercase text-orange-500">{item.brand}</p>
-                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{item.name}</p>
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{item.productName}</p>
                             <p className="text-xs text-gray-400">{t('orderDetail.qty')}: {item.quantity}</p>
                           </div>
-                          <p className="text-sm font-bold text-orange-500 shrink-0">{formatCurrency(item.price)}</p>
+                          <p className="text-sm font-bold text-orange-500 shrink-0">{formatCurrency(item.unitPrice)}</p>
                         </label>
                       )
                     })}
@@ -360,13 +403,16 @@ function OrderReturnPage() {
                     {selectedItemObjects.map(item => (
                       <div key={item.id} className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-white/5 p-3">
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg">
-                          <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                          {item.productThumbnail
+                            ? <img src={item.productThumbnail} alt={item.productName} className="h-full w-full object-cover" />
+                            : <div className="flex h-full items-center justify-center"><ImageOff size={14} className="text-gray-300"/></div>
+                          }
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{item.name}</p>
-                          <p className="text-[10px] text-gray-400">{formatCurrency(item.price)} × {item.quantity}</p>
+                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 line-clamp-1">{item.productName}</p>
+                          <p className="text-[10px] text-gray-400">{formatCurrency(item.unitPrice)} × {item.quantity}</p>
                         </div>
-                        <p className="text-sm font-bold text-orange-500">{formatCurrency(item.price * item.quantity)}</p>
+                        <p className="text-sm font-bold text-orange-500">{formatCurrency(item.totalPrice)}</p>
                       </div>
                     ))}
                   </div>
@@ -419,7 +465,7 @@ function OrderReturnPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('return.orderId2')}</span>
-                    <span className="font-mono text-xs font-semibold text-gray-700 dark:text-gray-200">{order.id}</span>
+                    <span className="font-mono text-xs font-semibold text-gray-700 dark:text-gray-200">{order.orderCode}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">{t('return.returnItems')}</span>

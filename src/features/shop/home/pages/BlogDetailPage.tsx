@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import {
   ChevronRight, Calendar, Eye, Tag, ArrowLeft,
-  ThumbsUp, Share2, Bookmark, Facebook, Twitter, Link2, MessageSquare, Loader2, ImageOff,
+  ThumbsUp, Share2, Bookmark, Facebook, Twitter, Link2, MessageSquare, ImageOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { blogApi, type BlogPostDto } from '@/lib/http/blog.api'

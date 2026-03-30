@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
   Users, UserCheck, UserX, ShoppingBag, TrendingUp, TrendingDown, ArrowUpRight,
-  Package, Tag, Bookmark, Activity, Clock, BarChart3, Loader2,
-  CheckCircle2, AlertCircle, XCircle, Timer,
+  Package, Tag, Bookmark, Activity, BarChart3,
+  CheckCircle2, XCircle, Timer,
 } from 'lucide-react'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { cn } from '@/lib/utils'

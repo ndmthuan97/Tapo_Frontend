@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import { sendContactMessage, emailjsConfigured } from '@/lib/services/contact.service'
 
 // ── Contact info cards ────────────────────────────────────────────────────────
 
@@ -86,9 +88,21 @@ function ContactPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
-    await new Promise(r => setTimeout(r, 1800))
-    setIsLoading(false)
-    setSubmitted(true)
+    try {
+      await sendContactMessage({
+        from_name:  form.name,
+        from_email: form.email,
+        phone:      form.phone,
+        topic:      TOPIC_LABELS[selectedTopic],
+        message:    form.message,
+      })
+      setSubmitted(true)
+    } catch (err) {
+      toast.error('Gửi thất bại. Vui lòng thử lại sau.')
+      console.error('[ContactPage] send error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -175,6 +189,11 @@ function ContactPage() {
                     <div className="mb-6">
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('contact.form.title')}</h2>
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('contact.form.subtitle')}</p>
+                      {!emailjsConfigured && (
+                        <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          Demo mode — chưa cấu hình EmailJS
+                        </span>
+                      )}
                     </div>
 
                     {/* Topic selector */}
