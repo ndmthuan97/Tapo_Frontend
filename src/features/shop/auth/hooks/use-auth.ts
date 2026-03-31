@@ -31,7 +31,8 @@ export function useAuth() {
           description: result.error?.message ?? t('toast.defaultError'),
         })
       }
-      return
+      // Rethrow so callers can inspect statusCode (e.g. LoginPage checks for 4040)
+      throw result.error ?? new Error('Login failed')
     }
 
     localStorage.setItem('accessToken', result.data.accessToken)
@@ -42,7 +43,6 @@ export function useAuth() {
       description: t('toast.loginSuccessDesc', { name: result.data.user.fullName }),
     })
 
-    // Admin accounts go straight to the admin panel
     const destination = result.data.user.role === 'ADMIN' ? '/admin/users' : '/'
     navigate(destination)
   }
@@ -62,17 +62,11 @@ export function useAuth() {
           description: result.error?.message ?? t('toast.defaultError'),
         })
       }
-      return
+      throw new Error(result.error?.message ?? 'Register failed')
     }
 
-    localStorage.setItem('accessToken', result.data.accessToken)
-    localStorage.setItem('refreshToken', result.data.refreshToken)
-    setUserFromAuthResponse(result.data)
-
-    toast.success(t('toast.registerSuccess'), {
-      description: t('toast.registerSuccessDesc', { name: result.data.user.fullName }),
-    })
-    navigate('/')
+    // DO NOT log user in — they must verify email first.
+    // RegisterPage will navigate to /verify-email-notice
   }
 
   function logout() {

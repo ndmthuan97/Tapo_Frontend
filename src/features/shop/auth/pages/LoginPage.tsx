@@ -1,24 +1,47 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff, Laptop, Zap, Shield, Headphones } from 'lucide-react'
+import { Eye, EyeOff, Laptop, Zap, Shield, Headphones, MailWarning } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
 import { useAuth } from '@/features/shop/auth/hooks/use-auth'
+import { emailVerificationApi } from '@/lib/http/email-verification.api'
+import { toast } from 'sonner'
 
 function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const { login, isLoading } = useAuth()
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    if (unverifiedEmail) setUnverifiedEmail(null) // clear banner when user retypes
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    login({ email: formData.email, password: formData.password })
+    try {
+      await login({ email: formData.email, password: formData.password })
+    } catch (err: unknown) {
+      const statusCode = (err as { statusCode?: number })?.statusCode
+      if (statusCode === 4040) {
+        setUnverifiedEmail(formData.email)
+      }
+    }
+  }
+
+  async function handleResendFromLogin() {
+    if (!unverifiedEmail) return
+    try {
+      await emailVerificationApi.resend(unverifiedEmail)
+      toast.success('Email xác thực đã được gửi!')
+      navigate(`/verify-email-notice?email=${encodeURIComponent(unverifiedEmail)}`)
+    } catch {
+      toast.error('Không thể gửi lại. Vui lòng thử lại.')
+    }
   }
 
   return (
@@ -83,6 +106,21 @@ function LoginPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('auth.login.title')}</h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('auth.login.subtitle')}</p>
           </div>
+
+          {/* Email not verified banner */}
+          {unverifiedEmail && (
+            <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/5 px-4 py-3">
+              <MailWarning size={16} className="shrink-0 text-amber-500 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Email chưa được xác thực</p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Kiểm tra hộp thư hoặc{' '}
+                  <button onClick={handleResendFromLogin} className="font-semibold underline hover:text-amber-700">
+                    gửi lại email xác thực
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Google */}
           <button className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm transition-shadow hover:shadow-md">

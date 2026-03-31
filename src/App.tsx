@@ -19,6 +19,8 @@ import { ComparePage }         from '@/features/shop/home/pages/ComparePage'
 import { LoginPage }           from '@/features/shop/auth/pages/LoginPage'
 import { RegisterPage }        from '@/features/shop/auth/pages/RegisterPage'
 import { ForgotPasswordPage }  from '@/features/shop/auth/pages/ForgotPasswordPage'
+import { VerifyEmailPage }     from '@/features/shop/auth/pages/VerifyEmailPage'
+import { VerifyEmailNoticePage } from '@/features/shop/auth/pages/VerifyEmailNoticePage'
 import { ProfilePage }         from '@/features/shop/user/pages/ProfilePage'
 import { AddressesPage }       from '@/features/shop/user/pages/AddressesPage'
 import { BlogPage }            from '@/features/shop/home/pages/BlogPage'
@@ -71,6 +73,8 @@ function App() {
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/blog/:slug"        element={<BlogDetailPage />} />
           <Route path="/contact"           element={<ContactPage />} />
+          <Route path="/verify-email"       element={<VerifyEmailPage />} />
+          <Route path="/verify-email-notice" element={<VerifyEmailNoticePage />} />
 
           {/* ── Authenticated customer ──────────────────────────────── */}
           <Route path="/profile"          element={<PrivateRoute><ProfilePage /></PrivateRoute>} />

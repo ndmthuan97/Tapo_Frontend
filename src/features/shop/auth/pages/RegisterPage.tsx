@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff, Laptop, Zap, Shield, Headphones } from 'lucide-react'
+import { Eye, EyeOff, Laptop, Zap, Shield, Headphones, Loader2 } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
+import { useAuth } from '@/features/shop/auth/hooks/use-auth'
+import { toast } from 'sonner'
 
 function RegisterPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { register, isLoading } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [formData, setFormData] = useState({
@@ -20,9 +24,22 @@ function RegisterPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: connect to auth API
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Mật khẩu xác nhận không khớp!')
+      return
+    }
+    try {
+      await register({
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      })
+      navigate(`/verify-email-notice?email=${encodeURIComponent(formData.email)}`)
+    } catch {
+      // useAuth already shows toast on error
+    }
   }
 
   return (
@@ -197,9 +214,10 @@ function RegisterPage() {
 
             <button
               type="submit"
-              className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-300 active:scale-[0.99]"
+              disabled={isLoading}
+              className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-200 transition-all hover:bg-orange-600 hover:shadow-lg hover:shadow-orange-300 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {t('auth.register.submitButton')}
+              {isLoading ? <><Loader2 size={16} className="animate-spin" /> Đang đăng ký...</> : t('auth.register.submitButton')}
             </button>
           </form>
 
