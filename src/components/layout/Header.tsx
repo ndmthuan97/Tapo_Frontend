@@ -57,7 +57,8 @@ function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex-shrink-0">
+          <Link to="/" className="flex-shrink-0 flex items-center gap-1">
+            <img src="/logo.png" alt="Tapo Store" className="h-10 w-10 object-contain drop-shadow-sm" />
             <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
               Tapo
             </span>

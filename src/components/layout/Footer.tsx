@@ -15,7 +15,10 @@ function Footer() {
 
           {/* Brand column */}
           <div>
-            <span className="mb-4 block text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Tapo</span>
+            <span className="mb-4 flex items-center gap-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+              <img src="/logo.png" alt="Tapo Store" className="h-10 w-10 object-contain drop-shadow-sm" />
+              <span>Tapo</span>
+            </span>
             <p className="mb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
               {t('footer.tagline')}
             </p>

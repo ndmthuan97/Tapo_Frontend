@@ -94,12 +94,10 @@ function LoginPage() {
         {/* ── Right form panel ── */}
         <div className="flex w-full flex-col justify-center px-10 py-14 lg:w-[480px] lg:flex-none">
           {/* Logo */}
-          <div className="mb-8 flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500">
-              <span className="text-lg font-black text-white">T</span>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900">Tapo</span>
-          </div>
+          <Link to="/" className="mb-8 flex items-center gap-1 w-fit">
+            <img src="/logo.png" alt="Tapo Store" className="h-12 w-12 object-contain drop-shadow-sm" />
+            <span className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Tapo</span>
+          </Link>
 
           {/* Heading */}
           <div className="mb-8">

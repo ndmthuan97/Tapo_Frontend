@@ -5,7 +5,6 @@ import {
   Users,
   Store,
   LogOut,
-  Zap,
   Sun,
   Moon,
   Bell,
@@ -102,10 +101,8 @@ function AdminLayout({ children }: { children: ReactNode }) {
         )}
       >
         {/* Logo + collapse toggle — same row */}
-        <div className="flex h-16 items-center gap-2.5 px-4 border-b border-gray-100 dark:border-white/5 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-500 shadow-lg shadow-orange-500/30">
-            <Zap size={15} className="text-white" />
-          </div>
+        <div className="flex h-16 items-center px-4 border-b border-gray-100 dark:border-white/5 overflow-hidden gap-1">
+          <img src="/logo.png" alt="Tapo Admin" className="h-10 w-10 shrink-0 object-contain drop-shadow-sm" />
           {isExpanded && (
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <span className="text-[15px] font-bold tracking-tight whitespace-nowrap">TAPO</span>
