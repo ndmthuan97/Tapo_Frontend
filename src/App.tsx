@@ -21,6 +21,8 @@ import { RegisterPage }        from '@/features/shop/auth/pages/RegisterPage'
 import { ForgotPasswordPage }  from '@/features/shop/auth/pages/ForgotPasswordPage'
 import { VerifyEmailPage }     from '@/features/shop/auth/pages/VerifyEmailPage'
 import { VerifyEmailNoticePage } from '@/features/shop/auth/pages/VerifyEmailNoticePage'
+import { ResetPasswordPage }   from '@/features/shop/auth/pages/ResetPasswordPage'
+import { OAuthCallbackPage }   from '@/features/shop/auth/pages/OAuthCallbackPage'
 import { ProfilePage }         from '@/features/shop/user/pages/ProfilePage'
 import { AddressesPage }       from '@/features/shop/user/pages/AddressesPage'
 import { BlogPage }            from '@/features/shop/home/pages/BlogPage'
@@ -75,6 +77,8 @@ function App() {
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/verify-email"       element={<VerifyEmailPage />} />
           <Route path="/verify-email-notice" element={<VerifyEmailNoticePage />} />
+          <Route path="/reset-password"     element={<ResetPasswordPage />} />
+          <Route path="/oauth/callback"     element={<OAuthCallbackPage />} />
 
           {/* ── Authenticated customer ──────────────────────────────── */}
           <Route path="/profile"          element={<PrivateRoute><ProfilePage /></PrivateRoute>} />

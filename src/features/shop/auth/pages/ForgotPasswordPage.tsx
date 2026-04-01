@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Mail, ArrowLeft, CheckCircle2, Shield, KeyRound, Loader2 } from 'lucide-react'
 import { FloatingInput } from '@/components/common/FloatingInput'
+import { authApi } from '@/lib/http/auth.api'
+import { toast } from 'sonner'
 
 // ── Step types ────────────────────────────────────────────────────────────────
 
@@ -20,10 +22,16 @@ function ForgotPasswordPage() {
     e.preventDefault()
     if (!email.trim()) return
     setIsLoading(true)
-    // Mock API delay
-    await new Promise(r => setTimeout(r, 1500))
-    setIsLoading(false)
-    setStep('sent')
+    try {
+      await authApi.forgotPassword(email.trim())
+    } catch {
+      // Intentionally ignore errors — never reveal if email exists
+      toast.error('Có lỗi xảy ra. Vui lòng thử lại sau.')
+    } finally {
+      setIsLoading(false)
+      // Always advance to 'sent' step for security (don't reveal email existence)
+      setStep('sent')
+    }
   }
 
   return (
