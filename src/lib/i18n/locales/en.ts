@@ -661,6 +661,7 @@ const en = {
     viewOrder:         'View order',
     continueShopping:  'Continue shopping',
     orderFailed:       'Failed to place order',
+    paymentLinkFailed: 'Could not create payment link. Your order was placed. Please try again later.',
     payment: {
       cod:   { label: 'Cash on Delivery (COD)', sub: 'Pay in cash when you receive the order' },
       vnpay: { label: 'VNPay', sub: 'Pay via VNPay gateway (ATM, Visa, MasterCard)' },

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -7,11 +7,12 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { orderApi } from '@/lib/http/order.api'
+import { paymentApi } from '@/lib/http/payment.api'
 import type { OrderDto, OrderStatus } from '@/lib/types/order/order.types'
 import {
   ChevronRight, Package, MapPin, CreditCard, ImageOff,
   CheckCircle2, Clock, Truck, PackageCheck, XCircle, RotateCcw,
-  Loader2, AlertCircle,
+  Loader2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -43,24 +44,51 @@ const PROGRESS_STEPS: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SH
 function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [order, setOrder] = useState<OrderDto | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isCancelling, setIsCancelling] = useState(false)
+  const [isRetryingPayment, setIsRetryingPayment] = useState(false)
   const [notFound, setNotFound] = useState(false)
 
-  useEffect(() => {
+  const fetchOrder = useCallback(async () => {
     if (!id) return
     setIsLoading(true)
-    orderApi.getOrderDetail(id).then(result => {
-      setIsLoading(false)
-      if (result.success && result.data) {
-        setOrder(result.data)
-      } else {
-        setNotFound(true)
-      }
-    })
+    const result = await orderApi.getOrderDetail(id)
+    setIsLoading(false)
+    if (result.success && result.data) {
+      setOrder(result.data)
+    } else {
+      setNotFound(true)
+    }
   }, [id])
+
+  useEffect(() => { fetchOrder() }, [fetchOrder])
+
+  // Xử lý PayOS return URL
+  useEffect(() => {
+    const paymentParam = searchParams.get('payment')
+    if (!paymentParam) return
+
+    if (paymentParam === 'success') {
+      toast.success('Thanh toán thành công! 🎉', {
+        description: 'Đơn hàng của bạn đã được xác nhận.',
+      })
+      // Refresh để lấy trạng thái mới nhất từ server
+      fetchOrder()
+    } else if (paymentParam === 'cancelled') {
+      toast.warning('Thanh toán đã bị huỷ', {
+        description: 'Đơn hàng vẫn được giữ, bạn có thể thanh toán lại.',
+      })
+    }
+
+    // Xóa query param khỏi URL để tránh trigger lại khi refresh
+    setSearchParams(prev => {
+      prev.delete('payment')
+      return prev
+    }, { replace: true })
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCancel() {
     if (!id || !window.confirm(t('orderDetail.cancelConfirm'))) return
@@ -72,6 +100,18 @@ function OrderDetailPage() {
       toast.success(t('orderDetail.cancelSuccess'))
     } else {
       toast.error(t('orderDetail.cancelFailed'), { description: result.error?.message })
+    }
+  }
+
+  async function handleRetryPayment() {
+    if (!id) return
+    setIsRetryingPayment(true)
+    const result = await paymentApi.createPaymentLink(id)
+    setIsRetryingPayment(false)
+    if (result.success && result.data) {
+      window.location.href = result.data
+    } else {
+      toast.error('Không thể tạo link thanh toán', { description: result.error?.message })
     }
   }
 
@@ -288,6 +328,22 @@ function OrderDetailPage() {
 
               {/* Actions */}
               <div className="flex flex-col gap-2">
+                {/* Nút thanh toán lại — hiện khi chưa thanh toán và order chưa hủy/hoàn */}
+                {order.paymentStatus !== 'PAID'
+                  && order.status !== 'CANCELLED'
+                  && order.status !== 'RETURNED'
+                  && (order.paymentMethod === 'VNPAY' || order.paymentMethod === 'MOMO') && (
+                  <button
+                    onClick={handleRetryPayment}
+                    disabled={isRetryingPayment}
+                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors shadow-md shadow-orange-200/40"
+                  >
+                    {isRetryingPayment
+                      ? <Loader2 size={14} className="animate-spin" />
+                      : <RefreshCw size={14} />}
+                    Thanh toán ngay
+                  </button>
+                )}
                 {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
                   <button
                     onClick={handleCancel}

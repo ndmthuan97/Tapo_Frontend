@@ -661,6 +661,7 @@ const vi = {
     viewOrder:         'Xem đơn hàng',
     continueShopping:  'Tiếp tục mua sắm',
     orderFailed:       'Đặt hàng thất bại',
+    paymentLinkFailed: 'Không tạo được link thanh toán, đơn hàng vẫn được tạo. Thử lại sau.',
     payment: {
       cod:   { label: 'Thanh toán khi nhận hàng (COD)', sub: 'Thanh toán bằng tiền mặt khi nhận hàng' },
       vnpay: { label: 'VNPay', sub: 'Thanh toán qua cổng VNPay (ATM, Visa, MasterCard)' },

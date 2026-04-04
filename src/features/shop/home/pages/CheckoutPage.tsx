@@ -10,6 +10,7 @@ import { useCart } from '@/features/shop/cart/hooks/use-cart'
 import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
 import { orderApi } from '@/lib/http/order.api'
 import { voucherApi } from '@/lib/http/voucher.api'
+import { paymentApi } from '@/lib/http/payment.api'
 import type { AddressDto } from '@/lib/types/user/user.types'
 import {
   ChevronRight, MapPin, CreditCard, CheckCircle2,
@@ -458,19 +459,54 @@ function CheckoutPage() {
   async function handleConfirm() {
     if (!selectedAddress) return
     setIsSubmitting(true)
+
+    // Map UI payment value → backend enum (uppercase)
+    const PAYMENT_METHOD_MAP = {
+      cod:   'COD',
+      vnpay: 'VNPAY',
+      momo:  'MOMO',
+      bank:  'BANK',
+    } as const
+
+    // 1. Tạo đơn hàng
     const result = await orderApi.createOrder({
       addressId: selectedAddress.id,
       customerNote: '',
       voucherCode: appliedVoucher?.code,
+      paymentMethod: PAYMENT_METHOD_MAP[payment],
     })
-    setIsSubmitting(false)
+
     if (!result.success || !result.data) {
+      setIsSubmitting(false)
       toast.error(t('checkout.orderFailed'), { description: result.error?.message })
       return
     }
-    setCreatedOrderId(result.data.id)
-    setDone(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    const orderId = result.data.id
+
+    // 2. Nếu là COD hoặc bank transfer thì hiện success screen
+    if (payment === 'cod' || payment === 'bank') {
+      setIsSubmitting(false)
+      setCreatedOrderId(orderId)
+      setDone(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    // 3. Online payment (VNPay, MoMo) → tạo PayOS link và redirect
+    const payResult = await paymentApi.createPaymentLink(orderId)
+    setIsSubmitting(false)
+
+    if (!payResult.success || !payResult.data) {
+      // Order đã được tạo nhưng link thất bại — thông báo và hướng user sang trang order
+      toast.error(t('checkout.paymentLinkFailed'), { description: payResult.error?.message })
+      setCreatedOrderId(orderId)
+      setDone(true)
+      return
+    }
+
+    // Redirect sang trang thanh toán PayOS
+    window.location.href = payResult.data
   }
 
   // If cart empty before checkout

@@ -31,6 +31,7 @@ export interface OrderDto {
   orderCode: string
   status: OrderStatus
   paymentStatus: PaymentStatus
+  paymentMethod: 'COD' | 'VNPAY' | 'MOMO' | 'BANK'
   shippingRecipientName: string
   shippingPhone: string
   shippingAddress: string
@@ -70,4 +71,5 @@ export interface CreateOrderRequest {
   addressId: string
   customerNote?: string
   voucherCode?: string
+  paymentMethod: 'COD' | 'VNPAY' | 'MOMO' | 'BANK'
 }
