@@ -281,12 +281,14 @@ function Step1Address({ selected, onSelect, onNext }: {
 
 // ── Step 2 — Payment ──────────────────────────────────────────────────────────
 
-const PAYMENT_METHODS: { id: PaymentMethod; logo: string; label: string; sub: string }[] = [
-  { id: 'cod',   logo: '🚚', label: 'Thanh toán khi nhận hàng (COD)', sub: 'Thanh toán bằng tiền mặt khi nhận hàng' },
-  { id: 'vnpay', logo: '🏦', label: 'VNPay', sub: 'Thanh toán qua cổng VNPay (ATM, Visa, MasterCard)' },
-  { id: 'momo',  logo: '🟣', label: 'MoMo', sub: 'Thanh toán qua ví điện tử MoMo' },
-  { id: 'bank',  logo: '🏧', label: 'Chuyển khoản ngân hàng', sub: 'STK: 0123456789 – MB Bank – Công ty TAPO' },
-]
+// Chỉ lưu logo — label/sub lấy từ t() để hỗ trợ i18n đầy đủ
+const PAYMENT_LOGOS: Record<PaymentMethod, string> = {
+  cod:   '🚚',
+  vnpay: '🏦',
+  momo:  '🟣',
+  bank:  '🏧',
+}
+const PAYMENT_IDS: PaymentMethod[] = ['cod', 'vnpay', 'momo', 'bank']
 
 function Step2Payment({ selected, onSelect, onBack, onNext }: {
   selected: PaymentMethod
@@ -303,29 +305,33 @@ function Step2Payment({ selected, onSelect, onBack, onNext }: {
       </h2>
 
       <div className="space-y-3">
-        {PAYMENT_METHODS.map(m => (
+        {PAYMENT_IDS.map(id => (
           <button
-            key={m.id}
-            onClick={() => onSelect(m.id)}
+            key={id}
+            onClick={() => onSelect(id)}
             className={cn(
               'flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all',
-              selected === m.id
+              selected === id
                 ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/5'
                 : 'border-gray-100 dark:border-white/10 hover:border-gray-200 dark:hover:border-white/20',
             )}
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-50 dark:bg-white/5 text-xl">
-              {m.logo}
+              {PAYMENT_LOGOS[id]}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{m.label}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">{m.sub}</p>
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                {t(`checkout.payment.${id}.label` as any)}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {t(`checkout.payment.${id}.sub` as any)}
+              </p>
             </div>
             <div className={cn(
               'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all',
-              selected === m.id ? 'border-orange-500 bg-orange-500' : 'border-gray-300 dark:border-white/20',
+              selected === id ? 'border-orange-500 bg-orange-500' : 'border-gray-300 dark:border-white/20',
             )}>
-              {selected === m.id && <div className="h-2 w-2 rounded-full bg-white" />}
+              {selected === id && <div className="h-2 w-2 rounded-full bg-white" />}
             </div>
           </button>
         ))}
@@ -353,7 +359,7 @@ function Step3Review({ address, paymentId, isSubmitting, onBack, onConfirm }: {
   onConfirm: () => void
 }) {
   const { t } = useTranslation()
-  const pm = PAYMENT_METHODS.find(m => m.id === paymentId)!
+  const pmLabel = t(`checkout.payment.${paymentId}.label` as any)
 
   return (
     <div className="space-y-4">
@@ -372,8 +378,8 @@ function Step3Review({ address, paymentId, isSubmitting, onBack, onConfirm }: {
           <CreditCard size={14} className="text-orange-500" /> {t('checkout.paymentTitle')}
         </h3>
         <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-          <span className="text-2xl">{pm.logo}</span>
-          <span className="font-semibold text-gray-800 dark:text-gray-100">{pm.label}</span>
+          <span className="text-2xl">{PAYMENT_LOGOS[paymentId]}</span>
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{pmLabel}</span>
         </div>
       </div>
 
@@ -550,12 +556,12 @@ function CheckoutPage() {
                       voucherName={appliedVoucher?.name}
                     />
                     <div className="flex flex-col gap-2">
-                      {[
-                        { icon: ShieldCheck, txt: t('cart.trustSecure') },
-                        { icon: Truck, txt: t('cart.trustShipping') },
-                      ].map(({ icon: Icon, txt }) => (
-                        <div key={txt} className="flex items-center gap-2 text-xs text-gray-400">
-                          <Icon size={13} className="text-orange-400 shrink-0" /> {txt}
+                      {([
+                        { id: 'secure',   icon: ShieldCheck, txtKey: 'cart.trustSecure' },
+                        { id: 'shipping', icon: Truck,       txtKey: 'cart.trustShipping' },
+                      ] as const).map(({ id, icon: Icon, txtKey }) => (
+                        <div key={id} className="flex items-center gap-2 text-xs text-gray-400">
+                          <Icon size={13} className="text-orange-400 shrink-0" /> {t(txtKey)}
                         </div>
                       ))}
                     </div>

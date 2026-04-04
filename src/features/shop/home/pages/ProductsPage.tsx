@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useDebounce } from '@/hooks/useDebounce'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { useProducts } from '@/features/shop/home/hooks/use-products'
+import { ShopProductCard } from '@/features/shop/home/components/ShopProductCard'
+import { FilterSidebar } from '@/features/shop/home/components/FilterSidebar'
 import { cn } from '@/lib/utils'
 import {
   Search, SlidersHorizontal, X, ChevronDown, ChevronLeft, ChevronRight,
-  Star, ImageOff, Heart, ShoppingCart, ArrowUpDown, LayoutGrid, LayoutList, Tag,
+  ArrowUpDown, LayoutGrid, LayoutList, Tag,
 } from 'lucide-react'
-import type { ProductDto } from '@/lib/types/product/product.types'
 import { formatCurrency } from '@/utils/formatCurrency'
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
@@ -30,267 +32,6 @@ function ProductCardSkeleton() {
   )
 }
 
-// ── Product Card ──────────────────────────────────────────────────────────────
-
-function ShopProductCard({ product, view }: { product: ProductDto; view: 'grid' | 'list' }) {
-  const { t } = useTranslation()
-  const [wishlisted, setWishlisted] = useState(false)
-  const discountPercent =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : null
-
-  if (view === 'list') {
-    return (
-      <div className="group flex gap-4 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-4 transition-shadow hover:shadow-md dark:hover:shadow-black/20">
-        <div className="relative shrink-0 w-36 h-36 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
-          {product.thumbnailUrl ? (
-            <img src={product.thumbnailUrl} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <ImageOff size={28} className="text-gray-300 dark:text-white/20" />
-            </div>
-          )}
-          {discountPercent && (
-            <span className="absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white">
-              -{discountPercent}%
-            </span>
-          )}
-        </div>
-        <div className="flex flex-1 flex-col justify-between min-w-0">
-          <div>
-            <div className="mb-1 flex items-center gap-2">
-              <span className="text-[11px] font-medium text-orange-500 uppercase tracking-wide">{product.brandName}</span>
-              <span className="text-gray-200 dark:text-white/10">•</span>
-              <span className="text-[11px] text-gray-400">{product.categoryName}</span>
-            </div>
-            <h3 className="line-clamp-2 text-sm font-semibold text-gray-800 dark:text-gray-100 leading-snug">{product.name}</h3>
-            {product.description && (
-              <p className="mt-1 line-clamp-2 text-xs text-gray-400 dark:text-gray-500">{product.description}</p>
-            )}
-            <div className="mt-2 flex items-center gap-1.5">
-              <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} size={11} className={cn('transition-colors', i < Math.round(product.avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-white/10')} />
-                ))}
-              </div>
-              <span className="text-[11px] text-gray-400">({product.reviewCount})</span>
-              {product.soldCount > 0 && (
-                <span className="text-[11px] text-gray-400">• {t('products.card.sold', { count: product.soldCount.toLocaleString() })}</span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-end gap-2">
-              <span className="text-lg font-bold text-orange-500">{formatCurrency(product.price)}</span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="text-sm text-gray-400 line-through">{formatCurrency(product.originalPrice)}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setWishlisted(w => !w)}
-                className={cn('flex h-8 w-8 items-center justify-center rounded-full border transition-all', wishlisted ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/20 dark:bg-red-500/10' : 'border-gray-200 dark:border-white/10 text-gray-400 hover:border-red-300 hover:text-red-400')}
-              >
-                <Heart size={14} className={wishlisted ? 'fill-current' : ''} />
-              </button>
-              <button className="flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm shadow-orange-200/50">
-                <ShoppingCart size={12} /> {t('products.card.addToCart')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="group relative cursor-pointer overflow-hidden rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] transition-all hover:shadow-lg hover:-translate-y-0.5 dark:hover:shadow-black/20">
-      <button
-        onClick={() => setWishlisted(w => !w)}
-        className={cn('absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all', wishlisted ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/20 dark:bg-red-500/10' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-400')}
-      >
-        <Heart size={13} className={wishlisted ? 'fill-current' : ''} />
-      </button>
-
-      {discountPercent && (
-        <div className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white shadow-sm shadow-orange-300/50">
-          -{discountPercent}%
-        </div>
-      )}
-
-      <div className="relative overflow-hidden bg-gray-50 dark:bg-white/5 h-52">
-        {product.thumbnailUrl ? (
-          <img src={product.thumbnailUrl} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-400 group-hover:scale-105" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <ImageOff size={36} className="text-gray-200 dark:text-white/10" />
-          </div>
-        )}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
-          <button className="flex w-full items-center justify-center gap-2 bg-orange-500 py-2.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors">
-            <ShoppingCart size={13} /> {t('products.card.addToCart')}
-          </button>
-        </div>
-      </div>
-
-      <div className="p-3.5">
-        <div className="mb-1 flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold text-orange-500 uppercase tracking-wide">{product.brandName}</span>
-          <span className="text-gray-200 dark:text-white/10 text-xs">•</span>
-          <span className="text-[10px] text-gray-400 truncate">{product.categoryName}</span>
-        </div>
-        <h3 className="mb-2 line-clamp-2 text-sm font-medium text-gray-800 dark:text-gray-100 leading-snug min-h-[2.5rem]">{product.name}</h3>
-        <div className="mb-2.5 flex items-center gap-1">
-          <div className="flex">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Star key={i} size={10} className={cn(i < Math.round(product.avgRating) ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-white/10')} />
-            ))}
-          </div>
-          <span className="text-[10px] text-gray-400">({product.reviewCount})</span>
-        </div>
-        <div className="flex items-end justify-between">
-          <div>
-            <span className="text-base font-bold text-orange-500">{formatCurrency(product.price)}</span>
-            {product.originalPrice && product.originalPrice > product.price && (
-              <div className="text-xs text-gray-400 line-through">{formatCurrency(product.originalPrice)}</div>
-            )}
-          </div>
-          {product.soldCount > 0 && (
-            <span className="text-[10px] text-gray-400">{t('products.card.sold', { count: product.soldCount.toLocaleString() })}</span>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Sidebar filter ─────────────────────────────────────────────────────────────
-
-interface SidebarProps {
-  categories: { id: string; name: string }[]
-  brands: { id: string; name: string }[]
-  selectedCategory: string
-  selectedBrand: string
-  minPrice: string
-  maxPrice: string
-  onCategory: (id: string) => void
-  onBrand: (id: string) => void
-  onPriceApply: (min: string, max: string) => void
-  onReset: () => void
-  activeCount: number
-}
-
-function FilterSidebar({ categories, brands, selectedCategory, selectedBrand, minPrice: initMin, maxPrice: initMax, onCategory, onBrand, onPriceApply, onReset, activeCount }: SidebarProps) {
-  const { t } = useTranslation()
-  const [min, setMin] = useState(initMin)
-  const [max, setMax] = useState(initMax)
-  const [catExpanded, setCatExpanded] = useState(true)
-  const [brandExpanded, setBrandExpanded] = useState(true)
-  const [priceExpanded, setPriceExpanded] = useState(true)
-
-  useEffect(() => { setMin(initMin); setMax(initMax) }, [initMin, initMax])
-
-  const PRICE_PRESETS = [
-    { key: 'under500' as const, min: '',        max: '500000' },
-    { key: 'm500to2m' as const, min: '500000',  max: '2000000' },
-    { key: 'm2to5m'  as const, min: '2000000', max: '5000000' },
-    { key: 'above5m' as const, min: '5000000', max: '' },
-  ]
-
-  function SectionHeader({ label, expanded, onToggle }: { label: string; expanded: boolean; onToggle: () => void }) {
-    return (
-      <button onClick={onToggle} className="flex w-full items-center justify-between py-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-        {label}
-        <ChevronDown size={14} className={cn('text-gray-400 transition-transform duration-200', expanded && 'rotate-180')} />
-      </button>
-    )
-  }
-
-  return (
-    <aside className="w-full space-y-1">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal size={15} className="text-orange-500" />
-          <span className="text-sm font-bold text-gray-800 dark:text-gray-100">{t('products.filterTitle')}</span>
-          {activeCount > 0 && (
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">{activeCount}</span>
-          )}
-        </div>
-        {activeCount > 0 && (
-          <button onClick={onReset} className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 transition-colors">
-            <X size={11} /> {t('products.clearFilter')}
-          </button>
-        )}
-      </div>
-
-      {/* Category */}
-      <div className="border-t border-gray-100 dark:border-white/5 pt-1">
-        <SectionHeader label={t('products.filter.categories')} expanded={catExpanded} onToggle={() => setCatExpanded(s => !s)} />
-        {catExpanded && (
-          <div className="space-y-0.5 pb-2">
-            <button onClick={() => onCategory('')} className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors', !selectedCategory ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}>
-              <span className={cn('h-1.5 w-1.5 rounded-full transition-colors', !selectedCategory ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
-              {t('products.filter.allCategories')}
-            </button>
-            {categories.map(cat => (
-              <button key={cat.id} onClick={() => onCategory(cat.id)} className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors', selectedCategory === cat.id ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}>
-                <span className={cn('h-1.5 w-1.5 rounded-full transition-colors', selectedCategory === cat.id ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Brand */}
-      <div className="border-t border-gray-100 dark:border-white/5 pt-1">
-        <SectionHeader label={t('products.filter.brands')} expanded={brandExpanded} onToggle={() => setBrandExpanded(s => !s)} />
-        {brandExpanded && (
-          <div className="space-y-0.5 pb-2">
-            <button onClick={() => onBrand('')} className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors', !selectedBrand ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}>
-              <span className={cn('h-1.5 w-1.5 rounded-full', !selectedBrand ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
-              {t('products.filter.allBrands')}
-            </button>
-            {brands.map(brand => (
-              <button key={brand.id} onClick={() => onBrand(brand.id)} className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors', selectedBrand === brand.id ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}>
-                <span className={cn('h-1.5 w-1.5 rounded-full', selectedBrand === brand.id ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
-                {brand.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Price range */}
-      <div className="border-t border-gray-100 dark:border-white/5 pt-1">
-        <SectionHeader label={t('products.filter.priceRange')} expanded={priceExpanded} onToggle={() => setPriceExpanded(s => !s)} />
-        {priceExpanded && (
-          <div className="pb-3 space-y-2.5">
-            <div className="grid grid-cols-2 gap-2">
-              {PRICE_PRESETS.map(p => (
-                <button key={p.key} onClick={() => { setMin(p.min); setMax(p.max); onPriceApply(p.min, p.max) }}
-                  className={cn('rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors text-center', min === p.min && max === p.max ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400' : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-orange-300 hover:text-orange-500')}>
-                  {t(`products.filter.pricePresets.${p.key}`)}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <input type="number" placeholder={t('products.filter.priceFrom')} value={min} onChange={e => setMin(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none" />
-              <span className="text-gray-400 text-xs">–</span>
-              <input type="number" placeholder={t('products.filter.priceTo')} value={max} onChange={e => setMax(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none" />
-            </div>
-            <button onClick={() => onPriceApply(min, max)} className="w-full rounded-lg bg-orange-500 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors">
-              {t('products.filter.priceApply')}
-            </button>
-          </div>
-        )}
-      </div>
-    </aside>
-  )
-}
 
 // ── Pagination ─────────────────────────────────────────────────────────────────
 
@@ -342,12 +83,19 @@ function ProductsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── Debounce search ──────────────────────────────────────────────────────────────────
+  const debouncedSearch = useDebounce(searchInput, 350)
 
   const {
     products, totalPages, totalItems, isLoading, params, categories, brands,
     setPage, setSearch, setFilter, reset,
   } = useProducts()
+
+  // ── Sync debounced search to query params ───────────────────────────────────────────────────
+  useEffect(() => {
+    setSearch(debouncedSearch)
+  }, [debouncedSearch])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const SORT_OPTIONS = [
     { value: 'createdAt,desc', labelKey: 'products.sort.newest' },
@@ -356,7 +104,6 @@ function ProductsPage() {
     { value: 'soldCount,desc', labelKey: 'products.sort.bestSelling' },
     { value: 'avgRating,desc', labelKey: 'products.sort.topRated' },
   ]
-
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
@@ -365,12 +112,8 @@ function ProductsPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current) }, [])
-
   function handleSearchChange(val: string) {
     setSearchInput(val)
-    if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => setSearch(val), 350)
   }
 
   function handlePriceApply(min: string, max: string) {
@@ -533,7 +276,7 @@ function ProductsPage() {
               {/* Grid / List */}
               {isLoading ? (
                 <div className={cn('gap-4', view === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4' : 'flex flex-col')}>
-                  {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+                  {Array.from({ length: 8 }, (_, i) => <ProductCardSkeleton key={`skel-${i}`} />)}
                 </div>
               ) : products.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">

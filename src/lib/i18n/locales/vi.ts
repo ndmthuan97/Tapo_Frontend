@@ -660,6 +660,13 @@ const vi = {
     successSub:        'Mã đơn hàng: {{id}}',
     viewOrder:         'Xem đơn hàng',
     continueShopping:  'Tiếp tục mua sắm',
+    orderFailed:       'Đặt hàng thất bại',
+    payment: {
+      cod:   { label: 'Thanh toán khi nhận hàng (COD)', sub: 'Thanh toán bằng tiền mặt khi nhận hàng' },
+      vnpay: { label: 'VNPay', sub: 'Thanh toán qua cổng VNPay (ATM, Visa, MasterCard)' },
+      momo:  { label: 'MoMo', sub: 'Thanh toán qua ví điện tử MoMo' },
+      bank:  { label: 'Chuyển khoản ngân hàng', sub: 'STK: 0123456789 – MB Bank – Công ty TAPO' },
+    },
   },
 
   // ── Orders page ───────────────────────────────────────────────────────────────
@@ -674,7 +681,7 @@ const vi = {
     emptySubtitle:   'Hãy mua sắm để bắt đầu theo dõi đơn hàng',
     shopNow:         'Mua sắm ngay',
     status: {
-      pending:    'Đầng chờ xạc nhận',
+      pending:    'Đang chờ xác nhận',
       processing: 'Đang xử lý',
       shipped:    'Đang giao hàng',
       delivered:  'Giao hàng thành công',

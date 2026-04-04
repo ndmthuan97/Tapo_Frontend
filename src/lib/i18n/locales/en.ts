@@ -660,6 +660,13 @@ const en = {
     successSub:        'Order ID: {{id}}',
     viewOrder:         'View order',
     continueShopping:  'Continue shopping',
+    orderFailed:       'Failed to place order',
+    payment: {
+      cod:   { label: 'Cash on Delivery (COD)', sub: 'Pay in cash when you receive the order' },
+      vnpay: { label: 'VNPay', sub: 'Pay via VNPay gateway (ATM, Visa, MasterCard)' },
+      momo:  { label: 'MoMo', sub: 'Pay via MoMo e-wallet' },
+      bank:  { label: 'Bank Transfer', sub: 'Account: 0123456789 – MB Bank – TAPO Company' },
+    },
   },
 
   // ── Orders page ────────────────────────────────────────────────────────────

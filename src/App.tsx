@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/context/auth-context'
@@ -29,27 +30,38 @@ import { BlogPage }            from '@/features/shop/home/pages/BlogPage'
 import { BlogDetailPage }      from '@/features/shop/home/pages/BlogDetailPage'
 import { ContactPage }         from '@/features/shop/home/pages/ContactPage'
 
-// ── Admin ───────────────────────────────────────────────────────────────────
-import { AdminLayout }      from '@/features/admin/components/AdminLayout'
-import { DashboardPage }    from '@/features/admin/pages/DashboardPage'
-import { AdminUsersPage }   from '@/features/admin/pages/AdminUsersPage'
-import { AdminProfilePage } from '@/features/admin/pages/AdminProfilePage'
-import { AdminProductsPage } from '@/features/admin/pages/AdminProductsPage'
-import { AdminCategoriesPage } from '@/features/admin/pages/AdminCategoriesPage'
-import { AdminBrandsPage }  from '@/features/admin/pages/AdminBrandsPage'
-import { AdminOrdersPage }  from '@/features/admin/pages/AdminOrdersPage'
-import { AdminMessagesPage } from '@/features/admin/pages/AdminMessagesPage'
-import { AdminReviewsPage } from '@/features/admin/pages/AdminReviewsPage'
+// ── Admin (lazy-loaded — code splitting cho admin bundle) ──────────────────────────────
+const AdminLayout         = lazy(() => import('@/features/admin/components/AdminLayout').then(m => ({ default: m.AdminLayout })))
+const DashboardPage       = lazy(() => import('@/features/admin/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
+const AdminUsersPage      = lazy(() => import('@/features/admin/pages/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })))
+const AdminProfilePage    = lazy(() => import('@/features/admin/pages/AdminProfilePage').then(m => ({ default: m.AdminProfilePage })))
+const AdminProductsPage   = lazy(() => import('@/features/admin/pages/AdminProductsPage').then(m => ({ default: m.AdminProductsPage })))
+const AdminCategoriesPage = lazy(() => import('@/features/admin/pages/AdminCategoriesPage').then(m => ({ default: m.AdminCategoriesPage })))
+const AdminBrandsPage     = lazy(() => import('@/features/admin/pages/AdminBrandsPage').then(m => ({ default: m.AdminBrandsPage })))
+const AdminOrdersPage     = lazy(() => import('@/features/admin/pages/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })))
+const AdminMessagesPage   = lazy(() => import('@/features/admin/pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })))
+const AdminReviewsPage    = lazy(() => import('@/features/admin/pages/AdminReviewsPage').then(m => ({ default: m.AdminReviewsPage })))
 
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
 import { AdminRoute }   from '@/components/guards/AdminRoute'
 
+/** Loading fallback for lazy-loaded pages */
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#191b22]">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+    </div>
+  )
+}
+
 /** Wrap a page with the shared AdminRoute + AdminLayout */
 function AdminPage({ children }: { children: React.ReactNode }) {
   return (
     <AdminRoute>
-      <AdminLayout>{children}</AdminLayout>
+      <Suspense fallback={<PageLoader />}>
+        <AdminLayout>{children}</AdminLayout>
+      </Suspense>
     </AdminRoute>
   )
 }
