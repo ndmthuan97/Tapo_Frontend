@@ -1,100 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, MapPin, Star, Pencil, Trash2, Loader2, X } from 'lucide-react'
+import { Plus, MapPin, Star, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
+import { AddressFormModal } from '@/features/shop/user/components/AddressFormModal'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { cn } from '@/lib/utils'
-import type { AddressDto, AddressRequest } from '@/lib/types/user/user.types'
-
-const EMPTY_FORM: AddressRequest = {
-  recipientName: '',
-  phoneNumber: '',
-  address: '',
-  district: '',
-  city: '',
-}
-
-function AddressFormModal({
-  initial,
-  onSubmit,
-  onClose,
-  isSubmitting,
-}: {
-  initial?: AddressDto
-  onSubmit: (data: AddressRequest) => Promise<boolean>
-  onClose: () => void
-  isSubmitting: boolean
-}) {
-  const { t } = useTranslation()
-  const [form, setForm] = useState<AddressRequest>(
-    initial
-      ? { recipientName: initial.recipientName, phoneNumber: initial.phoneNumber, address: initial.address, district: initial.district, city: initial.city }
-      : EMPTY_FORM,
-  )
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const ok = await onSubmit(form)
-    if (ok) onClose()
-  }
-
-  const fields: { key: keyof AddressRequest; label: string; type?: string }[] = [
-    { key: 'recipientName', label: t('address.recipientName') },
-    { key: 'phoneNumber', label: t('address.phone'), type: 'tel' },
-    { key: 'address', label: t('address.street') },
-    { key: 'district', label: t('address.district') },
-    { key: 'city', label: t('address.city') },
-  ]
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h3 className="font-semibold text-gray-900">
-            {initial ? t('address.editTitle') : t('address.addTitle')}
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
-          {fields.map(({ key, label, type }) => (
-            <label key={key} className="block">
-              <span className="mb-1 block text-sm font-medium text-gray-700">{label}</span>
-              <input
-                type={type ?? 'text'}
-                required
-                value={form[key]}
-                onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
-              />
-            </label>
-          ))}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
-            >
-              {isSubmitting && <Loader2 size={14} className="animate-spin" />}
-              {t('common.save')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
+import type { AddressDto } from '@/lib/types/user/user.types'
 
 function AddressesPage() {
   const { t } = useTranslation()
@@ -125,13 +37,27 @@ function AddressesPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 size={32} className="animate-spin text-orange-400" />
+            /* ── Skeleton loading thay spinner ── */
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 h-5 w-5 shrink-0 animate-pulse rounded-full bg-gray-200" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-40 animate-pulse rounded bg-gray-200" />
+                      <div className="h-3 w-64 animate-pulse rounded bg-gray-100" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : addresses.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center text-gray-400">
-              <MapPin size={36} className="mx-auto mb-3 opacity-40" />
-              <p className="text-sm">{t('address.empty')}</p>
+            <div className="rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-orange-50">
+                <MapPin size={26} className="text-orange-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-600">{t('address.empty')}</p>
+              <p className="mt-1 text-xs text-gray-400">{t('address.emptyHint', 'Nhấn «Thêm địa chỉ» để thêm địa chỉ đầu tiên')}</p>
             </div>
           ) : (
             <div className="space-y-4">

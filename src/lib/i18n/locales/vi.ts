@@ -160,7 +160,11 @@ const vi = {
     trustedReturn: 'Đổi trả 15 ngày',
     trustedReturnSub: 'Nếu lỗi nhà sản xuất',
     trustedAuth: 'Hàng chính hãng',
-    trustedAuthSub: '100% authentic',
+    trustedAuthSub:     '100% authentic',
+    notFound:          'Không tìm thấy sản phẩm',
+    backToProducts:    'Quay lại sản phẩm',
+    addedToCart:       'Đã thêm vào giỏ',
+    noSpecs:           'Chưa có thông số kỹ thuật',
   },
 
   // ── Profile Page ──────────────────────────────────────────────────────────
@@ -196,7 +200,8 @@ const vi = {
     addButton: 'Thêm địa chỉ',
     addTitle: 'Thêm địa chỉ mới',
     editTitle: 'Chỉnh sửa địa chỉ',
-    empty: 'Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ đầu tiên!',
+    empty:     'Bạn chưa có địa chỉ nào. Hãy thêm địa chỉ đầu tiên!',
+    emptyHint: 'Nhấn «Thêm địa chỉ» để thêm địa chỉ đầu tiên',
     default: 'Mặc định',
     setDefault: 'Đặt mặc định',
     recipientName: 'Tên người nhận',
@@ -613,7 +618,7 @@ const vi = {
   // ── Compare page ─────────────────────────────────────────────────────────
   compare: {
     pageTitle:     'So sánh sản phẩm',
-    subtitle:      'Chọn tối đa {{count}} sản phẩm để so sánh',
+    subtitle:      'Chọn tối đa {{max}} sản phẩm để so sánh',
     product:       'Sản phẩm',
     addProduct:    'Thêm sản phẩm',
     addToCart:     'Thêm vào giỏ',

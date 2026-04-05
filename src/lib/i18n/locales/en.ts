@@ -161,6 +161,10 @@ const en = {
     trustedReturnSub:   'If defective from manufacturer',
     trustedAuth:        'Authentic Product',
     trustedAuthSub:     '100% authentic',
+    notFound:          'Product not found',
+    backToProducts:    'Back to products',
+    addedToCart:       'Added to cart',
+    noSpecs:           'No specifications available',
   },
 
   // ── Profile Page ──────────────────────────────────────────────────────────
@@ -196,7 +200,8 @@ const en = {
     addButton: 'Add Address',
     addTitle: 'Add New Address',
     editTitle: 'Edit Address',
-    empty: 'You have no addresses yet. Add your first one!',
+    empty:     'You have no addresses yet. Add your first one!',
+    emptyHint: 'Click «Add Address» to add your first address',
     default: 'Default',
     setDefault: 'Set as Default',
     recipientName: 'Recipient Name',
