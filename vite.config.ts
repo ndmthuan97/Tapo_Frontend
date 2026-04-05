@@ -11,4 +11,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Fix: SockJS uses Node.js `global` which doesn't exist in browser context
+  define: {
+    global: 'globalThis',
+  },
 })
