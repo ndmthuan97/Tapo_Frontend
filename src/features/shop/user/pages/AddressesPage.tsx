@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, MapPin, Star, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Plus, MapPin, Star, Pencil, Trash2 } from 'lucide-react'
 import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
 import { AddressFormModal } from '@/features/shop/user/components/AddressFormModal'
 import { Header } from '@/components/layout/Header'
