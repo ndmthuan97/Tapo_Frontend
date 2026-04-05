@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // ─── API v2 ──────────────────────────────────────────────────────────────────
 const BASE = 'https://provinces.open-api.vn/api/v2'
@@ -32,6 +32,8 @@ export function useVietnamAddress() {
   const [loadingDistricts, setLoadingDistricts] = useState(false)
   const [loadingWards,     setLoadingWards]     = useState(false)
   const [errorProvinces,   setErrorProvinces]   = useState(false)
+  // Ref (not state) — transient value used within async callbacks, no render needed
+  const pendingDistrictRef = useRef<string | null>(null)
 
   // ── Provinces (load once) ──────────────────────────────────────────────────
   useEffect(() => {
@@ -73,7 +75,14 @@ export function useVietnamAddress() {
       .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json() })
       .then((data: { districts?: RawItem[] }) => {
         const list = data.districts ?? []
-        setDistricts(list.map((d) => ({ code: d.code, name: stripAdminPrefix(d.name) })))
+        const mapped = list.map((d) => ({ code: d.code, name: stripAdminPrefix(d.name) }))
+        setDistricts(mapped)
+        // Auto-select district if initAddress() was called (edit mode)
+        if (pendingDistrictRef.current) {
+          const found = mapped.find((d) => d.name === pendingDistrictRef.current)
+          if (found) setSelectedDistrict(found)
+          pendingDistrictRef.current = null
+        }
       })
       .catch((err) => {
         if (err.name !== 'AbortError')
@@ -133,6 +142,19 @@ export function useVietnamAddress() {
     setSelectedProvince(null)
     setSelectedDistrict(null)
     setSelectedWard(null)
+    pendingDistrictRef.current = null
+  }
+
+  /**
+   * Pre-populate province + district from saved address strings (edit mode).
+   * Triggers cascaded loading: province → districts load → district auto-selected.
+   */
+  function initAddress(cityName: string, districtName: string) {
+    if (!cityName || provinces.length === 0) return
+    const province = provinces.find((p) => p.name === cityName)
+    if (!province) return
+    if (districtName) pendingDistrictRef.current = districtName
+    setSelectedProvince(province)
   }
 
   return {
@@ -141,6 +163,7 @@ export function useVietnamAddress() {
     loadingProvinces, loadingDistricts, loadingWards,
     errorProvinces,
     pickProvince, pickDistrict, pickWard,
+    initAddress,
     reset,
   }
 }

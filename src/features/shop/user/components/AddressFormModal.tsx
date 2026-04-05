@@ -195,6 +195,15 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
   })
   const addr = useVietnamAddress()
 
+  // Pre-fill province + district when editing an existing address (runs once)
+  const initialized = useRef(false)
+  useEffect(() => {
+    if (!initial || initialized.current || addr.provinces.length === 0) return
+    initialized.current = true
+    addr.initAddress(initial.city, initial.district)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addr.provinces.length])  // fire when province list becomes available
+
   const patch = (key: keyof typeof form) => (value: string) =>
     setForm((p) => ({ ...p, [key]: value }))
 
