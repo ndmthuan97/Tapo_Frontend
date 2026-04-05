@@ -1,14 +1,32 @@
 import { useState, useEffect } from 'react'
 
-const API = 'https://provinces.open-api.vn/api/v1'
+// ─── API v2 ──────────────────────────────────────────────────────────────────
+const BASE = 'https://provinces.open-api.vn/api/v2'
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 export interface Province { code: number; name: string }
 export interface District { code: number; name: string }
 export interface Ward     { code: number; name: string }
 
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+/** Strip administrative prefix: "Tỉnh ", "Thành phố ", "Quận ", "Huyện ", etc. */
+function stripPrefix(name: string): string {
+  return name.replace(
+    /^(Tỉnh|Thành phố|Thành Phố|Quận|Huyện|Thị xã|Thị trấn|Phường|Xã)\s+/u,
+    '',
+  )
+}
+
+function mapItem(item: { code: number; name: string }): { code: number; name: string } {
+  return { code: item.code, name: stripPrefix(item.name) }
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
 /**
- * Cascading province → district → ward picker backed by
- * https://provinces.open-api.vn/api/v1/
+ * Cascading province → district → ward picker.
+ * Backed by https://provinces.open-api.vn/api/v2/
  */
 export function useVietnamAddress() {
   const [provinces, setProvinces] = useState<Province[]>([])
@@ -23,58 +41,80 @@ export function useVietnamAddress() {
   const [loadingDistricts, setLoadingDistricts] = useState(false)
   const [loadingWards,     setLoadingWards]     = useState(false)
 
-  // Load provinces once
+  const [errorProvinces, setErrorProvinces] = useState(false)
+
+  // ── Load provinces once ────────────────────────────────────────────────────
   useEffect(() => {
+    const ctrl = new AbortController()
     setLoadingProvinces(true)
-    fetch(`${API}/?depth=1`)
+    setErrorProvinces(false)
+
+    fetch(`${BASE}/p`, { signal: ctrl.signal })
       .then((r) => r.json())
-      .then((data) => setProvinces(data))
+      .then((data: { code: number; name: string }[]) =>
+        setProvinces(data.map(mapItem)),
+      )
+      .catch(() => setErrorProvinces(true))
       .finally(() => setLoadingProvinces(false))
+
+    return () => ctrl.abort()
   }, [])
 
-  // Load districts when province changes
+  // ── Load districts when province changes ───────────────────────────────────
   useEffect(() => {
-    if (!selectedProvince) { setDistricts([]); setSelectedDistrict(null); setWards([]); setSelectedWard(null); return }
-    setLoadingDistricts(true)
-    fetch(`${API}/p/${selectedProvince.code}?depth=2`)
-      .then((r) => r.json())
-      .then((data) => setDistricts(data.districts ?? []))
-      .finally(() => setLoadingDistricts(false))
+    setDistricts([])
     setSelectedDistrict(null)
     setWards([])
     setSelectedWard(null)
+
+    if (!selectedProvince) return
+
+    const ctrl = new AbortController()
+    setLoadingDistricts(true)
+
+    fetch(`${BASE}/p/${selectedProvince.code}?depth=2`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((data: { districts: { code: number; name: string }[] }) =>
+        setDistricts((data.districts ?? []).map(mapItem)),
+      )
+      .catch(() => {})
+      .finally(() => setLoadingDistricts(false))
+
+    return () => ctrl.abort()
   }, [selectedProvince])
 
-  // Load wards when district changes
+  // ── Load wards when district changes ──────────────────────────────────────
   useEffect(() => {
-    if (!selectedDistrict) { setWards([]); setSelectedWard(null); return }
-    setLoadingWards(true)
-    fetch(`${API}/d/${selectedDistrict.code}?depth=2`)
-      .then((r) => r.json())
-      .then((data) => setWards(data.wards ?? []))
-      .finally(() => setLoadingWards(false))
+    setWards([])
     setSelectedWard(null)
+
+    if (!selectedDistrict) return
+
+    const ctrl = new AbortController()
+    setLoadingWards(true)
+
+    fetch(`${BASE}/d/${selectedDistrict.code}?depth=2`, { signal: ctrl.signal })
+      .then((r) => r.json())
+      .then((data: { wards: { code: number; name: string }[] }) =>
+        setWards((data.wards ?? []).map(mapItem)),
+      )
+      .catch(() => {})
+      .finally(() => setLoadingWards(false))
+
+    return () => ctrl.abort()
   }, [selectedDistrict])
 
+  // ── Pickers ───────────────────────────────────────────────────────────────
   function pickProvince(code: number) {
-    const p = provinces.find((x) => x.code === code) ?? null
-    setSelectedProvince(p)
+    setSelectedProvince(provinces.find((x) => x.code === code) ?? null)
   }
 
   function pickDistrict(code: number) {
-    const d = districts.find((x) => x.code === code) ?? null
-    setSelectedDistrict(d)
+    setSelectedDistrict(districts.find((x) => x.code === code) ?? null)
   }
 
   function pickWard(code: number) {
-    const w = wards.find((x) => x.code === code) ?? null
-    setSelectedWard(w)
-  }
-
-  /** Full location string ready for the address.city or address fields */
-  function getFullLocation() {
-    const parts = [selectedWard?.name, selectedDistrict?.name, selectedProvince?.name]
-    return parts.filter(Boolean).join(', ')
+    setSelectedWard(wards.find((x) => x.code === code) ?? null)
   }
 
   function reset() {
@@ -87,7 +127,8 @@ export function useVietnamAddress() {
     provinces, districts, wards,
     selectedProvince, selectedDistrict, selectedWard,
     loadingProvinces, loadingDistricts, loadingWards,
+    errorProvinces,
     pickProvince, pickDistrict, pickWard,
-    getFullLocation, reset,
+    reset,
   }
 }
