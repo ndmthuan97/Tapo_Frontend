@@ -37,4 +37,14 @@ export const productAdminApi = {
   deleteProduct(id: string) {
     return apiCall<void>(httpClient.delete<ApiResponse<void>>(`${BASE}/${id}`))
   },
+
+  /** Bulk-delete by IDs — ADMIN only */
+  bulkDelete(ids: string[]) {
+    return apiCall<void>(httpClient.delete<ApiResponse<void>>(`${BASE}/bulk`, { data: ids }))
+  },
+
+  /** Bulk-update status — ADMIN only */
+  bulkUpdateStatus(ids: string[], status: ProductStatus) {
+    return apiCall<void>(httpClient.patch<ApiResponse<void>>(`${BASE}/bulk-status`, { ids, status }))
+  },
 }

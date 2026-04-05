@@ -10,7 +10,7 @@ import {
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderStatus, OrderSummary } from '@/lib/types/order/order.types'
 import { toast } from 'sonner'
-import { Link } from 'react-router-dom'
+import { AdminOrderDetailModal } from '@/features/admin/components/AdminOrderDetailModal'
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -110,6 +110,7 @@ function AdminOrdersPage() {
   
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     function h(e: MouseEvent) { if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false) }
@@ -147,7 +148,8 @@ function AdminOrdersPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
+    <>
+      <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -271,9 +273,13 @@ function AdminOrdersPage() {
                       {/* Actions */}
                       <td className="px-5 py-4 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <Link to={`/admin/orders/${order.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 transition-colors" title={t('adminOrders.viewDetail')}>
+                          <button
+                            onClick={() => setDetailOrderId(order.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
+                            title="Xem chi tiết"
+                          >
                             <Eye size={14} />
-                          </Link>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -311,6 +317,14 @@ function AdminOrdersPage() {
         )}
       </div>
     </div>
+
+    {detailOrderId !== null && (
+      <AdminOrderDetailModal
+        orderId={detailOrderId}
+        onClose={() => setDetailOrderId(null)}
+      />
+    )}
+    </>
   )
 }
 

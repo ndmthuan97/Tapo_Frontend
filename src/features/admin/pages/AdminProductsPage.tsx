@@ -13,6 +13,10 @@ import {
   Check,
   Link,
   Upload,
+  CheckSquare,
+  Square,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAdminProducts } from '@/features/admin/hooks/use-admin-products'
@@ -564,10 +568,13 @@ function AdminProductsPage() {
     products, meta, totalPages, totalItems, isLoading, isSubmitting, params,
     setPage, setSearch, setStatus,
     createProduct, updateProduct, deleteProduct,
+    bulkDelete, bulkUpdateStatus,
   } = useAdminProducts()
 
   const [modal, setModal] = useState<{ open: boolean; editing?: ProductDto }>({ open: false })
   const [searchInput, setSearchInput] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleSearch(val: string) {
@@ -581,6 +588,38 @@ function AdminProductsPage() {
   async function handleDelete(id: string) {
     if (!window.confirm(t('adminProducts.deleteConfirm'))) return
     await deleteProduct(id)
+  }
+
+  // ── Bulk selection helpers ────────────────────────────────────────────────
+  const allPageIds = products.map(p => p.id)
+  const allSelected = allPageIds.length > 0 && allPageIds.every(id => selectedIds.has(id))
+  const someSelected = selectedIds.size > 0
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedIds(prev => { const next = new Set(prev); allPageIds.forEach(id => next.delete(id)); return next })
+    } else {
+      setSelectedIds(prev => new Set([...prev, ...allPageIds]))
+    }
+  }
+
+  function toggleOne(id: string) {
+    setSelectedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+  }
+
+  async function handleBulkDelete() {
+    if (!window.confirm(`Xóa ${selectedIds.size} sản phẩm đã chọn?`)) return
+    setIsBulkProcessing(true)
+    await bulkDelete([...selectedIds])
+    setSelectedIds(new Set())
+    setIsBulkProcessing(false)
+  }
+
+  async function handleBulkStatus(status: ProductStatus) {
+    setIsBulkProcessing(true)
+    await bulkUpdateStatus([...selectedIds], status)
+    setSelectedIds(new Set())
+    setIsBulkProcessing(false)
   }
 
   const currentPage = (params.page ?? 0) + 1
@@ -624,10 +663,52 @@ function AdminProductsPage() {
           </button>
         </div>
 
+        {/* Bulk Action Bar */}
+        {someSelected && (
+          <div className="flex items-center gap-2 border-b border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-5 py-2.5 animate-in slide-in-from-top-1 duration-150">
+            <span className="text-xs font-semibold text-orange-700 dark:text-orange-400 mr-auto">
+              Đã chọn {selectedIds.size} sản phẩm
+            </span>
+            <button
+              onClick={() => handleBulkStatus('ACTIVE')}
+              disabled={isBulkProcessing}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 transition"
+            >
+              <ToggleRight size={12} /> Kích hoạt
+            </button>
+            <button
+              onClick={() => handleBulkStatus('INACTIVE')}
+              disabled={isBulkProcessing}
+              className="flex items-center gap-1.5 rounded-lg bg-gray-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition"
+            >
+              <ToggleLeft size={12} /> Ẩn
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={isBulkProcessing}
+              className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition"
+            >
+              {isBulkProcessing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+              Xóa hàng loạt
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="flex h-7 w-7 items-center justify-center rounded-lg text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition">
+              <X size={13} />
+            </button>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
+                {/* Checkbox select-all */}
+                <th className="px-4 py-3.5 w-10">
+                  <button onClick={toggleAll} className="flex items-center justify-center text-gray-400 hover:text-orange-500 transition">
+                    {allSelected
+                      ? <CheckSquare size={15} className="text-orange-500" />
+                      : <Square size={15} />}
+                  </button>
+                </th>
                 <th className="px-5 py-3.5">{t('adminProducts.colProduct')}</th>
                 <th className="px-5 py-3.5">{t('adminProducts.colCategory')}</th>
                 <th className="px-5 py-3.5">{t('adminProducts.colBrand')}</th>
@@ -639,12 +720,19 @@ function AdminProductsPage() {
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {isLoading ? (
-                <tr><td colSpan={7} className="py-20 text-center"><Loader2 className="mx-auto animate-spin text-orange-500" size={28} /></td></tr>
+                <tr><td colSpan={8} className="py-20 text-center"><Loader2 className="mx-auto animate-spin text-orange-500" size={28} /></td></tr>
               ) : products.length === 0 ? (
-                <tr><td colSpan={7} className="py-16 text-center text-gray-400 text-sm">{t('adminProducts.empty')}</td></tr>
+                <tr><td colSpan={8} className="py-16 text-center text-gray-400 text-sm">{t('adminProducts.empty')}</td></tr>
               ) : (
                 products.map((p) => (
-                  <tr key={p.id} className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]">
+                  <tr key={p.id} className={cn('group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]', selectedIds.has(p.id) && 'bg-orange-50/40 dark:bg-orange-500/5')}>
+                    <td className="px-4 py-3.5">
+                      <button onClick={() => toggleOne(p.id)} className="flex items-center justify-center text-gray-300 hover:text-orange-500 transition">
+                        {selectedIds.has(p.id)
+                          ? <CheckSquare size={15} className="text-orange-500" />
+                          : <Square size={15} />}
+                      </button>
+                    </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         {p.thumbnailUrl ? (

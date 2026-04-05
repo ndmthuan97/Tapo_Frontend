@@ -49,4 +49,10 @@ export const orderApi = {
       ),
     )
   },
+
+  adminGetOrderDetail(id: string) {
+    return apiCall<OrderDto>(
+      httpClient.get<ApiResponse<OrderDto>>(`/api/admin/orders/${id}`),
+    )
+  },
 }

@@ -7,7 +7,6 @@ import {
   LogOut,
   Sun,
   Moon,
-  Bell,
   Search,
   LayoutDashboard,
   ChevronsLeft,
@@ -19,6 +18,8 @@ import {
   Bookmark,
   ShoppingBag,
   Mail,
+  Ticket,
+  RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ import { useAuthContext } from '@/lib/context/auth-context'
 import { DEFAULT_AVATAR } from '@/lib/context/auth-context'
 import { useAdminTheme } from '@/features/admin/hooks/use-admin-theme'
 import { AdminLanguageSwitcher } from '@/features/admin/components/AdminLanguageSwitcher'
+import { AdminNotificationBell } from '@/features/admin/components/AdminNotificationBell'
 
 interface NavItem {
   to: string
@@ -59,7 +61,9 @@ const NAV_SECTIONS: NavSection[] = [
     groupKey: 'admin.nav.sales',
     items: [
       { to: '/admin/orders',   icon: ShoppingBag, labelKey: 'admin.nav.orders' },
-      { to: '/admin/messages', icon: Mail,        labelKey: 'admin.nav.messages' },
+      { to: '/admin/vouchers', icon: Ticket,       labelKey: 'admin.nav.vouchers' },
+      { to: '/admin/returns',  icon: RotateCcw,    labelKey: 'admin.nav.returns' },
+      { to: '/admin/messages', icon: Mail,         labelKey: 'admin.nav.messages' },
     ],
   },
 ]
@@ -237,11 +241,8 @@ function AdminLayout({ children }: { children: ReactNode }) {
             {/* Language selector */}
             <AdminLanguageSwitcher />
 
-            {/* Notifications */}
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white transition">
-              <Bell size={16} />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-orange-500 ring-2 ring-white dark:ring-[#21232d]" />
-            </button>
+            {/* Notifications — realtime WebSocket bell (M11) */}
+            <AdminNotificationBell />
 
             {/* Divider */}
             <div className="h-5 w-px bg-gray-200 dark:bg-white/10" />

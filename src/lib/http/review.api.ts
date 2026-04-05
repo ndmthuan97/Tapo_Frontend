@@ -20,6 +20,13 @@ export interface CreateReviewRequest {
   images?: string[]
 }
 
+/** Returned by GET /api/reviews/can-review */
+export interface CanReviewResult {
+  canReview: boolean
+  /** UUID string of the qualifying DELIVERED order, empty string if cannot review */
+  orderId: string
+}
+
 export const reviewApi = {
   getProductReviews(productId: string, page = 0, size = 10) {
     return apiCall<PageResponse<ReviewDto>>(
@@ -31,8 +38,8 @@ export const reviewApi = {
   },
 
   canReview(productId: string) {
-    return apiCall<{ canReview: boolean }>(
-      httpClient.get<ApiResponse<{ canReview: boolean }>>(`/api/reviews/can-review`, {
+    return apiCall<CanReviewResult>(
+      httpClient.get<ApiResponse<CanReviewResult>>(`/api/reviews/can-review`, {
         params: { productId },
       }),
     )

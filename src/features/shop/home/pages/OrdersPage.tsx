@@ -7,7 +7,8 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderSummary, OrderStatus, OrderPage } from '@/lib/types/order/order.types'
-import { ChevronRight, Package, ImageOff, Search, X, Loader2 } from 'lucide-react'
+import { ChevronRight, Package, ImageOff, Search, X } from 'lucide-react'
+import { OrderCardSkeletonList } from '@/components/ui/SkeletonComponents'
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -147,7 +148,6 @@ function OrdersPage() {
           <div className="mb-6 flex items-center gap-3">
             <Package size={22} className="text-orange-500" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.pageTitle')}</h1>
-            {isLoading && <Loader2 size={16} className="animate-spin text-orange-400 ml-auto" />}
           </div>
 
           {/* Search */}
@@ -184,10 +184,8 @@ function OrdersPage() {
             ))}
           </div>
 
-          {isLoading ? (
-            <div className="flex justify-center py-24">
-              <Loader2 size={36} className="animate-spin text-orange-400" />
-            </div>
+          {isLoading && !page ? (
+            <OrderCardSkeletonList count={5} />
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">

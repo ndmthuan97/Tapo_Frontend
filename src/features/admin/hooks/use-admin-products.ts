@@ -82,5 +82,17 @@ export function useAdminProducts(initialParams: ProductParams = {}) {
     products, meta, totalPages, totalItems, isLoading, isSubmitting,
     params, setPage, setSearch, setStatus,
     createProduct, updateProduct, deleteProduct,
+    bulkDelete: async (ids: string[]) => {
+      const r = await productAdminApi.bulkDelete(ids)
+      if (r.success) { toast.success(`Đã xóa ${ids.length} sản phẩm`); load(params) }
+      else toast.error(r.error?.message ?? 'Xóa hàng loạt thất bại')
+      return r.success
+    },
+    bulkUpdateStatus: async (ids: string[], status: import('@/lib/types/product/product.types').ProductStatus) => {
+      const r = await productAdminApi.bulkUpdateStatus(ids, status)
+      if (r.success) { toast.success(`Đã cập nhật ${ids.length} sản phẩm`); load(params) }
+      else toast.error(r.error?.message ?? 'Cập nhật thất bại')
+      return r.success
+    },
   }
 }

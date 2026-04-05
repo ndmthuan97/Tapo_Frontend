@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/context/auth-context'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // ── Shop ────────────────────────────────────────────────────────────────────
 import { HomePage }           from '@/features/shop/home/pages/HomePage'
@@ -41,6 +42,8 @@ const AdminBrandsPage     = lazy(() => import('@/features/admin/pages/AdminBrand
 const AdminOrdersPage     = lazy(() => import('@/features/admin/pages/AdminOrdersPage').then(m => ({ default: m.AdminOrdersPage })))
 const AdminMessagesPage   = lazy(() => import('@/features/admin/pages/AdminMessagesPage').then(m => ({ default: m.AdminMessagesPage })))
 const AdminReviewsPage    = lazy(() => import('@/features/admin/pages/AdminReviewsPage').then(m => ({ default: m.AdminReviewsPage })))
+const AdminVouchersPage   = lazy(() => import('@/features/admin/pages/AdminVouchersPage').then(m => ({ default: m.AdminVouchersPage })))
+const AdminReturnsPage    = lazy(() => import('@/features/admin/pages/AdminReturnsPage').then(m => ({ default: m.AdminReturnsPage })))
 
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
@@ -74,12 +77,12 @@ function App() {
         <Routes>
           {/* ── Public / Shop ───────────────────────────────────────── */}
           <Route path="/"         element={<HomePage />} />
-          <Route path="/products"           element={<ProductsPage />} />
-          <Route path="/products/:id"        element={<ProductDetailPage />} />
-          <Route path="/categories/:slug"    element={<CategoryPage />} />
+          <Route path="/products"           element={<ErrorBoundary><ProductsPage /></ErrorBoundary>} />
+          <Route path="/products/:id"        element={<ErrorBoundary><ProductDetailPage /></ErrorBoundary>} />
+          <Route path="/categories/:slug"    element={<ErrorBoundary><CategoryPage /></ErrorBoundary>} />
           <Route path="/wishlist"            element={<WishlistPage />} />
-          <Route path="/cart"               element={<CartPage />} />
-          <Route path="/search"             element={<SearchPage />} />
+          <Route path="/cart"               element={<ErrorBoundary><CartPage /></ErrorBoundary>} />
+          <Route path="/search"             element={<ErrorBoundary><SearchPage /></ErrorBoundary>} />
           <Route path="/compare"            element={<ComparePage />} />
           <Route path="/login"              element={<LoginPage />} />
           <Route path="/register"           element={<RegisterPage />} />
@@ -107,6 +110,8 @@ function App() {
           <Route path="/admin/categories"  element={<AdminPage><AdminCategoriesPage /></AdminPage>} />
           <Route path="/admin/brands"      element={<AdminPage><AdminBrandsPage /></AdminPage>} />
           <Route path="/admin/orders"      element={<AdminPage><AdminOrdersPage /></AdminPage>} />
+          <Route path="/admin/vouchers"    element={<AdminPage><AdminVouchersPage /></AdminPage>} />
+          <Route path="/admin/returns"     element={<AdminPage><AdminReturnsPage /></AdminPage>} />
           <Route path="/admin/messages"    element={<AdminPage><AdminMessagesPage /></AdminPage>} />
           <Route path="/admin/reviews"     element={<AdminPage><AdminReviewsPage /></AdminPage>} />
           <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />

@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { Heart, ShoppingCart, Trash2, Star, ChevronRight, ImageOff, Loader2 } from 'lucide-react'
+import { Heart, ShoppingCart, Trash2, Star, ChevronRight, ImageOff } from 'lucide-react'
+import { WishlistCardSkeletonGrid } from '@/components/ui/SkeletonComponents'
 import { cn } from '@/lib/utils'
 import { useWishlist } from '@/features/shop/home/hooks/use-wishlist'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
@@ -180,9 +181,7 @@ function WishlistPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex items-center justify-center py-28">
-              <Loader2 size={36} className="animate-spin text-orange-500" />
-            </div>
+            <WishlistCardSkeletonGrid count={8} />
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-28 text-center">
               <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">

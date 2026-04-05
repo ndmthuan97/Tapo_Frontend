@@ -14,6 +14,7 @@ import {
   CheckCircle2, Clock, Truck, PackageCheck, XCircle, RotateCcw,
   Loader2, AlertCircle, RefreshCw,
 } from 'lucide-react'
+import { OrderDetailSkeleton } from '@/components/ui/SkeletonComponents'
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 
@@ -120,8 +121,8 @@ function OrderDetailPage() {
     return (
       <>
         <Header />
-        <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#191b22]">
-          <Loader2 size={40} className="animate-spin text-orange-400" />
+        <main className="min-h-screen bg-gray-50 dark:bg-[#191b22]">
+          <OrderDetailSkeleton />
         </main>
         <Footer />
       </>
@@ -189,27 +190,35 @@ function OrderDetailPage() {
               {/* Progress tracker */}
               {showProgress && (
                 <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 p-6">
-                  <h3 className="mb-5 text-sm font-bold text-gray-800 dark:text-gray-100">{t('orderDetail.trackingTitle')}</h3>
-                  <div className="relative flex justify-between">
-                    {/* Progress bar */}
-                    <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-100 dark:bg-white/10">
+                  <h3 className="mb-6 text-sm font-bold text-gray-800 dark:text-gray-100">{t('orderDetail.trackingTitle')}</h3>
+
+                  {/* Step indicator */}
+                  <div className="relative flex items-start justify-between">
+                    <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-100 dark:bg-white/10" style={{ zIndex: 0 }}>
                       <div
-                        className="h-full bg-emerald-500 transition-all duration-500"
-                        style={{ width: `${currentIdx >= 0 ? (currentIdx / (PROGRESS_STEPS.length - 1)) * 100 : 0}%` }}
+                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700"
+                        style={{ width: currentIdx >= 0 ? `${(currentIdx / (PROGRESS_STEPS.length - 1)) * 100}%` : '0%' }}
                       />
                     </div>
+
                     {PROGRESS_STEPS.map((s, i) => {
-                      const Icon = STATUS_ICONS[s]
-                      const done = currentIdx >= 0 && i <= currentIdx
+                      const Icon   = STATUS_ICONS[s]
+                      const done   = currentIdx >= 0 && i <= currentIdx
+                      const active = i === currentIdx
                       return (
-                        <div key={s} className="relative flex flex-col items-center z-10">
+                        <div key={s} className="relative z-10 flex flex-col items-center gap-2 flex-1">
                           <div className={cn(
-                            'flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all',
-                            done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-300',
+                            'flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-300',
+                            done && !active && 'border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-300/40',
+                            active && 'border-emerald-500 bg-white dark:bg-[#21232d] text-emerald-500 shadow-md ring-4 ring-emerald-100 dark:ring-emerald-500/10',
+                            !done && 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-300 dark:text-white/20',
                           )}>
-                            {done ? <CheckCircle2 size={14} /> : <Icon size={14} />}
+                            {done && !active ? <CheckCircle2 size={14} /> : <Icon size={13} />}
                           </div>
-                          <span className={cn('mt-2 text-[10px] font-medium text-center hidden sm:block max-w-[70px]', done ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-300 dark:text-white/20')}>
+                          <span className={cn(
+                            'hidden sm:block text-center text-[10px] font-semibold leading-tight max-w-[72px]',
+                            active ? 'text-emerald-600 dark:text-emerald-400' : done ? 'text-gray-500 dark:text-gray-400' : 'text-gray-200 dark:text-white/15',
+                          )}>
                             {t(`orders.status.${s.toLowerCase()}`)}
                           </span>
                         </div>
@@ -217,25 +226,37 @@ function OrderDetailPage() {
                     })}
                   </div>
 
-                  {/* Status history timeline */}
+                  {/* Vertical timeline history */}
                   {order.statusHistory.length > 0 && (
-                    <div className="mt-6 space-y-3 border-t border-gray-100 dark:border-white/5 pt-4">
-                      {[...order.statusHistory].reverse().map((h, i) => {
-                        const Icon = STATUS_ICONS[h.toStatus] ?? Clock
-                        return (
-                          <div key={i} className={cn('flex items-start gap-3', i === 0 ? '' : 'opacity-60')}>
-                            <div className={cn('mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full', i === 0 ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-400')}>
-                              <Icon size={11} />
+                    <div className="mt-7 border-t border-gray-100 dark:border-white/5 pt-5">
+                      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-gray-400">Lịch sử trạng thái</p>
+                      <div className="relative space-y-0">
+                        <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-100 dark:bg-white/10" />
+                        {[...order.statusHistory].reverse().map((h, i) => {
+                          const Icon    = STATUS_ICONS[h.toStatus] ?? Clock
+                          const isFirst = i === 0
+                          return (
+                            <div key={i} className="relative flex items-start gap-4 pb-5 last:pb-0">
+                              <div className={cn(
+                                'relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all',
+                                isFirst
+                                  ? 'border-emerald-400 bg-emerald-500 text-white shadow-sm shadow-emerald-300/40'
+                                  : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-400 dark:text-white/30',
+                              )}>
+                                <Icon size={11} />
+                              </div>
+                              <div className={cn('flex-1 min-w-0', !isFirst && 'opacity-55')}>
+                                <p className={cn('text-xs font-semibold', isFirst ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300')}>
+                                  {h.note ?? t(`orders.status.${h.toStatus.toLowerCase()}`)}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-gray-400">
+                                  {new Date(h.changedAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">{h.note ?? t(`orders.status.${h.toStatus.toLowerCase()}`)}</p>
-                              <p className="text-[10px] text-gray-400">
-                                {new Date(h.changedAt).toLocaleString('vi-VN')}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

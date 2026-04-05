@@ -26,6 +26,7 @@ export interface DashboardStatsDto {
   ordersThisMonth: number
   ordersPrevMonth: number
   ordersGrowthPct: number
+  avgOrderValue: number
   // User KPIs
   totalUsers: number
   activeUsers: number
@@ -50,5 +51,20 @@ export const statisticsApi = {
         params: year ? { year } : {},
       }),
     )
+  },
+
+  async exportDashboard(year: number): Promise<{ ok: true; blob: Blob } | { ok: false; message: string }> {
+    try {
+      const res = await httpClient.get<ArrayBuffer>('/api/admin/statistics/export', {
+        params: { year },
+        responseType: 'arraybuffer',
+      })
+      const blob = new Blob([res.data as unknown as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      return { ok: true, blob }
+    } catch {
+      return { ok: false, message: 'Export failed' }
+    }
   },
 }

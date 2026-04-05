@@ -135,6 +135,7 @@ function VoucherInput({
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useTranslation()
 
   const handleApply = async () => {
     if (!code.trim()) return
@@ -146,7 +147,7 @@ function VoucherInput({
       onApply(res.data.voucher.code, res.data.discountAmount, res.data.voucher.name)
       setCode('')
     } else {
-      setError(res.error?.message ?? 'Mã không hợp lệ')
+      setError(res.error?.message ?? t('checkoutVoucher.invalid'))
     }
   }
 
@@ -167,7 +168,7 @@ function VoucherInput({
   return (
     <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 p-4">
       <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300 flex items-center gap-1.5">
-        <Tag size={12} className="text-orange-500" /> Mã giảm giá
+        <Tag size={12} className="text-orange-500" /> {t('checkoutVoucher.label')}
       </p>
       <div className="flex gap-2">
         <input
@@ -176,7 +177,7 @@ function VoucherInput({
           value={code}
           onChange={e => { setCode(e.target.value.toUpperCase()); setError(null) }}
           onKeyDown={e => e.key === 'Enter' && handleApply()}
-          placeholder="Nhập mã..."
+          placeholder={t('checkoutVoucher.placeholder')}
           className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 text-sm uppercase placeholder:normal-case placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition"
         />
         <button
@@ -185,7 +186,7 @@ function VoucherInput({
           disabled={isLoading || !code.trim()}
           className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white hover:bg-orange-600 transition disabled:opacity-50"
         >
-          {isLoading ? <Loader2 size={12} className="animate-spin" /> : 'Áp dụng'}
+          {isLoading ? <Loader2 size={12} className="animate-spin" /> : t('checkoutVoucher.apply')}
         </button>
       </div>
       {error && (

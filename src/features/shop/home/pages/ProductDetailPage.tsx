@@ -7,15 +7,17 @@ import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
 import {
   Star, Heart, ShoppingCart, ChevronRight, ChevronLeft, Share2, ArrowLeftRight,
-  Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag,
+  Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag, Clock,
   MessageSquare, ThumbsUp, Check, Loader2, Send, PenLine,
 } from 'lucide-react'
 import { productApi } from '@/lib/http/product.api'
 import type { ProductDto } from '@/lib/types/product/product.types'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
 import { reviewApi, type ReviewDto } from '@/lib/http/review.api'
+import { useWishlist } from '@/features/shop/home/hooks/use-wishlist'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { toast } from 'sonner'
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
 // ── Skeleton ───────────────────────────────────────────────────────────────────
 
@@ -115,15 +117,16 @@ function ProductDetailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { addItem } = useCart()
+  const { addItem: trackView, getItems } = useRecentlyViewed()
 
   const { user } = useAuthContext()
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist()
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [related, setRelated] = useState<ProductDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
   const [quantity, setQuantity] = useState(1)
-  const [wishlisted, setWishlisted] = useState(false)
   const [activeTab, setActiveTab] = useState<'desc' | 'specs' | 'reviews'>('desc')
   const [addingToCart, setAddingToCart] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
@@ -133,6 +136,7 @@ function ProductDetailPage() {
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [reviewsTotal, setReviewsTotal] = useState(0)
   const [canReview, setCanReview] = useState(false)
+  const [reviewOrderId, setReviewOrderId] = useState('')
   // Review form
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewComment, setReviewComment] = useState('')
@@ -167,7 +171,10 @@ function ProductDetailPage() {
     productApi.getProduct(id).then(result => {
       setIsLoading(false)
       if (result.success && result.data) {
-        setProduct(result.data)
+        const p = result.data
+        setProduct(p)
+        // Track recently viewed
+        trackView({ id: p.id, name: p.name, price: p.price, originalPrice: p.originalPrice, thumbnailUrl: p.thumbnailUrl, brandName: p.brandName, avgRating: p.avgRating })
         productApi.getRelatedProducts(id).then(r => {
           if (r.success && r.data) setRelated(r.data)
         })
@@ -193,22 +200,23 @@ function ProductDetailPage() {
     if (activeTab === 'reviews') loadReviews()
   }, [activeTab, loadReviews])
 
-  // Check if user can review
+  // Check if user can review — also fetch orderId for the form
   useEffect(() => {
-    if (!id || !user) { setCanReview(false); return }
+    if (!id || !user) { setCanReview(false); setReviewOrderId(''); return }
     reviewApi.canReview(id).then(res => {
-      if (res.success && res.data) setCanReview(res.data.canReview)
+      if (res.success && res.data) {
+        setCanReview(res.data.canReview)
+        setReviewOrderId(res.data.orderId ?? '')
+      }
     })
   }, [id, user])
 
   const handleSubmitReview = useCallback(async () => {
-    if (!product || !reviewComment.trim()) return
+    if (!product || !reviewComment.trim() || !reviewOrderId) return
     setSubmittingReview(true)
-    // Note: orderId is not available here; user should review from order history.
-    // We pass a placeholder — backend will validate purchase.
     const result = await reviewApi.createReview({
       productId: product.id,
-      orderId: '00000000-0000-0000-0000-000000000000', // placeholder, BE validates
+      orderId: reviewOrderId,
       rating: reviewRating,
       comment: reviewComment,
     })
@@ -221,7 +229,7 @@ function ProductDetailPage() {
     } else {
       toast.error(result.error?.message ?? 'Gửi đánh giá thất bại')
     }
-  }, [product, reviewRating, reviewComment])
+  }, [product, reviewRating, reviewComment, reviewOrderId])
 
   if (isLoading) {
     return (
@@ -395,10 +403,15 @@ function ProductDetailPage() {
                   {t('productDetail.buyNow')}
                 </button>
                 <button
-                  onClick={() => setWishlisted(w => !w)}
-                  className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 transition-all', wishlisted ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/20 dark:bg-red-500/10' : 'border-gray-200 dark:border-white/10 text-gray-400 hover:border-red-300 hover:text-red-400')}
+                  onClick={() => toggleWishlist(product.id)}
+                  className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 transition-all',
+                    isWishlisted(product.id)
+                      ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/20 dark:bg-red-500/10'
+                      : 'border-gray-200 dark:border-white/10 text-gray-400 hover:border-red-300 hover:text-red-400'
+                  )}
+                  title="Thêm vào yêu thích"
                 >
-                  <Heart size={18} className={wishlisted ? 'fill-current' : ''} />
+                  <Heart size={18} className={isWishlisted(product.id) ? 'fill-current' : ''} />
                 </button>
                 <Link
                   to={`/compare?ids=${product.id}`}
@@ -639,6 +652,44 @@ function ProductDetailPage() {
             </div>
           </div>
         )}
+        {(() => {
+          const recentItems = getItems().filter(r => r.id !== product.id).slice(0, 4)
+          if (recentItems.length === 0) return null
+          return (
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-16">
+              <h2 className="mb-6 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Clock size={18} className="text-orange-500" />
+                Đã xem gần đây
+              </h2>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {recentItems.map(p => {
+                  const disc = p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : null
+                  return (
+                    <Link to={`/products/${p.id}`} key={p.id} className="group overflow-hidden rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 hover:shadow-md transition-shadow">
+                      <div className="relative overflow-hidden bg-gray-50 dark:bg-white/5 h-44">
+                        {p.thumbnailUrl ? (
+                          <img src={p.thumbnailUrl} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center"><ImageOff size={28} className="text-gray-200 dark:text-white/10" /></div>
+                        )}
+                        {disc && <span className="absolute left-2 top-2 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-bold text-white">-{disc}%</span>}
+                      </div>
+                      <div className="p-3">
+                        <span className="text-[10px] font-semibold text-orange-500 uppercase">{p.brandName}</span>
+                        <h3 className="mt-0.5 line-clamp-2 text-xs font-medium text-gray-800 dark:text-gray-100 min-h-[2rem]">{p.name}</h3>
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <Star size={10} className="fill-amber-400 text-amber-400" />
+                          <span className="text-[10px] text-gray-400">{p.avgRating?.toFixed(1)}</span>
+                        </div>
+                        <p className="mt-1 text-sm font-bold text-orange-500">{formatCurrency(p.price)}</p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
       </main>
       <Footer />
     </>
