@@ -288,6 +288,14 @@ const vi = {
       warehouse: 'Kho',
       admin: 'Quản trị viên',
     },
+    modal: {
+      title:   'Chi tiết người dùng',
+      phone:   'Số điện thoại',
+      noPhone: 'Chưa cập nhật',
+      userId:  'User ID',
+      close:   'Đóng',
+      viewBtn: 'Xem chi tiết',
+    },
   },
 
   // ── Admin Categories Page ──────────────────────────────────────────────────
@@ -496,8 +504,13 @@ const vi = {
       resetBtn: 'Xóa bộ lọc',
     },
     card: {
-      sold:      '{{count}} bán',
-      addToCart: 'Thêm vào giỏ',
+      sold:         '{{count}} bán',
+      addToCart:    'Thêm vào giỏ',
+      viewDetail:   'Xem chi tiết',
+      wishlist:     'Yêu thích',
+      loginRequired:'Vui lòng đăng nhập để thêm vào giỏ',
+      addSuccess:   'Đã thêm vào giỏ hàng!',
+      addFailed:    'Thêm vào giỏ thất bại',
     },
   },
 

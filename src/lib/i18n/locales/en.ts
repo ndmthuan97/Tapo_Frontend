@@ -288,6 +288,14 @@ const en = {
       warehouse: 'Warehouse Staff',
       admin: 'Administrator',
     },
+    modal: {
+      title:   'User Details',
+      phone:   'Phone Number',
+      noPhone: 'Not provided',
+      userId:  'User ID',
+      close:   'Close',
+      viewBtn: 'View details',
+    },
   },
 
   // ── Admin Categories Page ──────────────────────────────────────────────────
@@ -496,8 +504,13 @@ const en = {
       resetBtn: 'Clear filters',
     },
     card: {
-      sold:      '{{count}} sold',
-      addToCart: 'Add to cart',
+      sold:         '{{count}} sold',
+      addToCart:    'Add to cart',
+      viewDetail:   'View detail',
+      wishlist:     'Wishlist',
+      loginRequired:'Please log in to add to cart',
+      addSuccess:   'Added to cart!',
+      addFailed:    'Failed to add to cart',
     },
   },
 

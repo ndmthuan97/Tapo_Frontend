@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Shield,
@@ -35,7 +35,7 @@ const ROLE_LABEL: Record<string, string> = {
   CUSTOMER: 'Customer',
 }
 
-// â”€â”€ Helpers & Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers & Sub-components ──────────────────────────────────────────────────
 
 function InfoRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
@@ -47,20 +47,22 @@ function InfoRow({ label, value, mono = false }: { label: string; value: string;
 }
 
 function UserDetailModal({ user, onClose }: { user: UserDto; onClose: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Chi tiáº¿t ngÆ°á»i dÃ¹ng</h3>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={15} /></button>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('adminUsers.modal.title')}</h3>
+          <button onClick={onClose} aria-label={t('adminUsers.modal.close')} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={15} /></button>
         </div>
         {/* Avatar + Name */}
         <div className="flex flex-col items-center py-6 px-5 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02]">
           <div className="relative">
             <img
               src={user.avatarUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=f97316&color=fff&size=80`}
-              alt="" className="h-20 w-20 rounded-full object-cover bg-gray-100 dark:bg-gray-700 ring-4 ring-white dark:ring-[#21232d]"
+              alt={user.fullName}
+              className="h-20 w-20 rounded-full object-cover bg-gray-100 dark:bg-gray-700 ring-4 ring-white dark:ring-[#21232d]"
               onError={e => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=f97316&color=fff&size=80` }}
             />
             <span className={cn('absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-[#21232d]',
@@ -76,21 +78,21 @@ function UserDetailModal({ user, onClose }: { user: UserDto; onClose: () => void
                 ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                 : 'bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400')}>
               <span className={cn('h-1.5 w-1.5 rounded-full', user.status === UserStatus.ACTIVE ? 'bg-emerald-500' : 'bg-red-500')} />
-              {user.status === UserStatus.ACTIVE ? 'Äang hoáº¡t Ä‘á»™ng' : 'ÄÃ£ khoÃ¡'}
+              {user.status === UserStatus.ACTIVE ? t('adminUsers.active') : t('adminUsers.locked')}
             </span>
           </div>
         </div>
         {/* Info rows */}
         <div className="px-5 py-1">
           <InfoRow label="Email" value={user.email} />
-          <InfoRow label="Sá»‘ Ä‘iá»‡n thoáº¡i" value={user.phoneNumber ?? 'ChÆ°a cáº­p nháº­t'} />
-          <InfoRow label="User ID" value={user.id} mono />
+          <InfoRow label={t('adminUsers.modal.phone')} value={user.phoneNumber ?? t('adminUsers.modal.noPhone')} />
+          <InfoRow label={t('adminUsers.modal.userId')} value={user.id} mono />
         </div>
         {/* Footer */}
         <div className="flex justify-end border-t border-gray-100 dark:border-white/5 px-5 py-4">
           <button onClick={onClose}
             className="rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
-            ÄÃ³ng
+            {t('adminUsers.modal.close')}
           </button>
         </div>
       </div>
@@ -112,10 +114,10 @@ function UserSkeleton() {
           <td className="px-5 py-3.5"><div className="h-4 w-44 rounded bg-gray-100 dark:bg-white/5" /></td>
           <td className="px-5 py-3.5"><div className="h-5 w-20 rounded-full bg-gray-100 dark:bg-white/5" /></td>
           <td className="px-5 py-3.5"><div className="h-5 w-20 rounded-full bg-gray-100 dark:bg-white/5" /></td>
-          <td className="px-5 py-3.5">
-            <div className="flex justify-end gap-1">
+          <td className="px-5 py-3.5 text-right">
+            <div className="inline-flex justify-end gap-1.5">
               <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
-              <div className="h-7 w-14 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-7 w-16 rounded-lg bg-gray-100 dark:bg-white/5" />
             </div>
           </td>
         </tr>
@@ -143,28 +145,19 @@ function AdminUsersPage() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [detailUser, setDetailUser] = useState<UserDto | null>(null)
 
-
-  // Debounce: wait 350ms after user stops typing before updating the filter
+  // Debounce 350ms
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 350)
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  const ROLE_OPTIONS = [
-    { value: undefined, label: t('adminUsers.filter.all') },
-    { value: UserRole.CUSTOMER, label: t('adminUsers.filter.customer') },
-    { value: UserRole.SALES_STAFF, label: t('adminUsers.filter.sales') },
-    { value: UserRole.WAREHOUSE_STAFF, label: t('adminUsers.filter.warehouse') },
-    { value: UserRole.ADMIN, label: t('adminUsers.filter.admin') },
-  ]
-
-  useEffect(() => { reload() }, [])
+  useEffect(() => { reload() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalUsers = data?.totalElements ?? 0
   const activeCount = data?.content.filter((u: UserDto) => u.status === UserStatus.ACTIVE).length ?? 0
   const lockedCount = data?.content.filter((u: UserDto) => u.status === UserStatus.LOCKED).length ?? 0
 
-  // Filter the visible page by the debounced query (name or email, case-insensitive)
+  // Client-side search filter
   const q = debouncedQuery.trim().toLowerCase()
   const filteredContent = q
     ? (data?.content ?? []).filter(
@@ -173,6 +166,14 @@ function AdminUsersPage() {
         u.email.toLowerCase().includes(q),
     )
     : (data?.content ?? [])
+
+  const ROLE_OPTIONS = [
+    { value: undefined, label: t('adminUsers.filter.all') },
+    { value: UserRole.CUSTOMER, label: t('adminUsers.filter.customer') },
+    { value: UserRole.SALES_STAFF, label: t('adminUsers.filter.sales') },
+    { value: UserRole.WAREHOUSE_STAFF, label: t('adminUsers.filter.warehouse') },
+    { value: UserRole.ADMIN, label: t('adminUsers.filter.admin') },
+  ]
 
   return (
     <div className="p-6 space-y-6">
@@ -243,16 +244,16 @@ function AdminUsersPage() {
                     {/* Name + avatar */}
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="relative">
+                        <div className="relative shrink-0">
                           <img
-                            src={user.avatarUrl ?? ''}
-                            alt=""
+                            src={user.avatarUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=f97316&color=fff&size=32`}
+                            alt={user.fullName}
                             className="h-8 w-8 rounded-full object-cover bg-gray-100 dark:bg-gray-700"
                             onError={(e) => {
-                              ; (e.target as HTMLImageElement).style.display = 'none'
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=f97316&color=fff&size=32`
                             }}
                           />
-                          {/* Online dot */}
+                          {/* Status dot */}
                           <span
                             className={cn(
                               'absolute bottom-0 right-0 h-2 w-2 rounded-full ring-2 ring-white dark:ring-[#21232d]',
@@ -309,31 +310,35 @@ function AdminUsersPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      <div className="inline-flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setDetailUser(user)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition"
+                          aria-label={t('adminUsers.modal.viewBtn')}
+                          title={t('adminUsers.modal.viewBtn')}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition cursor-pointer"
                         >
-                          <Eye size={12} />
+                          <Eye size={13} />
                         </button>
 
                         {user.role !== UserRole.ADMIN ? (
                           user.status === UserStatus.ACTIVE ? (
                             <button
                               onClick={() => lockUser(user.id)}
-                              className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition"
+                              aria-label={t('adminUsers.lock')}
+                              title={t('adminUsers.lock')}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition cursor-pointer"
                             >
-                              <LockKeyhole size={11} />
-                              {t('adminUsers.lock')}
+                              <LockKeyhole size={12} />
                             </button>
                           ) : (
                             <button
                               onClick={() => unlockUser(user.id)}
-                              className="flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition"
+                              aria-label={t('adminUsers.unlock')}
+                              title={t('adminUsers.unlock')}
+                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition cursor-pointer"
                             >
-                              <Unlock size={11} />
-                              {t('adminUsers.unlock')}
+                              <Unlock size={12} />
                             </button>
                           )
                         ) : (

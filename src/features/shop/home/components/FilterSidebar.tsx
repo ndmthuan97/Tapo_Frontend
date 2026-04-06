@@ -118,11 +118,23 @@ export function FilterSidebar({
               ))}
             </div>
             <div className="flex items-center gap-1.5">
-              <input type="number" placeholder={t('products.filter.priceFrom')} value={min} onChange={e => setMin(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none" />
-              <span className="text-gray-400 text-xs">–</span>
-              <input type="number" placeholder={t('products.filter.priceTo')} value={max} onChange={e => setMax(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none" />
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder={t('products.filter.priceFrom')}
+                value={min}
+                onChange={e => setMin(e.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#2a2d3a] px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <span className="shrink-0 text-gray-400 text-xs">–</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder={t('products.filter.priceTo')}
+                value={max}
+                onChange={e => setMax(e.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#2a2d3a] px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
             </div>
             <button onClick={() => onPriceApply(min, max)} className="w-full rounded-lg bg-orange-500 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition-colors">
               {t('products.filter.priceApply')}

@@ -221,18 +221,24 @@ function AdminCategoriesPage() {
                       {cat.isVisible ? t('adminCategories.visible') : t('adminCategories.hidden')}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => setModal({ open: true, editing: cat })}
-                        className="flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">
-                        <Pencil size={11} />{t('common.edit')}
-                      </button>
-                      <button onClick={async () => { if (window.confirm(t('adminCategories.deleteConfirm'))) await deleteCategory(cat.id) }}
-                        className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
-                        <Trash2 size={11} />{t('common.delete')}
-                      </button>
-                    </div>
-                  </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setModal({ open: true, editing: cat })}
+                          title={t('common.edit')}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={async () => { if (window.confirm(t('adminCategories.deleteConfirm'))) await deleteCategory(cat.id) }}
+                          title={t('common.delete')}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
                 </tr>
               ))}
             </tbody>

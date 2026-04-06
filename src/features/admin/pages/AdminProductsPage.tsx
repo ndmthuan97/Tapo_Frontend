@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -117,31 +117,19 @@ function SearchableSelect({ label, required, value, onChange, options, onCreate 
   }
 
   const labelCls = 'mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400'
-  const triggerCls =
-    'flex-1 flex items-center justify-between rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs text-left text-gray-700 dark:text-gray-300 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400/30 transition cursor-pointer'
+  const fieldCls =
+    'flex items-center justify-between rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-xs text-gray-700 dark:text-gray-300 focus-within:border-orange-400 focus-within:ring-1 focus-within:ring-orange-400/30 transition cursor-pointer overflow-hidden'
 
   return (
     <div ref={containerRef} className="relative">
       <label className={labelCls}>{label}{required && ' *'}</label>
 
-      <div className="flex gap-1.5">
-        <button type="button" className={triggerCls} onClick={handleOpen}>
-          <span className={selected ? '' : 'text-gray-400'}>{selected?.name ?? 'Chọn…'}</span>
-          <ChevronDown size={12} className={cn('text-gray-400 transition-transform', open && 'rotate-180')} />
+      <div className={fieldCls}>
+        {/* Main trigger area */}
+        <button type="button" className="flex flex-1 items-center justify-between px-3 py-1.5 min-w-0 text-left" onClick={handleOpen}>
+          <span className={selected ? 'truncate text-gray-700 dark:text-gray-200' : 'text-gray-400 truncate'}>{selected?.name ?? 'Chọn…'}</span>
+          <ChevronDown size={12} className={cn('ml-1.5 shrink-0 text-gray-400 transition-transform', open && 'rotate-180')} />
         </button>
-        {onCreate && (
-          <button
-            type="button"
-            title="Tạo mới"
-            onClick={() => {
-              setOpen(true)
-              setTimeout(() => inputRef.current?.focus(), 40)
-            }}
-            className="flex shrink-0 items-center justify-center h-[30px] w-[30px] rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-400 hover:border-orange-400 hover:text-orange-500 transition"
-          >
-            <Plus size={13} />
-          </button>
-        )}
       </div>
 
       {open && (
@@ -180,18 +168,25 @@ function SearchableSelect({ label, required, value, onChange, options, onCreate 
             )}
           </div>
 
-          {/* Quick-create */}
-          {onCreate && query.trim() && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) && (
+          {/* Quick-create — always visible when onCreate provided */}
+          {onCreate && (
             <div className="border-t border-gray-100 dark:border-white/5 p-2">
-              <button
-                type="button"
-                disabled={isCreating}
-                onClick={handleCreate}
-                className="flex w-full items-center gap-1.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 disabled:opacity-60 transition"
-              >
-                {isCreating ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
-                Tạo mới &ldquo;{query.trim()}&rdquo;
-              </button>
+              {query.trim() && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) ? (
+                <button
+                  type="button"
+                  disabled={isCreating}
+                  onClick={handleCreate}
+                  className="flex w-full items-center gap-1.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 disabled:opacity-60 transition"
+                >
+                  {isCreating ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+                  Tạo mới &ldquo;{query.trim()}&rdquo;
+                </button>
+              ) : (
+                <p className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-gray-400">
+                  <Plus size={10} className="text-orange-400" />
+                  Gõ tên vào ô tìm kiếm để tạo mới
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -871,21 +866,23 @@ function AdminProductsPage() {
                     </td>
                     <td className="px-5 py-3.5"><StatusBadge status={p.status} /></td>
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setDetailProduct(p)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition">
-                          <Eye size={12} />
-                        </button>
-                        <button onClick={() => setModal({ open: true, editing: p })}
-
-                          className="flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">
-                          <Pencil size={11} />{t('common.edit')}
-                        </button>
-                        <button onClick={() => handleDelete(p.id)}
-                          className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
-                          <Trash2 size={11} />{t('common.delete')}
-                        </button>
-                      </div>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setDetailProduct(p)}
+                            title="Xem chi tiết"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition">
+                            <Eye size={12} />
+                          </button>
+                          <button onClick={() => setModal({ open: true, editing: p })}
+                            title={t('common.edit')}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">
+                            <Pencil size={12} />
+                          </button>
+                          <button onClick={() => handleDelete(p.id)}
+                            title={t('common.delete')}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                     </td>
                   </tr>
                 ))

@@ -29,7 +29,7 @@ export interface AdminNotification {
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 
-const WS_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/ws`
+const WS_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/ws`
 const TOPIC   = '/topic/admin/notifications'
 const MAX_HISTORY = 50
 

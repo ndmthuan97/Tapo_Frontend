@@ -1,3 +1,5 @@
+export type CatalogStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT'
+
 export interface CategoryDto {
   id: string
   name: string
@@ -5,7 +7,7 @@ export interface CategoryDto {
   description?: string
   imageUrl?: string
   sortOrder: number
-  isVisible: boolean
+  status: CatalogStatus
   createdAt: string
   updatedAt: string
 }
@@ -16,7 +18,7 @@ export interface CategoryRequest {
   description?: string
   imageUrl?: string
   sortOrder?: number
-  isVisible?: boolean
+  status?: CatalogStatus
 }
 
 export interface BrandDto {
@@ -24,7 +26,7 @@ export interface BrandDto {
   name: string
   slug: string
   logoUrl?: string
-  isVisible: boolean
+  status: CatalogStatus
   createdAt: string
   updatedAt: string
 }
@@ -33,5 +35,5 @@ export interface BrandRequest {
   name: string
   slug?: string
   logoUrl?: string
-  isVisible?: boolean
+  status?: CatalogStatus
 }

@@ -3,28 +3,65 @@ import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
 import {
-  ChevronDown, ChevronLeft, ChevronRight,
-  Eye, ImageOff, Filter,
-  Clock, Package, Truck, PackageCheck, XCircle, Loader2,
+  ChevronDown,
+  Eye, ImageOff,
+  Clock, Package, Truck, PackageCheck, XCircle, ShoppingBag,
 } from 'lucide-react'
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderStatus, OrderSummary } from '@/lib/types/order/order.types'
 import { toast } from 'sonner'
 import { AdminOrderDetailModal } from '@/features/admin/components/AdminOrderDetailModal'
+import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
+import React from 'react'
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<OrderStatus, { icon: React.ElementType; color: string; bg: string; dot: string }> = {
-  PENDING:    { icon: Clock,        color: 'text-amber-700 dark:text-amber-400',    bg: 'bg-amber-50 dark:bg-amber-500/10',    dot: 'bg-amber-500' },
-  CONFIRMED:  { icon: Clock,        color: 'text-amber-700 dark:text-amber-400',    bg: 'bg-amber-50 dark:bg-amber-500/10',    dot: 'bg-amber-500' },
-  PROCESSING: { icon: Package,      color: 'text-blue-700 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-500/10',      dot: 'bg-blue-500' },
-  SHIPPING:   { icon: Truck,        color: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/10',  dot: 'bg-indigo-500' },
-  DELIVERED:  { icon: PackageCheck, color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
-  CANCELLED:  { icon: XCircle,      color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-500/10',        dot: 'bg-red-500' },
-  RETURNED:   { icon: XCircle,      color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-500/10',        dot: 'bg-red-500' },
+const STATUS_CONFIG: Record<OrderStatus, { icon: React.ElementType; color: string; bg: string }> = {
+  PENDING:    { icon: Clock,        color: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-500/10'    },
+  CONFIRMED:  { icon: Clock,        color: 'text-amber-700 dark:text-amber-400',      bg: 'bg-amber-50 dark:bg-amber-500/10'    },
+  PROCESSING: { icon: Package,      color: 'text-blue-700 dark:text-blue-400',        bg: 'bg-blue-50 dark:bg-blue-500/10'      },
+  SHIPPING:   { icon: Truck,        color: 'text-indigo-700 dark:text-indigo-400',    bg: 'bg-indigo-50 dark:bg-indigo-500/10'  },
+  DELIVERED:  { icon: PackageCheck, color: 'text-emerald-700 dark:text-emerald-400',  bg: 'bg-emerald-50 dark:bg-emerald-500/10'},
+  CANCELLED:  { icon: XCircle,      color: 'text-red-600 dark:text-red-400',          bg: 'bg-red-50 dark:bg-red-500/10'        },
+  RETURNED:   { icon: XCircle,      color: 'text-red-600 dark:text-red-400',          bg: 'bg-red-50 dark:bg-red-500/10'        },
 }
 
 const ALL_STATUSES: (OrderStatus | 'ALL')[] = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']
+
+const STATUS_OPTIONS = [
+  { value: 'ALL',        label: 'Tất cả trạng thái' },
+  { value: 'PENDING',    label: 'Chờ xác nhận'       },
+  { value: 'CONFIRMED',  label: 'Đã xác nhận'        },
+  { value: 'PROCESSING', label: 'Đang xử lý'         },
+  { value: 'SHIPPING',   label: 'Đang giao'           },
+  { value: 'DELIVERED',  label: 'Đã giao'             },
+  { value: 'CANCELLED',  label: 'Đã hủy'              },
+  { value: 'RETURNED',   label: 'Hoàn trả'            },
+]
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function OrdersSkeleton() {
+  return (
+    <>
+      {[...Array(7)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-gray-50 dark:border-white/5">
+          <td className="px-5 py-4"><div className="h-4 w-20 rounded bg-gray-100 dark:bg-white/5" /><div className="mt-1 h-3 w-28 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 shrink-0 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-4 w-32 rounded bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+          <td className="px-5 py-4"><div className="h-4 w-20 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-5 w-16 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-5 w-24 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="ml-auto h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" /></td>
+        </tr>
+      ))}
+    </>
+  )
+}
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
@@ -39,12 +76,23 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   )
 }
 
-// ── Status dropdown ───────────────────────────────────────────────────────────
+// ── Status dropdown (change status) ──────────────────────────────────────────
+
+const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
+  PENDING:    ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED:  ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['SHIPPING', 'CANCELLED'],
+  SHIPPING:   ['DELIVERED'],
+  DELIVERED:  [],
+  CANCELLED:  [],
+  RETURNED:   [],
+}
 
 function StatusDropdown({ current, onSelect }: { current: OrderStatus; onSelect: (s: OrderStatus) => void }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const nexts = NEXT_STATUSES[current] ?? []
 
   useEffect(() => {
     function h(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
@@ -52,36 +100,27 @@ function StatusDropdown({ current, onSelect }: { current: OrderStatus; onSelect:
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  // Admin can change to almost anything forward, or cancel if not already finished
-  const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {
-    PENDING:    ['CONFIRMED', 'CANCELLED'],
-    CONFIRMED:  ['PROCESSING', 'CANCELLED'],
-    PROCESSING: ['SHIPPING', 'CANCELLED'],
-    SHIPPING:   ['DELIVERED', 'CANCELLED'],
-    DELIVERED:  ['RETURNED'],
-    CANCELLED:  [],
-    RETURNED:   [],
-  }
-
-  const nexts = NEXT_STATUSES[current] || []
-  if (nexts.length === 0) return <StatusBadge status={current} />
-
   return (
     <div ref={ref} className="relative">
       <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1"
+        onClick={() => nexts.length > 0 && setOpen(o => !o)}
+        disabled={nexts.length === 0}
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all',
+          STATUS_CONFIG[current].color, STATUS_CONFIG[current].bg,
+          nexts.length > 0 ? 'cursor-pointer hover:opacity-80' : 'cursor-default',
+        )}
       >
-        <StatusBadge status={current} />
-        <ChevronDown size={12} className={cn('text-gray-400 transition-transform', open && 'rotate-180')} />
+        {React.createElement(STATUS_CONFIG[current].icon, { size: 11 })}
+        {t(`orders.status.${current}`)}
+        {nexts.length > 0 && <ChevronDown size={10} className={cn('transition-transform', open && 'rotate-180')} />}
       </button>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-1 min-w-[160px] rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#2a2d3a] shadow-xl py-1 overflow-hidden">
           {nexts.map(s => {
             const Icon = STATUS_CONFIG[s].icon
             return (
-              <button
-                key={s}
+              <button key={s}
                 onClick={() => { onSelect(s); setOpen(false) }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-600 transition-colors"
               >
@@ -99,6 +138,9 @@ function StatusDropdown({ current, onSelect }: { current: OrderStatus; onSelect:
 
 const PAGE_SIZE = 10
 
+// keep ALL_STATUSES to avoid TS unused-var warning
+void ALL_STATUSES
+
 function AdminOrdersPage() {
   const { t } = useTranslation()
   const [orders, setOrders] = useState<OrderSummary[]>([])
@@ -107,16 +149,8 @@ function AdminOrdersPage() {
   const [activeStatus, setActiveStatus] = useState<OrderStatus | 'ALL'>('ALL')
   const [page, setPage] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  
-  const [filterOpen, setFilterOpen] = useState(false)
-  const filterRef = useRef<HTMLDivElement>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
-
-  useEffect(() => {
-    function h(e: MouseEvent) { if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false) }
-    document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
-  }, [])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -133,9 +167,7 @@ function AdminOrdersPage() {
     }
   }, [page, activeStatus])
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  useEffect(() => { loadData() }, [loadData])
 
   async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     const result = await orderApi.adminUpdateStatus(orderId, newStatus)
@@ -147,93 +179,82 @@ function AdminOrdersPage() {
     }
   }
 
+  const q = searchQuery.trim().toLowerCase()
+  const filteredOrders = q
+    ? orders.filter(o => o.orderCode?.toLowerCase().includes(q) || o.firstProductName?.toLowerCase().includes(q))
+    : orders
+
+  const pendingCount  = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED').length
+  const deliveredCount = orders.filter(o => o.status === 'DELIVERED').length
+
   return (
     <>
-      <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="p-6 space-y-6">
+        {/* Title */}
         <div>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t('adminOrders.pageTitle')}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{t('adminOrders.subtitle', { count: totalElements })}</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+            {t('adminOrders.pageTitle')}
+          </h1>
         </div>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        
-        {/* Status filter */}
-        <div ref={filterRef} className="relative">
-          <button
-            onClick={() => setFilterOpen(o => !o)}
-            className={cn(
-              'flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all',
-              activeStatus !== 'ALL'
-                ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
-                : 'border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] text-gray-600 dark:text-gray-400',
-            )}
-          >
-            <Filter size={13} />
-            {activeStatus === 'ALL' ? t('orders.statusAll') : t(`orders.status.${activeStatus}`)}
-            <ChevronDown size={12} className={cn('transition-transform', filterOpen && 'rotate-180')} />
-          </button>
-          {filterOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#2a2d3a] shadow-xl py-1 overflow-hidden">
-              {ALL_STATUSES.map(s => (
-                <button
-                  key={s}
-                  onClick={() => { setActiveStatus(s); setPage(0); setFilterOpen(false) }}
-                  className={cn('flex w-full items-center gap-2 px-3 py-2 text-xs font-medium transition-colors', s === activeStatus ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5')}
-                >
-                  {s === 'ALL' ? t('orders.statusAll') : t(`orders.status.${s}`)}
-                </button>
-              ))}
-            </div>
-          )}
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard icon={ShoppingBag} label="Tổng đơn hàng" value={totalElements} color="bg-orange-500" />
+          <StatCard icon={Clock}       label="Chờ xử lý"     value={pendingCount}   color="bg-amber-500"  />
+          <StatCard icon={PackageCheck} label="Đã giao"       value={deliveredCount} color="bg-emerald-500" />
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d]">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/3">
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.orderId')}</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.product')}</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.total')}</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.payment')}</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.status')}</th>
-                <th className="px-5 py-3.5 text-center text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminOrders.col.actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <Loader2 size={24} className="animate-spin text-orange-500 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">{t('common.loading')}</p>
-                  </td>
+        {/* Table card */}
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden transition-colors">
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">
+              {t('adminOrders.pageTitle')}
+            </p>
+            <AdminSearchInput
+              value={searchQuery}
+              onChange={v => { setSearchQuery(v); setPage(0) }}
+              placeholder="Tìm theo mã đơn, sản phẩm..."
+            />
+            <AdminFilterSelect
+              value={activeStatus}
+              onChange={v => { setActiveStatus(v as OrderStatus | 'ALL'); setPage(0) }}
+              options={STATUS_OPTIONS}
+            />
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px] text-sm">
+              <thead>
+                <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
+                  <th className="px-5 py-3.5">{t('adminOrders.col.orderId')}</th>
+                  <th className="px-5 py-3.5">{t('adminOrders.col.product')}</th>
+                  <th className="px-5 py-3.5">{t('adminOrders.col.total')}</th>
+                  <th className="px-5 py-3.5">{t('adminOrders.col.payment')}</th>
+                  <th className="px-5 py-3.5">{t('adminOrders.col.status')}</th>
+                  <th className="px-5 py-3.5 text-right">{t('adminOrders.col.actions')}</th>
                 </tr>
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center text-sm text-gray-400">{t('adminOrders.noResults')}</td>
-                </tr>
-              ) : (
-                orders.map(order => {
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+                {isLoading ? (
+                  <OrdersSkeleton />
+                ) : filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-sm text-gray-400">
+                      {t('adminOrders.noResults')}
+                    </td>
+                  </tr>
+                ) : filteredOrders.map(order => {
                   const date = new Date(order.createdAt).toLocaleDateString('vi-VN')
                   const time = new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
-                      {/* Order ID */}
-                      <td className="px-5 py-4">
-                        <div>
-                          <p className="text-xs font-bold text-gray-800 dark:text-gray-100">{order.orderCode}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{time} - {date}</p>
-                        </div>
+                    <tr key={order.id} className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]">
+                      <td className="px-5 py-3.5">
+                        <p className="text-xs font-bold text-gray-800 dark:text-gray-100">{order.orderCode}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{time} · {date}</p>
                       </td>
-
-                      {/* Product preview */}
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-white/5">
                             {order.firstProductThumbnail
@@ -243,87 +264,49 @@ function AdminOrdersPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{order.firstProductName || '—'}</p>
-                            {order.totalQty > 1 && (
-                              <p className="text-[10px] text-gray-400">+{order.totalQty - 1} {t('orders.andMore', { count: '' }).replace(' ', '')}</p>
-                            )}
+                            {order.totalQty > 1 && <p className="text-[10px] text-gray-400">+{order.totalQty - 1} sản phẩm</p>}
                           </div>
                         </div>
                       </td>
-
-                      {/* Total */}
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3.5">
                         <p className="text-sm font-bold text-orange-500">{formatCurrency(order.totalAmount)}</p>
                       </td>
-
-                      {/* Payment */}
-                      <td className="px-5 py-4">
-                        <span className={cn('text-[10px] font-medium px-2 py-1 rounded border', order.paymentStatus === 'PAID' ? 'border-emerald-200 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10' : 'border-gray-200 text-gray-500')}>
+                      <td className="px-5 py-3.5">
+                        <span className={cn(
+                          'text-[10px] font-semibold px-2.5 py-1 rounded-full',
+                          order.paymentStatus === 'PAID'
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-gray-100 dark:bg-white/5 text-gray-500',
+                        )}>
                           {t(`orders.paymentStatus.${order.paymentStatus}`)}
                         </span>
                       </td>
-
-                      {/* Status */}
-                      <td className="px-5 py-4">
-                        <StatusDropdown
-                          current={order.status}
-                          onSelect={s => handleStatusChange(order.id, s)}
-                        />
+                      <td className="px-5 py-3.5">
+                        <StatusDropdown current={order.status} onSelect={s => handleStatusChange(order.id, s)} />
                       </td>
-
-                      {/* Actions */}
-                      <td className="px-5 py-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => setDetailOrderId(order.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 transition-colors"
-                            title="Xem chi tiết"
-                          >
-                            <Eye size={14} />
-                          </button>
-                        </div>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setDetailOrderId(order.id)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition"
+                          title="Xem chi tiết"
+                        >
+                          <Eye size={12} />
+                        </button>
                       </td>
                     </tr>
                   )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/5 px-5 py-3">
-            <p className="text-xs text-gray-400">
-              {t('adminOrders.showing', { from: page * PAGE_SIZE + 1, to: Math.min((page + 1) * PAGE_SIZE, totalElements), total: totalElements })}
-            </p>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-40 transition">
-                <ChevronLeft size={14} />
-              </button>
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i)}
-                  className={cn('flex h-8 w-8 items-center justify-center rounded-lg text-sm transition-all', i === page ? 'bg-orange-500 text-white' : 'border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-orange-400 hover:text-orange-500')}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-40 transition">
-                <ChevronRight size={14} />
-              </button>
-            </div>
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
-    </div>
 
-    {detailOrderId !== null && (
-      <AdminOrderDetailModal
-        orderId={detailOrderId}
-        onClose={() => setDetailOrderId(null)}
-      />
-    )}
+          <AdminTablePagination page={page + 1} totalPages={totalPages} onPageChange={p => setPage(p - 1)} />
+        </div>
+      </div>
+
+      {detailOrderId !== null && (
+        <AdminOrderDetailModal orderId={detailOrderId} onClose={() => setDetailOrderId(null)} />
+      )}
     </>
   )
 }

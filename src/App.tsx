@@ -45,6 +45,8 @@ const AdminReviewsPage    = lazy(() => import('@/features/admin/pages/AdminRevie
 const AdminVouchersPage   = lazy(() => import('@/features/admin/pages/AdminVouchersPage').then(m => ({ default: m.AdminVouchersPage })))
 const AdminReturnsPage    = lazy(() => import('@/features/admin/pages/AdminReturnsPage').then(m => ({ default: m.AdminReturnsPage })))
 const AdminBlogPage       = lazy(() => import('@/features/admin/pages/AdminBlogPage').then(m => ({ default: m.AdminBlogPage })))
+const AdminBannersPage    = lazy(() => import('@/features/admin/pages/AdminBannersPage').then(m => ({ default: m.AdminBannersPage })))
+
 
 
 
@@ -118,6 +120,7 @@ function App() {
           <Route path="/admin/messages"    element={<AdminPage><AdminMessagesPage /></AdminPage>} />
           <Route path="/admin/reviews"     element={<AdminPage><AdminReviewsPage /></AdminPage>} />
           <Route path="/admin/blog"        element={<AdminPage><AdminBlogPage /></AdminPage>} />
+          <Route path="/admin/banners"     element={<AdminPage><AdminBannersPage /></AdminPage>} />
           <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />
 
           {/* ── 404 catch-all ─────────────────────────── */}

@@ -130,16 +130,24 @@ function DashboardPage() {
   const [chartPeriod, setChartPeriod] = useState<'month' | 'quarter'>('month')
   const [stats, setStats] = useState<DashboardStatsDto | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
   const [year, setYear] = useState(new Date().getFullYear())
+  const [retryKey, setRetryKey] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     setIsLoading(true)
+    setHasError(false)
     statisticsApi.getDashboard(year).then(res => {
       setIsLoading(false)
-      if (res.success && res.data) setStats(res.data)
+      if (res.success && res.data) {
+        setStats(res.data)
+      } else {
+        setHasError(true)
+        toast.error('Không tải được dữ liệu thống kê')
+      }
     })
-  }, [year])
+  }, [year, retryKey])
 
   async function handleExport() {
     setIsExporting(true)
@@ -167,7 +175,20 @@ function DashboardPage() {
   const formatGrowth = (pct: number) =>
     `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
 
-  if (isLoading || !stats) return <DashboardSkeleton />
+  if (isLoading) return <DashboardSkeleton />
+  if (hasError || !stats) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+      <BarChart3 size={40} className="text-gray-200 dark:text-white/10" />
+      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Không thể tải dữ liệu dashboard</p>
+      <p className="text-xs text-gray-400">Kiểm tra kết nối backend hoặc thử lại</p>
+      <button
+        onClick={() => { setStats(null); setRetryKey(k => k + 1) }}
+        className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition"
+      >
+        Thử lại
+      </button>
+    </div>
+  )
 
   const statCards: StatCardProps[] = [
     {
