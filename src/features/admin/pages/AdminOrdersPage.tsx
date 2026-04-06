@@ -63,19 +63,6 @@ function OrdersSkeleton() {
   )
 }
 
-// ── Status badge ──────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: OrderStatus }) {
-  const { t } = useTranslation()
-  const cfg = STATUS_CONFIG[status]
-  const Icon = cfg.icon
-  return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', cfg.color, cfg.bg)}>
-      <Icon size={11} /> {t(`orders.status.${status}`)}
-    </span>
-  )
-}
-
 // ── Status dropdown (change status) ──────────────────────────────────────────
 
 const NEXT_STATUSES: Record<OrderStatus, OrderStatus[]> = {

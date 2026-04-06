@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, Loader2, Tag, Eye, EyeOff, X } from 'lucide-react
 import { useAdminCategories } from '@/features/admin/hooks/use-admin-categories'
 import { StatCard, AdminSearchInput, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import { cn } from '@/lib/utils'
-import type { CategoryDto, CategoryRequest } from '@/lib/types/catalog/catalog.types'
+import type { CategoryDto, CategoryRequest, CatalogStatus } from '@/lib/types/catalog/catalog.types'
 
 // ── slug helper ───────────────────────────────────────────────────────────────
 function toSlug(s: string) {
@@ -30,7 +30,7 @@ function CategoryFormModal({
     description: initial?.description ?? '',
     imageUrl: initial?.imageUrl ?? '',
     sortOrder: initial?.sortOrder ?? 0,
-    isVisible: initial?.isVisible ?? true,
+    status: initial?.status ?? 'ACTIVE',
   })
   const [slugManual, setSlugManual] = useState(!!initial)
 
@@ -86,12 +86,15 @@ function CategoryFormModal({
             <textarea rows={3} className={cn(inputCls, 'resize-none')} value={form.description ?? ''}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
           </div>
-          <label className="flex items-center gap-2.5 cursor-pointer select-none">
-            <input type="checkbox" checked={form.isVisible ?? true}
-              onChange={(e) => setForm((p) => ({ ...p, isVisible: e.target.checked }))}
-              className="h-3.5 w-3.5 accent-orange-500" />
-            <span className="text-xs text-gray-600 dark:text-gray-300">{t('adminCategories.fieldVisible')}</span>
-          </label>
+          <div>
+            <label className={labelCls}>{t('common.status')}</label>
+            <select className={inputCls} value={form.status ?? 'ACTIVE'}
+              onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as CatalogStatus }))}>
+              <option value="ACTIVE">{t('catalog.status.ACTIVE')}</option>
+              <option value="INACTIVE">{t('catalog.status.INACTIVE')}</option>
+              <option value="DRAFT">{t('catalog.status.DRAFT')}</option>
+            </select>
+          </div>
           <div className="flex gap-2.5 shrink-0 pt-1">
             <button type="button" onClick={onClose}
               className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
@@ -156,7 +159,7 @@ function AdminCategoriesPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  const visible_count = categories.filter((c) => c.isVisible).length
+  const visible_count = categories.filter((c) => c.status === 'ACTIVE').length
 
   return (
     <div className="p-6 space-y-6">
@@ -215,10 +218,12 @@ function AdminCategoriesPage() {
                   <td className="px-5 py-3.5 text-center text-gray-500 dark:text-gray-400">{cat.sortOrder}</td>
                   <td className="px-5 py-3.5">
                     <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-                      cat.isVisible ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                        : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400')}>
-                      <span className={cn('h-1.5 w-1.5 rounded-full', cat.isVisible ? 'bg-emerald-500' : 'bg-gray-400')} />
-                      {cat.isVisible ? t('adminCategories.visible') : t('adminCategories.hidden')}
+                      cat.status === 'ACTIVE' ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                      : cat.status === 'DRAFT' ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
+                      : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400')}>
+                      <span className={cn('h-1.5 w-1.5 rounded-full',
+                        cat.status === 'ACTIVE' ? 'bg-emerald-500' : cat.status === 'DRAFT' ? 'bg-amber-500' : 'bg-gray-400')} />
+                      {t(`catalog.status.${cat.status}`)}
                     </span>
                   </td>
                     <td className="px-5 py-3.5">

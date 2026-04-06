@@ -126,6 +126,16 @@ const vi = {
     backToShop: 'Mua sắm',
     goBack: 'Quay lại',
     loading: 'Đang tải...',
+    status: 'Trạng thái',
+  },
+
+  // ── Catalog status ────────────────────────────────────────────────────────
+  catalog: {
+    status: {
+      ACTIVE:   'Đang hoạt động',
+      INACTIVE: 'Không hoạt động',
+      DRAFT:    'Nháp',
+    },
   },
 
   // ── Not Found Page ────────────────────────────────────────────────────────
@@ -767,6 +777,7 @@ const vi = {
     viewDetail:       'Xem chi tiết',
     moreActions:      'Thêm',
     showing:          'Hiển thị {{from}}–{{to}} trong {{total}} kết quả',
+    statusUpdated:    'Cập nhật trạng thái thành công',
     col: {
       orderId:  'Mã đơn hàng',
       customer: 'Khách hàng',

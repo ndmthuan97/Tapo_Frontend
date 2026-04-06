@@ -126,6 +126,16 @@ const en = {
     backToShop: 'Shop',
     goBack: 'Go back',
     loading: 'Loading...',
+    status: 'Status',
+  },
+
+  // ── Catalog status ─────────────────────────────────────────────────────
+  catalog: {
+    status: {
+      ACTIVE:   'Active',
+      INACTIVE: 'Inactive',
+      DRAFT:    'Draft',
+    },
   },
 
   // ── Not Found Page ────────────────────────────────────────────────────────
@@ -767,6 +777,7 @@ const en = {
     viewDetail:        'View detail',
     moreActions:       'More',
     showing:           'Showing {{from}}–{{to}} of {{total}} results',
+    statusUpdated:     'Status updated successfully',
     col: {
       orderId:  'Order ID',
       customer: 'Customer',
