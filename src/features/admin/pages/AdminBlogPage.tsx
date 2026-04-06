@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   FileText, Eye, Trash2, Search, X, ImageOff,
-  Globe, Clock, CheckCircle2, RefreshCw, EyeIcon,
-  Plus, Pencil, Loader2,
+  Globe, Clock, CheckCircle2,
+  EyeIcon, Plus, Pencil, Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { blogApi, type BlogPostDto, type BlogCategoryDto } from '@/lib/http/blog.api'
@@ -480,10 +480,6 @@ function AdminBlogPage() {
           <p className="mt-0.5 text-sm text-gray-400">Tạo, chỉnh sửa và quản lý các bài viết</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={loadData}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition">
-            <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} /> Làm mới
-          </button>
           <button onClick={openCreate}
             className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 shadow-sm shadow-orange-200/50 transition">
             <Plus size={14} /> Thêm bài viết

@@ -77,7 +77,9 @@ export function useAdminNotifications() {
     const token = localStorage.getItem('accessToken') ?? ''
 
     const client = new Client({
-      webSocketFactory: () => new SockJS(WS_URL) as WebSocket,
+      webSocketFactory: () => new SockJS(WS_URL, null, {
+        transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+      }) as WebSocket,
       reconnectDelay: 5000,
       // Sprint 1: pass JWT on STOMP CONNECT — validated by StompAuthChannelInterceptor
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},

@@ -69,11 +69,11 @@ interface SearchableSelectProps {
   value: string
   onChange: (id: string) => void
   options: SimpleRefDto[]
-  /** If provided, shows a quick-create button when query has no match */
-  onCreate?: (name: string) => Promise<SimpleRefDto | null>
+  /** If provided, opens a create dialog when user wants to create a new item */
+  onWantCreate?: (name: string) => void
 }
 
-function SearchableSelect({ label, required, value, onChange, options, onCreate }: SearchableSelectProps) {
+function SearchableSelect({ label, required, value, onChange, options, onWantCreate }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [isCreating, setIsCreating] = useState(false)
@@ -107,16 +107,11 @@ function SearchableSelect({ label, required, value, onChange, options, onCreate 
     setQuery('')
   }
 
-  async function handleCreate() {
-    if (!onCreate || !query.trim()) return
-    setIsCreating(true)
-    const created = await onCreate(query.trim())
-    setIsCreating(false)
-    if (created) {
-      onChange(created.id)
-      setOpen(false)
-      setQuery('')
-    }
+  function handleCreate() {
+    if (!onWantCreate || !query.trim()) return
+    onWantCreate(query.trim())
+    setOpen(false)
+    setQuery('')
   }
 
   const labelCls = 'mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400'
@@ -146,7 +141,7 @@ function SearchableSelect({ label, required, value, onChange, options, onCreate 
               placeholder="Tìm kiếm..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && filtered.length === 0) handleCreate() }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && filtered.length === 0 && onWantCreate) handleCreate() }}
             />
           </div>
 
@@ -171,23 +166,22 @@ function SearchableSelect({ label, required, value, onChange, options, onCreate 
             )}
           </div>
 
-          {/* Quick-create — always visible when onCreate provided */}
-          {onCreate && (
+          {/* Quick-create — show when onWantCreate is provided */}
+          {onWantCreate && (
             <div className="border-t border-gray-100 dark:border-white/5 p-2">
               {query.trim() && !options.some((o) => o.name.toLowerCase() === query.trim().toLowerCase()) ? (
                 <button
                   type="button"
-                  disabled={isCreating}
                   onClick={handleCreate}
-                  className="flex w-full items-center gap-1.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 disabled:opacity-60 transition"
+                  className="flex w-full items-center gap-1.5 rounded-lg bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition"
                 >
-                  {isCreating ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+                  <Plus size={11} />
                   Tạo mới &ldquo;{query.trim()}&rdquo;
                 </button>
               ) : (
                 <p className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-gray-400">
                   <Plus size={10} className="text-orange-400" />
-                  Gõ tên vào ô tìm kiếm để tạo mới
+                  Gõ tên để tạo mới
                 </p>
               )}
             </div>
@@ -341,6 +335,82 @@ function ImageUploader({ entries, onChange }: ImageUploaderProps) {
   )
 }
 
+// ── QuickCreateDialog ────────────────────────────────────────────────────────
+
+interface QuickCreateDialogProps {
+  title: string
+  prefillName: string
+  isSubmitting: boolean
+  onConfirm: (name: string, status: string) => void
+  onCancel: () => void
+}
+
+function QuickCreateDialog({ title, prefillName, isSubmitting, onConfirm, onCancel }: QuickCreateDialogProps) {
+  const [name, setName] = useState(prefillName)
+  const [status, setStatus] = useState('ACTIVE')
+
+  const inputCls =
+    'w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400/30 transition'
+  const labelCls = 'mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400'
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{title}</h4>
+          <button onClick={onCancel} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 flex flex-col gap-4">
+          <div>
+            <label className={labelCls}>Tên *</label>
+            <input
+              autoFocus
+              className={inputCls}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nhập tên..."
+              onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onConfirm(name.trim(), status) }}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Trạng thái</label>
+            <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="DRAFT">Draft</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2.5 border-t border-gray-100 dark:border-white/5 px-5 py-3.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            disabled={!name.trim() || isSubmitting}
+            onClick={() => onConfirm(name.trim(), status)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-orange-500 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition"
+          >
+            {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+            Tạo mới
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Product Form Modal ────────────────────────────────────────────────────────
 
 interface FormModalProps {
@@ -365,6 +435,10 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
   // Local mutable copies so newly created items appear immediately
   const [categories, setCategories] = useState<SimpleRefDto[]>(initialCats)
   const [brands, setBrands] = useState<SimpleRefDto[]>(initialBrands)
+
+  // QuickCreate dialog state
+  const [quickCreate, setQuickCreate] = useState<{ type: 'category' | 'brand'; name: string } | null>(null)
+  const [isQuickCreating, setIsQuickCreating] = useState(false)
 
   // Multi-image: lazy upload — files stored as ImageEntry until form submit
   const [entries, setEntries] = useState<ImageEntry[]>(() => {
@@ -430,22 +504,33 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
     if (ok) onClose()
   }
 
-  async function handleCreateCategory(name: string): Promise<SimpleRefDto | null> {
-    const { data, error } = await apiCall(categoryAdminApi.create({ name }))
-    if (!data) { toast.error(error?.message ?? 'Tạo danh mục thất bại'); return null }
-    const ref: SimpleRefDto = { id: data.id, name: data.name }
-    setCategories((prev) => [...prev, ref])
-    toast.success(`Đã tạo danh mục "${name}"`)
-    return ref
-  }
-
-  async function handleCreateBrand(name: string): Promise<SimpleRefDto | null> {
-    const { data, error } = await apiCall(brandAdminApi.create({ name }))
-    if (!data) { toast.error(error?.message ?? 'Tạo thương hiệu thất bại'); return null }
-    const ref: SimpleRefDto = { id: data.id, name: data.name }
-    setBrands((prev) => [...prev, ref])
-    toast.success(`Đã tạo thương hiệu "${name}"`)
-    return ref
+  async function handleQuickConfirm(name: string, status: string) {
+    if (!quickCreate) return
+    setIsQuickCreating(true)
+    try {
+      if (quickCreate.type === 'category') {
+        const { data, error } = await apiCall(
+          categoryAdminApi.create({ name, status: status as 'ACTIVE' | 'INACTIVE' | 'DRAFT' })
+        )
+        if (!data) { toast.error(error?.message ?? 'Tạo danh mục thất bại'); return }
+        const ref: SimpleRefDto = { id: data.id, name: data.name }
+        setCategories((prev) => [...prev, ref])
+        setForm((p) => ({ ...p, categoryId: ref.id }))
+        toast.success(`Đã tạo danh mục "${name}"`)
+      } else {
+        const { data, error } = await apiCall(
+          brandAdminApi.create({ name, status: status as 'ACTIVE' | 'INACTIVE' | 'DRAFT' })
+        )
+        if (!data) { toast.error(error?.message ?? 'Tạo thương hiệu thất bại'); return }
+        const ref: SimpleRefDto = { id: data.id, name: data.name }
+        setBrands((prev) => [...prev, ref])
+        setForm((p) => ({ ...p, brandId: ref.id }))
+        toast.success(`Đã tạo thương hiệu "${name}"`)
+      }
+      setQuickCreate(null)
+    } finally {
+      setIsQuickCreating(false)
+    }
   }
 
   const inputCls =
@@ -501,7 +586,7 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
               value={form.categoryId ?? ''}
               onChange={(id) => setForm((p) => ({ ...p, categoryId: id }))}
               options={categories}
-              onCreate={handleCreateCategory}
+              onWantCreate={(name) => setQuickCreate({ type: 'category', name })}
             />
             <SearchableSelect
               label={t('adminProducts.fieldBrand')}
@@ -509,7 +594,7 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
               value={form.brandId ?? ''}
               onChange={(id) => setForm((p) => ({ ...p, brandId: id }))}
               options={brands}
-              onCreate={handleCreateBrand}
+              onWantCreate={(name) => setQuickCreate({ type: 'brand', name })}
             />
           </div>
 
@@ -556,6 +641,17 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
           </div>
         </form>
       </div>
+
+      {/* QuickCreate nested dialog */}
+      {quickCreate && (
+        <QuickCreateDialog
+          title={quickCreate.type === 'category' ? 'Tạo danh mục mới' : 'Tạo thương hiệu mới'}
+          prefillName={quickCreate.name}
+          isSubmitting={isQuickCreating}
+          onConfirm={handleQuickConfirm}
+          onCancel={() => setQuickCreate(null)}
+        />
+      )}
     </div>
   )
 }
