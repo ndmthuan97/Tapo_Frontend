@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2, Loader2, Tag, Eye, EyeOff, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Tag, CheckCircle, CircleOff, FileText, X } from 'lucide-react'
 import { useAdminCategories } from '@/features/admin/hooks/use-admin-categories'
 import { StatCard, AdminSearchInput, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import { cn } from '@/lib/utils'
@@ -159,7 +159,9 @@ function AdminCategoriesPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  const visible_count = categories.filter((c) => c.status === 'ACTIVE').length
+  const activeCount   = categories.filter((c) => c.status === 'ACTIVE').length
+  const inactiveCount = categories.filter((c) => c.status === 'INACTIVE').length
+  const draftCount    = categories.filter((c) => c.status === 'DRAFT').length
 
   return (
     <div className="p-6 space-y-6">
@@ -167,10 +169,11 @@ function AdminCategoriesPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{t('adminCategories.title')}</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Tag} label={t('adminCategories.statAll')} value={categories.length} color="bg-orange-500" />
-        <StatCard icon={Eye} label={t('adminCategories.statVisible')} value={visible_count} color="bg-emerald-500" />
-        <StatCard icon={EyeOff} label={t('adminCategories.statHidden')} value={categories.length - visible_count} color="bg-gray-500" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard icon={Tag}        label={t('adminCategories.statAll')}      value={categories.length} color="bg-orange-500"  />
+        <StatCard icon={CheckCircle} label={t('adminCategories.statActive')}  value={activeCount}        color="bg-emerald-500" />
+        <StatCard icon={CircleOff}  label={t('adminCategories.statInactive')} value={inactiveCount}      color="bg-gray-500"   />
+        <StatCard icon={FileText}   label={t('adminCategories.statDraft')}    value={draftCount}         color="bg-amber-500"  />
       </div>
 
       <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden transition-colors">

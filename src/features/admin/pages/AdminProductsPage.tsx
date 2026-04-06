@@ -18,6 +18,9 @@ import {
   Square,
   ToggleLeft,
   ToggleRight,
+  CheckCircle,
+  CircleOff,
+  FileText,
 } from 'lucide-react'
 
 import { toast } from 'sonner'
@@ -732,9 +735,10 @@ function AdminProductsPage() {
   const currentPage = (params.page ?? 0) + 1
 
   const STAT_CARDS = [
-    { label: t('adminProducts.statAll'),    value: totalItems,                                                           color: 'bg-orange-500', icon: Package },
-    { label: t('adminProducts.statActive'), value: products.filter((p) => p.status === 'ACTIVE').length, color: 'bg-emerald-500',  icon: Package },
-    { label: t('adminProducts.statDraft'),  value: products.filter((p) => p.status === 'DRAFT').length,  color: 'bg-amber-500',    icon: Package },
+    { label: t('adminProducts.statAll'),      value: totalItems,                                                             color: 'bg-orange-500',  icon: Package     },
+    { label: t('adminProducts.statActive'),   value: products.filter((p) => p.status === 'ACTIVE').length,   color: 'bg-emerald-500', icon: CheckCircle },
+    { label: t('adminProducts.statInactive'), value: products.filter((p) => p.status === 'INACTIVE').length, color: 'bg-gray-500',    icon: CircleOff   },
+    { label: t('adminProducts.statDraft'),    value: products.filter((p) => p.status === 'DRAFT').length,    color: 'bg-amber-500',   icon: FileText    },
   ]
 
   const STATUS_OPTIONS = [
@@ -750,7 +754,7 @@ function AdminProductsPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{t('adminProducts.title')}</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {STAT_CARDS.map((card) => (
           <StatCard key={card.label} icon={card.icon} label={card.label} value={card.value} color={card.color} />
         ))}

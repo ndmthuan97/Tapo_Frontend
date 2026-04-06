@@ -2,17 +2,48 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   FileText, Eye, Trash2, Search, X, ImageOff,
   Globe, Clock, CheckCircle2, RefreshCw, EyeIcon,
+  Plus, Pencil, Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { blogApi, type BlogPostDto } from '@/lib/http/blog.api'
+import { blogApi, type BlogPostDto, type BlogCategoryDto } from '@/lib/http/blog.api'
 import { httpClient, apiCall } from '@/lib/http/http-client'
 import type { ApiResponse } from '@/lib/types/common/api.types'
 import { StatCard, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import { cn } from '@/lib/utils'
 
-// ── Admin Blog API (CRUD) ──────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface BlogPostRequest {
+  title: string
+  slug: string
+  thumbnailUrl: string
+  excerpt: string
+  content: string
+  categoryId: string
+  metaTitle: string
+  metaDescription: string
+  publish: boolean
+}
+
+// ── Admin Blog API ────────────────────────────────────────────────────────────
 
 const blogAdminApi = {
+  getAllAdmin(page: number, size: number) {
+    return apiCall<{ content: BlogPostDto[]; totalPages: number; totalElements: number }>(
+      httpClient.get<ApiResponse<{ content: BlogPostDto[]; totalPages: number; totalElements: number }>>(
+        '/api/blog/admin', { params: { page, size } }
+      )
+    )
+  },
+  createPost(data: BlogPostRequest) {
+    return apiCall<BlogPostDto>(httpClient.post<ApiResponse<BlogPostDto>>('/api/blog', data))
+  },
+  updatePost(id: string, data: BlogPostRequest) {
+    return apiCall<BlogPostDto>(httpClient.put<ApiResponse<BlogPostDto>>(`/api/blog/${id}`, data))
+  },
+  togglePublish(id: string) {
+    return apiCall<BlogPostDto>(httpClient.patch<ApiResponse<BlogPostDto>>(`/api/blog/${id}/publish`, {}))
+  },
   deletePost(id: string) {
     return apiCall<void>(httpClient.delete<ApiResponse<void>>(`/api/blog/${id}`))
   },
@@ -43,11 +74,190 @@ function BlogSkeleton() {
             <div className="flex justify-end gap-1">
               <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
               <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
             </div>
           </td>
         </tr>
       ))}
     </>
+  )
+}
+
+// ── Blog Form Modal ───────────────────────────────────────────────────────────
+
+function BlogFormModal({
+  initial, categories, onSubmit, onClose, isSubmitting,
+}: {
+  initial?: BlogPostDto
+  categories: BlogCategoryDto[]
+  onSubmit: (data: BlogPostRequest) => Promise<boolean>
+  onClose: () => void
+  isSubmitting: boolean
+}) {
+  const [form, setForm] = useState<BlogPostRequest>({
+    title:           initial?.title           ?? '',
+    slug:            initial?.slug            ?? '',
+    thumbnailUrl:    initial?.thumbnailUrl     ?? '',
+    excerpt:         initial?.excerpt          ?? '',
+    content:         initial?.content          ?? '',
+    categoryId:      '',
+    metaTitle:       initial?.metaTitle        ?? '',
+    metaDescription: initial?.metaDescription  ?? '',
+    publish:         !!initial?.publishedAt,
+  })
+
+  // auto-generate slug from title (only when creating)
+  function handleTitleChange(title: string) {
+    setForm(p => ({
+      ...p,
+      title,
+      ...(initial ? {} : {
+        slug: title.toLowerCase()
+          .replace(/[àáạảãăắặẳẵâấậẩẫ]/g, 'a')
+          .replace(/[èéẹẻẽêếệểễ]/g, 'e')
+          .replace(/[ìíịỉĩ]/g, 'i')
+          .replace(/[òóọỏõôốộổỗơớợởỡ]/g, 'o')
+          .replace(/[ùúụủũưứựửữ]/g, 'u')
+          .replace(/[ỳýỵỷỹ]/g, 'y')
+          .replace(/đ/g, 'd')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .trim().replace(/\s+/g, '-'),
+      }),
+    }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const ok = await onSubmit(form)
+    if (ok) onClose()
+  }
+
+  const inputCls = 'w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400/30 transition'
+  const labelCls = 'mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex flex-col w-full max-w-2xl max-h-[90vh] rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <FileText size={15} className="text-orange-500" />
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              {initial ? 'Chỉnh sửa bài viết' : 'Thêm bài viết mới'}
+            </h3>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 flex flex-col gap-3.5">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Title */}
+            <div className="col-span-2">
+              <label className={labelCls}>Tiêu đề *</label>
+              <input required className={inputCls} value={form.title}
+                onChange={e => handleTitleChange(e.target.value)}
+                placeholder="Tiêu đề bài viết..." />
+            </div>
+
+            {/* Slug */}
+            <div className="col-span-2">
+              <label className={labelCls}>Slug *</label>
+              <input required className={cn(inputCls, 'font-mono text-[11px]')} value={form.slug}
+                onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
+                placeholder="duong-dan-url" />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className={labelCls}>Danh mục *</label>
+              <select required className={inputCls} value={form.categoryId}
+                onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))}>
+                <option value="">— Chọn danh mục —</option>
+                {categories.map(c => (
+                  <option key={String(c.id)} value={String(c.id)}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Thumbnail URL */}
+            <div>
+              <label className={labelCls}>URL ảnh bìa</label>
+              <input type="url" className={inputCls} value={form.thumbnailUrl}
+                onChange={e => setForm(p => ({ ...p, thumbnailUrl: e.target.value }))}
+                placeholder="https://..." />
+            </div>
+
+            {/* Excerpt */}
+            <div className="col-span-2">
+              <label className={labelCls}>Tóm tắt</label>
+              <textarea rows={2} className={cn(inputCls, 'resize-none')} value={form.excerpt}
+                onChange={e => setForm(p => ({ ...p, excerpt: e.target.value }))}
+                placeholder="Mô tả ngắn hiển thị trên trang danh sách..." />
+            </div>
+
+            {/* Content */}
+            <div className="col-span-2">
+              <label className={labelCls}>Nội dung *</label>
+              <textarea required rows={6} className={cn(inputCls, 'resize-y')} value={form.content}
+                onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
+                placeholder="Nội dung bài viết..." />
+            </div>
+
+            {/* Meta Title */}
+            <div>
+              <label className={labelCls}>Meta Title (SEO)</label>
+              <input className={inputCls} value={form.metaTitle}
+                onChange={e => setForm(p => ({ ...p, metaTitle: e.target.value }))}
+                placeholder="Tiêu đề SEO..." />
+            </div>
+
+            {/* Meta Desc */}
+            <div>
+              <label className={labelCls}>Meta Description (SEO)</label>
+              <input className={inputCls} value={form.metaDescription}
+                onChange={e => setForm(p => ({ ...p, metaDescription: e.target.value }))}
+                placeholder="Mô tả SEO..." />
+            </div>
+
+            {/* Publish toggle */}
+            <div className="col-span-2 flex items-center gap-3 rounded-xl border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02] px-4 py-3">
+              <div
+                onClick={() => setForm(p => ({ ...p, publish: !p.publish }))}
+                className={cn('relative h-5 w-9 rounded-full transition-colors cursor-pointer shrink-0',
+                  form.publish ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-white/10')}
+              >
+                <span className={cn('absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
+                  form.publish && 'translate-x-4')} />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                  {form.publish ? 'Xuất bản ngay' : 'Lưu nháp'}
+                </p>
+                <p className="text-[10px] text-gray-400">
+                  {form.publish ? 'Bài viết sẽ hiển thị công khai' : 'Bài viết chỉ hiển thị với admin'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex gap-2.5 pt-1 shrink-0">
+            <button type="button" onClick={onClose}
+              className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+              Hủy
+            </button>
+            <button type="submit" disabled={isSubmitting}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-500 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition">
+              {isSubmitting && <Loader2 size={12} className="animate-spin" />}
+              {initial ? 'Lưu thay đổi' : 'Tạo bài viết'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 
@@ -64,23 +274,16 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
         className="w-full max-w-3xl rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl max-h-[90vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4 shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={15} className="text-orange-500" />
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Chi tiết bài viết</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition"
-          >
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
             <X size={15} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          {/* Thumbnail */}
           {post.thumbnailUrl ? (
             <div className="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-white/5">
               <img src={post.thumbnailUrl} alt={post.title} className="h-full w-full object-cover" />
@@ -94,20 +297,15 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
               <ImageOff size={32} className="text-gray-200 dark:text-white/10" />
             </div>
           )}
-
           <div className="p-5 space-y-4">
-            {/* Title (if no thumbnail shown above) */}
             {!post.thumbnailUrl && (
               <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-snug">{post.title}</h2>
             )}
-
-            {/* Meta badges */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+              <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold',
                 isPublished
                   ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+                  : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
               )}>
                 {isPublished ? <CheckCircle2 size={10} /> : <Clock size={10} />}
                 {isPublished ? 'Đã xuất bản' : 'Bản nháp'}
@@ -124,77 +322,30 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
                 <EyeIcon size={12} /> {post.viewCount.toLocaleString()} lượt xem
               </span>
             </div>
-
-            {/* Excerpt */}
             {post.excerpt && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed italic border-l-2 border-orange-400 pl-3">
-                {post.excerpt}
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed italic border-l-2 border-orange-400 pl-3">{post.excerpt}</p>
             )}
-
-            {/* Content */}
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Nội dung</p>
               <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 p-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-h-52 overflow-y-auto">
                 {post.content || <span className="text-gray-300 italic">Không có nội dung</span>}
               </div>
             </div>
-
-            {/* Dates */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-gray-50 dark:bg-white/5 p-3">
-                <p className="text-[10px] text-gray-400 mb-1">Ngày tạo</p>
-                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  {new Date(post.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                </p>
-              </div>
-              <div className="rounded-xl bg-gray-50 dark:bg-white/5 p-3">
-                <p className="text-[10px] text-gray-400 mb-1">Ngày xuất bản</p>
-                <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  {post.publishedAt
-                    ? new Date(post.publishedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    : '—'}
-                </p>
-              </div>
-            </div>
-
-            {/* SEO section */}
-            {(post.metaTitle || post.metaDescription) && (
-              <div className="rounded-xl border border-dashed border-gray-200 dark:border-white/10 p-3 space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">SEO</p>
-                {post.metaTitle && (
-                  <div><p className="text-[10px] text-gray-400">Meta Title</p><p className="text-xs text-gray-600 dark:text-gray-300">{post.metaTitle}</p></div>
-                )}
-                {post.metaDescription && (
-                  <div><p className="text-[10px] text-gray-400">Meta Description</p><p className="text-xs text-gray-600 dark:text-gray-300">{post.metaDescription}</p></div>
-                )}
-              </div>
-            )}
-
-            {/* Slug + ID */}
             <div className="flex flex-col gap-1 text-[11px] text-gray-400 font-mono">
               <span>Slug: <span className="text-gray-600 dark:text-gray-300">{post.slug}</span></span>
-              <span>ID: <span className="text-gray-600 dark:text-gray-300">{post.id}</span></span>
+              <span>ID: <span className="text-gray-600 dark:text-gray-300">{String(post.id)}</span></span>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
         <div className="flex justify-between border-t border-gray-100 dark:border-white/5 px-5 py-4 shrink-0">
           {post.slug && (
-            <a
-              href={`/blog/${post.slug}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-600 transition"
-            >
+            <a href={`/blog/${post.slug}`} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-600 transition">
               <Globe size={12} /> Xem trên website
             </a>
           )}
-          <button
-            onClick={onClose}
-            className="ml-auto rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition"
-          >
+          <button onClick={onClose}
+            className="ml-auto rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
             Đóng
           </button>
         </div>
@@ -225,23 +376,32 @@ function StatusBadge({ publishedAt }: { publishedAt: string | null }) {
 const PAGE_SIZE = 10
 
 function AdminBlogPage() {
-  const [posts, setPosts] = useState<BlogPostDto[]>([])
+  const [posts, setPosts]           = useState<BlogPostDto[]>([])
+  const [categories, setCategories] = useState<BlogCategoryDto[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [page, setPage] = useState(0)
-  const [search, setSearch] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [detailPost, setDetailPost] = useState<BlogPostDto | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [page, setPage]             = useState(0)
+  const [search, setSearch]         = useState('')
+  const [isLoading, setIsLoading]   = useState(true)
+
+  const [detailPost,   setDetailPost]   = useState<BlogPostDto | null>(null)
+  const [editingPost,  setEditingPost]  = useState<BlogPostDto | undefined>(undefined)
+  const [showForm,     setShowForm]     = useState(false)
+  const [deletingId,   setDeletingId]   = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
-    const res = await blogApi.getPosts({ page, size: PAGE_SIZE })
-    if (res.data) {
-      setPosts(res.data.content)
-      setTotalPages(res.data.totalPages)
-      setTotalItems(res.data.totalElements)
+    const [postsRes, catsRes] = await Promise.all([
+      blogAdminApi.getAllAdmin(page, PAGE_SIZE),
+      blogApi.getCategories(),
+    ])
+    if (postsRes.data) {
+      setPosts(postsRes.data.content)
+      setTotalPages(postsRes.data.totalPages)
+      setTotalItems(postsRes.data.totalElements)
     }
+    if (catsRes.data) setCategories(catsRes.data)
     setIsLoading(false)
   }, [page])
 
@@ -254,22 +414,62 @@ function AdminBlogPage() {
       )
     : posts
 
-  const published = filtered.filter(p => !!p.publishedAt)
-  const drafts    = filtered.filter(p => !p.publishedAt)
-  const totalViews = filtered.reduce((sum, p) => sum + p.viewCount, 0)
+  const published  = posts.filter(p => !!p.publishedAt)
+  const drafts     = posts.filter(p => !p.publishedAt)
+  const totalViews = posts.reduce((sum, p) => sum + p.viewCount, 0)
+
+  async function handleSubmit(data: BlogPostRequest): Promise<boolean> {
+    setIsSubmitting(true)
+    let success = false
+    if (editingPost) {
+      const res = await blogAdminApi.updatePost(String(editingPost.id), data)
+      if (res.success && res.data) {
+        setPosts(prev => prev.map(p => String(p.id) === String(editingPost.id) ? res.data! : p))
+        toast.success('Đã cập nhật bài viết')
+        success = true
+      } else {
+        toast.error('Cập nhật thất bại')
+      }
+    } else {
+      const res = await blogAdminApi.createPost(data)
+      if (res.success && res.data) {
+        setPosts(prev => [res.data!, ...prev])
+        setTotalItems(n => n + 1)
+        toast.success('Đã tạo bài viết')
+        success = true
+      } else {
+        toast.error('Tạo bài viết thất bại')
+      }
+    }
+    setIsSubmitting(false)
+    return success
+  }
+
+  async function handleTogglePublish(post: BlogPostDto) {
+    const res = await blogAdminApi.togglePublish(String(post.id))
+    if (res.success && res.data) {
+      setPosts(prev => prev.map(p => String(p.id) === String(post.id) ? res.data! : p))
+      toast.success(post.publishedAt ? 'Đã chuyển về nháp' : 'Đã xuất bản')
+    }
+  }
 
   async function handleDelete(post: BlogPostDto) {
     if (!window.confirm(`Xóa bài viết "${post.title}"?`)) return
-    setDeletingId(post.id)
-    const res = await blogAdminApi.deletePost(post.id)
+    setDeletingId(String(post.id))
+    const res = await blogAdminApi.deletePost(String(post.id))
     if (res.success) {
       toast.success('Đã xóa bài viết')
-      setPosts(prev => prev.filter(p => p.id !== post.id))
+      setPosts(prev => prev.filter(p => String(p.id) !== String(post.id)))
+      setTotalItems(n => n - 1)
     } else {
       toast.error('Xóa thất bại — kiểm tra quyền admin')
     }
     setDeletingId(null)
   }
+
+  function openCreate() { setEditingPost(undefined); setShowForm(true) }
+  function openEdit(post: BlogPostDto) { setEditingPost(post); setShowForm(true) }
+  function closeForm() { setShowForm(false); setEditingPost(undefined) }
 
   return (
     <div className="p-6 space-y-6">
@@ -277,22 +477,26 @@ function AdminBlogPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Quản lý Blog</h1>
-          <p className="mt-0.5 text-sm text-gray-400">Xem và quản lý các bài viết trên blog</p>
+          <p className="mt-0.5 text-sm text-gray-400">Tạo, chỉnh sửa và quản lý các bài viết</p>
         </div>
-        <button
-          onClick={loadData}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition"
-        >
-          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} /> Làm mới
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={loadData}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition">
+            <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} /> Làm mới
+          </button>
+          <button onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 shadow-sm shadow-orange-200/50 transition">
+            <Plus size={14} /> Thêm bài viết
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Tổng bài viết" value={totalItems}       icon={FileText}      color="bg-orange-500" />
-        <StatCard label="Đã xuất bản"   value={published.length} icon={CheckCircle2}  color="bg-emerald-500" />
-        <StatCard label="Bản nháp"       value={drafts.length}    icon={Clock}         color="bg-amber-500" />
-        <StatCard label="Lượt xem"       value={totalViews}       icon={EyeIcon}       color="bg-blue-500" />
+        <StatCard label="Tổng bài viết" value={totalItems}        icon={FileText}     color="bg-orange-500" />
+        <StatCard label="Đã xuất bản"   value={published.length}  icon={CheckCircle2} color="bg-emerald-500" />
+        <StatCard label="Bản nháp"       value={drafts.length}     icon={Clock}        color="bg-amber-500" />
+        <StatCard label="Lượt xem"       value={totalViews}        icon={EyeIcon}      color="bg-blue-500" />
       </div>
 
       {/* Table card */}
@@ -317,7 +521,7 @@ function AdminBlogPage() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px]">
+          <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
                 {['Bài viết', 'Danh mục', 'Tác giả', 'Lượt xem', 'Trạng thái', 'Ngày đăng', ''].map(h => (
@@ -333,69 +537,65 @@ function AdminBlogPage() {
                   <td colSpan={7} className="py-16 text-center">
                     <FileText size={28} className="mx-auto mb-2 text-gray-200 dark:text-white/10" />
                     <p className="text-sm text-gray-400">{search ? 'Không tìm thấy bài viết phù hợp' : 'Chưa có bài viết nào'}</p>
+                    {!search && (
+                      <button onClick={openCreate}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition">
+                        <Plus size={13} /> Thêm bài viết đầu tiên
+                      </button>
+                    )}
                   </td>
                 </tr>
               ) : filtered.map(post => (
-                <tr key={post.id} className="group hover:bg-orange-50/60 dark:hover:bg-white/[0.03] transition-colors">
+                <tr key={String(post.id)} className="group hover:bg-orange-50/60 dark:hover:bg-white/[0.03] transition-colors">
                   {/* Post */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       {post.thumbnailUrl ? (
-                        <img
-                          src={post.thumbnailUrl} alt={post.title}
-                          className="h-10 w-16 rounded-lg object-cover border border-gray-100 dark:border-white/5 shrink-0"
-                        />
+                        <img src={post.thumbnailUrl} alt={post.title}
+                          className="h-10 w-16 rounded-lg object-cover border border-gray-100 dark:border-white/5 shrink-0" />
                       ) : (
                         <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5">
                           <ImageOff size={14} className="text-gray-300" />
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate max-w-[220px]">{post.title}</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate max-w-[200px]">{post.title}</p>
                         {post.excerpt && (
-                          <p className="text-[11px] text-gray-400 truncate max-w-[220px]">{post.excerpt}</p>
+                          <p className="text-[11px] text-gray-400 truncate max-w-[200px]">{post.excerpt}</p>
                         )}
                       </div>
                     </div>
                   </td>
-                  {/* Category */}
-                  <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
-                    {post.categoryName ?? <span className="text-gray-300">—</span>}
-                  </td>
-                  {/* Author */}
-                  <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
-                    {post.authorName ?? <span className="text-gray-300">—</span>}
-                  </td>
-                  {/* Views */}
-                  <td className="px-5 py-3.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-                    {post.viewCount.toLocaleString()}
-                  </td>
-                  {/* Status */}
-                  <td className="px-5 py-3.5">
-                    <StatusBadge publishedAt={post.publishedAt} />
-                  </td>
-                  {/* Date */}
+                  <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">{post.categoryName ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">{post.authorName ?? <span className="text-gray-300">—</span>}</td>
+                  <td className="px-5 py-3.5 text-xs font-medium text-gray-700 dark:text-gray-300">{post.viewCount.toLocaleString()}</td>
+                  <td className="px-5 py-3.5"><StatusBadge publishedAt={post.publishedAt as unknown as string | null} /></td>
                   <td className="px-5 py-3.5 text-xs text-gray-500 dark:text-gray-400">
                     {post.publishedAt
-                      ? new Date(post.publishedAt).toLocaleDateString('vi-VN')
+                      ? new Date(post.publishedAt as unknown as string).toLocaleDateString('vi-VN')
                       : <span className="text-gray-300">—</span>}
                   </td>
                   {/* Actions */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setDetailPost(post)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition"
-                        title="Xem chi tiết"
-                      >
+                      <button onClick={() => setDetailPost(post)} title="Xem chi tiết"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition">
                         <Eye size={12} />
                       </button>
-                      <button
-                        onClick={() => handleDelete(post)}
-                        disabled={deletingId === post.id}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-600 transition disabled:opacity-50"
-                        title="Xóa bài viết"
-                      >
+                      <button onClick={() => handleTogglePublish(post)} title={post.publishedAt ? 'Chuyển về nháp' : 'Xuất bản'}
+                        className={cn('flex h-7 w-7 items-center justify-center rounded-lg border transition',
+                          post.publishedAt
+                            ? 'border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 text-amber-500 hover:bg-amber-100'
+                            : 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 hover:bg-emerald-100'
+                        )}>
+                        {post.publishedAt ? <Clock size={12} /> : <CheckCircle2 size={12} />}
+                      </button>
+                      <button onClick={() => openEdit(post)} title="Chỉnh sửa"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">
+                        <Pencil size={12} />
+                      </button>
+                      <button onClick={() => handleDelete(post)} disabled={deletingId === String(post.id)} title="Xóa bài viết"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition disabled:opacity-50">
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -406,15 +606,23 @@ function AdminBlogPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <AdminTablePagination page={page} totalPages={totalPages} onPageChange={setPage} />
         )}
       </div>
 
       {/* Detail Modal */}
-      {detailPost && (
-        <BlogDetailModal post={detailPost} onClose={() => setDetailPost(null)} />
+      {detailPost && <BlogDetailModal post={detailPost} onClose={() => setDetailPost(null)} />}
+
+      {/* Form Modal */}
+      {showForm && (
+        <BlogFormModal
+          initial={editingPost}
+          categories={categories}
+          onSubmit={handleSubmit}
+          onClose={closeForm}
+          isSubmitting={isSubmitting}
+        />
       )}
     </div>
   )

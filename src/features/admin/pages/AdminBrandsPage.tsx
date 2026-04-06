@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2, Loader2, Bookmark, ImageOff, X, CheckCircle, FileText } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Bookmark, ImageOff, X, CheckCircle, CircleOff, FileText } from 'lucide-react'
 
 import { useAdminBrands } from '@/features/admin/hooks/use-admin-brands'
 import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
@@ -160,8 +160,9 @@ function AdminBrandsPage() {
 
   useEffect(() => { load() }, [load])
 
-  const activeCount = brands.filter(b => b.status === 'ACTIVE').length
-  const draftCount  = brands.filter(b => b.status === 'DRAFT').length
+  const activeCount   = brands.filter(b => b.status === 'ACTIVE').length
+  const inactiveCount = brands.filter(b => b.status === 'INACTIVE').length
+  const draftCount    = brands.filter(b => b.status === 'DRAFT').length
   const [statusFilter, setStatusFilter] = useState<CatalogStatus | 'ALL'>('ALL')
 
   const filtered = (() => {
@@ -179,10 +180,11 @@ function AdminBrandsPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{t('adminBrands.title')}</h1>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Bookmark}    label={t('adminBrands.statAll')}  value={brands.length}  color="bg-orange-500"  />
-        <StatCard icon={CheckCircle} label="Active"                     value={activeCount}    color="bg-emerald-500" />
-        <StatCard icon={FileText}    label="Draft"                      value={draftCount}     color="bg-amber-500"  />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard icon={Bookmark}    label={t('adminBrands.statAll')}      value={brands.length}  color="bg-orange-500"  />
+        <StatCard icon={CheckCircle} label={t('adminBrands.statActive')}   value={activeCount}    color="bg-emerald-500" />
+        <StatCard icon={CircleOff}   label={t('adminBrands.statInactive')} value={inactiveCount}  color="bg-gray-500"   />
+        <StatCard icon={FileText}    label={t('adminBrands.statDraft')}    value={draftCount}     color="bg-amber-500"  />
       </div>
 
       <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden transition-colors">
