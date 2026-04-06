@@ -169,6 +169,30 @@ function DetailModal({ request, onClose }: { request: ReturnRequestDto; onClose:
   )
 }
 
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+
+function ReturnSkeleton() {
+  return (
+    <>
+      {[...Array(6)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-gray-100 dark:border-white/5">
+          <td className="px-5 py-4"><div className="h-4 w-24 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-4 w-28 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-4 w-40 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-4 w-20 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4"><div className="h-5 w-20 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-4">
+            <div className="flex items-center gap-1">
+              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function AdminReturnsPage() {
@@ -313,12 +337,7 @@ function AdminReturnsPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="py-16 text-center">
-                      <Loader2 size={24} className="animate-spin text-rose-500 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">Đang tải...</p>
-                    </td>
-                  </tr>
+                  <ReturnSkeleton />
                 ) : requests.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-16 text-center">

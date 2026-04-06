@@ -373,7 +373,9 @@ const en = {
       vouchers: 'Vouchers',
       messages: 'Messages',
       returns: 'Returns',
+      blog: 'Blog',
     },
+
     dashboard: {
       morning:         'Good morning',
       afternoon:       'Good afternoon',

@@ -20,7 +20,9 @@ import {
   Mail,
   Ticket,
   RotateCcw,
+  FileText,
 } from 'lucide-react'
+
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/shop/auth/hooks/use-auth'
@@ -55,8 +57,10 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/products',   icon: Package,     labelKey: 'admin.nav.products' },
       { to: '/admin/categories', icon: Tag,         labelKey: 'admin.nav.categories' },
       { to: '/admin/brands',     icon: Bookmark,    labelKey: 'admin.nav.brands' },
+      { to: '/admin/blog',       icon: FileText,    labelKey: 'admin.nav.blog' },
     ],
   },
+
   {
     groupKey: 'admin.nav.sales',
     items: [

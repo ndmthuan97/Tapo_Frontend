@@ -373,7 +373,9 @@ const vi = {
       vouchers: 'Voucher',
       messages: 'Tin nhắn',
       returns: 'Đổi / Trả hàng',
+      blog: 'Blog',
     },
+
     dashboard: {
       morning:         'Chào buổi sáng',
       afternoon:       'Chào buổi chiều',

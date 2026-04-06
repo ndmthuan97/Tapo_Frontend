@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -8,6 +8,7 @@ import {
   Package,
   ImageOff,
   X,
+  Eye,
   Search,
   ChevronDown,
   Check,
@@ -18,6 +19,7 @@ import {
   ToggleLeft,
   ToggleRight,
 } from 'lucide-react'
+
 import { toast } from 'sonner'
 import { useAdminProducts } from '@/features/admin/hooks/use-admin-products'
 import {
@@ -559,6 +561,115 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
     </div>
   )
 }
+}
+
+// ── Product Detail Modal ──────────────────────────────────────────────────────
+
+function ProductDetailModal({ product, onClose }: { product: ProductDto; onClose: () => void }) {
+  const { t } = useTranslation()
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price
+  const discountPct = hasDiscount ? Math.round((1 - product.price / product.originalPrice!) * 100) : 0
+  const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
+    ACTIVE:   { label: t('adminProducts.statusActive'),   color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-500/15' },
+    INACTIVE: { label: t('adminProducts.statusInactive'), color: 'text-gray-500 dark:text-gray-400',       bg: 'bg-gray-100 dark:bg-white/10' },
+    DRAFT:    { label: t('adminProducts.statusDraft'),    color: 'text-amber-700 dark:text-amber-400',     bg: 'bg-amber-100 dark:bg-amber-500/15' },
+  }
+  const badge = STATUS_CFG[product.status] ?? STATUS_CFG.DRAFT
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Chi tiết sản phẩm</h3>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition"><X size={15} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div className="flex gap-4">
+            {product.thumbnailUrl ? (
+              <img src={product.thumbnailUrl} alt={product.name} className="h-24 w-24 rounded-xl object-cover border border-gray-100 dark:border-white/5 shrink-0" />
+            ) : (
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5"><ImageOff size={24} className="text-gray-300" /></div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-gray-900 dark:text-white leading-snug">{product.name}</p>
+              <p className="mt-0.5 text-[11px] text-gray-400 font-mono truncate">{product.slug}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold', badge.color, badge.bg)}>{badge.label}</span>
+                <span className="text-xs text-gray-400 bg-gray-50 dark:bg-white/5 rounded-full px-2 py-0.5">{product.categoryName}</span>
+                <span className="text-xs text-gray-400 bg-gray-50 dark:bg-white/5 rounded-full px-2 py-0.5">{product.brandName}</span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {[{ label: 'Giá bán', value: `${product.price.toLocaleString('vi-VN')}₫`, sub: hasDiscount ? product.originalPrice!.toLocaleString('vi-VN') + '₫' : undefined, cls: 'text-orange-500' },
+              { label: 'Tồn kho', value: product.stock.toLocaleString(), cls: product.stock === 0 ? 'text-red-500' : 'text-gray-900 dark:text-white' },
+              { label: 'Đã bán', value: (product.soldCount ?? 0).toLocaleString(), cls: 'text-gray-900 dark:text-white' }].map(s => (
+              <div key={s.label} className="rounded-xl bg-gray-50 dark:bg-white/5 p-3 text-center">
+                <p className="text-[10px] text-gray-400 mb-1">{s.label}</p>
+                <p className={cn('text-sm font-bold', s.cls)}>{s.value}</p>
+                {s.sub && <p className="text-[10px] text-gray-400 line-through">{s.sub}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 rounded-xl bg-gray-50 dark:bg-white/5 px-4 py-2.5 flex-wrap">
+            <div><p className="text-[10px] text-gray-400">Rating</p><p className="text-sm font-bold text-gray-900 dark:text-white">⭐ {product.avgRating?.toFixed(1) ?? '—'}</p></div>
+            <div><p className="text-[10px] text-gray-400">Reviews</p><p className="text-sm font-bold text-gray-900 dark:text-white">{(product.reviewCount ?? 0).toLocaleString()}</p></div>
+            {hasDiscount && <div><p className="text-[10px] text-gray-400">Giảm</p><p className="text-sm font-bold text-emerald-500">-{discountPct}%</p></div>}
+            <div className="ml-auto"><p className="text-[10px] text-gray-400 text-right">Tạo</p><p className="text-[11px] text-gray-500">{new Date(product.createdAt).toLocaleDateString('vi-VN')}</p></div>
+          </div>
+          {product.description && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Mô tả</p>
+              <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-white/5 rounded-xl p-3">{product.description}</p>
+            </div>
+          )}
+          {product.specifications && Object.keys(product.specifications).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Thông số kỹ thuật</p>
+              <div className="rounded-xl border border-gray-100 dark:border-white/5 divide-y divide-gray-100 dark:divide-white/5">
+                {Object.entries(product.specifications).map(([k, v]) => (
+                  <div key={k} className="flex justify-between px-3 py-2">
+                    <span className="text-xs text-gray-500 shrink-0">{k}</span>
+                    <span className="text-xs font-medium text-gray-800 dark:text-gray-200 text-right ml-3">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end border-t border-gray-100 dark:border-white/5 px-5 py-4">
+          <button onClick={onClose} className="rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">Đóng</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Product Skeleton ───────────────────────────────────────────────────────────
+
+function ProductSkeleton() {
+  return (
+    <>
+      {[...Array(8)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-gray-50 dark:border-white/5">
+          <td className="px-4 py-3.5"><div className="h-4 w-4 rounded bg-gray-100 dark:bg-white/5 mx-auto" /></td>
+          <td className="px-5 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-gray-100 dark:bg-white/5 shrink-0" />
+              <div className="space-y-1.5"><div className="h-4 w-36 rounded bg-gray-100 dark:bg-white/5" /><div className="h-3 w-24 rounded bg-gray-100 dark:bg-white/5" /></div>
+            </div>
+          </td>
+          <td className="px-5 py-3.5"><div className="h-4 w-24 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-4 w-20 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5 text-right"><div className="h-4 w-16 rounded bg-gray-100 dark:bg-white/5 ml-auto" /></td>
+          <td className="px-5 py-3.5 text-right"><div className="h-4 w-10 rounded bg-gray-100 dark:bg-white/5 ml-auto" /></td>
+          <td className="px-5 py-3.5"><div className="h-5 w-16 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="flex items-center justify-end gap-1"><div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" /><div className="h-7 w-12 rounded-lg bg-gray-100 dark:bg-white/5" /><div className="h-7 w-12 rounded-lg bg-gray-100 dark:bg-white/5" /></div></td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 
 // ── Admin Products Page ────────────────────────────────────────────────────────
 
@@ -575,7 +686,9 @@ function AdminProductsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+  const [detailProduct, setDetailProduct] = useState<ProductDto | null>(null)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
 
   function handleSearch(val: string) {
     setSearchInput(val)
@@ -720,7 +833,7 @@ function AdminProductsPage() {
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {isLoading ? (
-                <tr><td colSpan={8} className="py-20 text-center"><Loader2 className="mx-auto animate-spin text-orange-500" size={28} /></td></tr>
+                <ProductSkeleton />
               ) : products.length === 0 ? (
                 <tr><td colSpan={8} className="py-16 text-center text-gray-400 text-sm">{t('adminProducts.empty')}</td></tr>
               ) : (
@@ -760,7 +873,12 @@ function AdminProductsPage() {
                     <td className="px-5 py-3.5"><StatusBadge status={p.status} /></td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => setDetailProduct(p)}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition">
+                          <Eye size={12} />
+                        </button>
                         <button onClick={() => setModal({ open: true, editing: p })}
+
                           className="flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition">
                           <Pencil size={11} />{t('common.edit')}
                         </button>
@@ -789,6 +907,9 @@ function AdminProductsPage() {
           onClose={() => setModal({ open: false })}
           onSubmit={modal.editing ? (data) => updateProduct(modal.editing!.id, data) : createProduct}
         />
+      )}
+      {detailProduct && (
+        <ProductDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} />
       )}
     </div>
   )

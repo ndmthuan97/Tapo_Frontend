@@ -48,6 +48,30 @@ function normalizeTopic(topic: string): MessageTopic {
   return map[topic] ?? 'other'
 }
 
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
+function MessageListSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-white/5">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="flex items-start gap-3 px-4 py-3.5 animate-pulse">
+          <div className="mt-1 h-5 w-5 shrink-0" />
+          <div className="h-9 w-9 shrink-0 rounded-full bg-gray-100 dark:bg-white/5" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-3.5 w-28 rounded bg-gray-100 dark:bg-white/5" />
+              <div className="h-3 w-14 rounded bg-gray-100 dark:bg-white/5" />
+            </div>
+            <div className="h-3 w-20 rounded bg-gray-100 dark:bg-white/5" />
+            <div className="h-3 w-full rounded bg-gray-100 dark:bg-white/5" />
+            <div className="h-4 w-16 rounded-full bg-gray-100 dark:bg-white/5" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Message Row ───────────────────────────────────────────────────────────────
 
 function MessageRow({
@@ -392,10 +416,7 @@ function AdminMessagesPage() {
 
           {/* List */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center flex-1 gap-2">
-              <Loader2 size={20} className="animate-spin text-orange-500" />
-              <p className="text-xs text-gray-400">Đang tải...</p>
-            </div>
+            <MessageListSkeleton />
           ) : (
             <>
               <div className="flex-1 overflow-y-auto divide-y divide-transparent">

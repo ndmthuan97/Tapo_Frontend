@@ -44,6 +44,9 @@ const AdminMessagesPage   = lazy(() => import('@/features/admin/pages/AdminMessa
 const AdminReviewsPage    = lazy(() => import('@/features/admin/pages/AdminReviewsPage').then(m => ({ default: m.AdminReviewsPage })))
 const AdminVouchersPage   = lazy(() => import('@/features/admin/pages/AdminVouchersPage').then(m => ({ default: m.AdminVouchersPage })))
 const AdminReturnsPage    = lazy(() => import('@/features/admin/pages/AdminReturnsPage').then(m => ({ default: m.AdminReturnsPage })))
+const AdminBlogPage       = lazy(() => import('@/features/admin/pages/AdminBlogPage').then(m => ({ default: m.AdminBlogPage })))
+
+
 
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
@@ -114,7 +117,9 @@ function App() {
           <Route path="/admin/returns"     element={<AdminPage><AdminReturnsPage /></AdminPage>} />
           <Route path="/admin/messages"    element={<AdminPage><AdminMessagesPage /></AdminPage>} />
           <Route path="/admin/reviews"     element={<AdminPage><AdminReviewsPage /></AdminPage>} />
+          <Route path="/admin/blog"        element={<AdminPage><AdminBlogPage /></AdminPage>} />
           <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />
+
           {/* ── 404 catch-all ─────────────────────────── */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

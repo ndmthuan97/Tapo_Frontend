@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Trash2, Loader2, Bookmark, Eye, EyeOff, X, ImageOff } from 'lucide-react'
+
 import { useAdminBrands } from '@/features/admin/hooks/use-admin-brands'
 import { StatCard, AdminSearchInput, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import { cn } from '@/lib/utils'
@@ -95,8 +96,36 @@ function BrandFormModal({
   )
 }
 
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+
+function BrandSkeleton() {
+  return (
+    <>
+      {[...Array(6)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-gray-50 dark:border-white/5">
+          <td className="px-5 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-white/5 shrink-0" />
+              <div className="h-4 w-28 rounded bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+          <td className="px-5 py-3.5"><div className="h-4 w-36 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-5 w-16 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5">
+            <div className="flex items-center justify-end gap-1">
+              <div className="h-7 w-14 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-7 w-14 rounded-lg bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 10
+
 
 function AdminBrandsPage() {
   const { t } = useTranslation()
@@ -150,7 +179,7 @@ function AdminBrandsPage() {
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {isLoading ? (
-                <tr><td colSpan={4} className="py-20 text-center"><Loader2 className="mx-auto animate-spin text-orange-500" size={28} /></td></tr>
+                <BrandSkeleton />
               ) : visible.length === 0 ? (
                 <tr><td colSpan={4} className="py-16 text-center text-gray-400 text-sm">{t('adminBrands.empty')}</td></tr>
               ) : visible.map((brand) => (
