@@ -8,7 +8,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 export const httpClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10_000,
+  timeout: 30_000, // 30s — Azure cold start can take 20-25s
 })
 
 // ── Request: auto-attach access token ────────────────────────────────────────

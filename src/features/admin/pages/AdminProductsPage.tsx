@@ -76,7 +76,6 @@ interface SearchableSelectProps {
 function SearchableSelect({ label, required, value, onChange, options, onWantCreate }: SearchableSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [isCreating, setIsCreating] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 

@@ -78,7 +78,10 @@ export function useAdminNotifications() {
 
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL, null, {
-        transports: ['websocket', 'xhr-streaming', 'xhr-polling'],
+        // xhr-polling: works on Azure without WebSocket setting enabled.
+        // Enable 'websocket' only after turning on "Web sockets" in Azure Portal
+        // (App Service → Configuration → General settings → Web sockets: On).
+        transports: ['xhr-streaming', 'xhr-polling'],
       }) as WebSocket,
       reconnectDelay: 5000,
       // Sprint 1: pass JWT on STOMP CONNECT — validated by StompAuthChannelInterceptor
