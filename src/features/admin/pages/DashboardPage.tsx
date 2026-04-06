@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Users, ShoppingBag, TrendingUp,
   Package, BarChart3,
-  Timer, Download, Loader2,
+  Timer, Download, Loader2, ChevronRight,
 } from 'lucide-react'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { cn } from '@/lib/utils'
@@ -334,10 +335,11 @@ function DashboardPage() {
 
         {/* Product Statistics */}
         <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+          <Link to="/admin/products" className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5 group hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
             <Package size={14} className="text-orange-500" />
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.productStats')}</p>
-          </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex-1">{t('admin.dashboard.productStats')}</p>
+            <ChevronRight size={13} className="text-gray-300 dark:text-white/20 group-hover:text-orange-400 transition-colors" />
+          </Link>
           <div className="p-5 flex-1 flex flex-col gap-4 justify-center">
             {/* Inventory donut — always has data */}
             <DonutChart
@@ -367,10 +369,11 @@ function DashboardPage() {
 
         {/* Order Statistics */}
         <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+          <Link to="/admin/orders" className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5 group hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
             <ShoppingBag size={14} className="text-orange-500" />
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.orderStats')}</p>
-          </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex-1">{t('admin.dashboard.orderStats')}</p>
+            <ChevronRight size={13} className="text-gray-300 dark:text-white/20 group-hover:text-orange-400 transition-colors" />
+          </Link>
           <div className="p-5 flex-1 flex items-center">
             <DonutChart
               centerValue={stats.totalOrders ?? 0}
@@ -387,10 +390,11 @@ function DashboardPage() {
 
         {/* User Statistics */}
         <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+          <Link to="/admin/users" className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5 group hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
             <Users size={14} className="text-orange-500" />
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.userStats')}</p>
-          </div>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 flex-1">{t('admin.dashboard.userStats')}</p>
+            <ChevronRight size={13} className="text-gray-300 dark:text-white/20 group-hover:text-orange-400 transition-colors" />
+          </Link>
           <div className="p-5 flex-1 flex flex-col gap-3 justify-center">
             {(() => {
               const active   = stats.activeUsers ?? 0

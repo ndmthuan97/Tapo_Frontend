@@ -42,7 +42,9 @@ httpClient.interceptors.response.use(
     const status = error.response?.status
 
     // 401 on any request that is NOT the refresh endpoint itself
-    if (status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/refresh-token')) {
+    // AND NOT an auth endpoint (login/register return 401 for bad creds — not session expiry)
+    const isAuthEndpoint = originalRequest.url?.includes('/api/auth/')
+    if (status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/refresh-token') && !isAuthEndpoint) {
       const accessToken  = localStorage.getItem('accessToken')
       const refreshToken = localStorage.getItem('refreshToken')
 
