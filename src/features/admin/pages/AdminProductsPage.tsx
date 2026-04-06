@@ -561,7 +561,6 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
     </div>
   )
 }
-}
 
 // ── Product Detail Modal ──────────────────────────────────────────────────────
 
