@@ -2,23 +2,39 @@ import { type ElementType } from 'react'
 import { cn } from '@/lib/utils'
 
 // ── StatCard ──────────────────────────────────────────────────────────────────
+import { TrendingUp, TrendingDown } from 'lucide-react'
+
 interface StatCardProps {
   icon: ElementType
   label: string
   value: number | string
   color?: string
+  /** e.g. "+3.2%" — shown as a pill badge in top-right corner */
+  badge?: string
+  badgePositive?: boolean
 }
 
-export function StatCard({ icon: Icon, label, value, color = 'bg-orange-500' }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, color = 'bg-orange-500', badge, badgePositive = true }: StatCardProps) {
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm transition-colors">
+    <div className="relative flex items-center gap-4 rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm transition-colors">
       <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', color)}>
         <Icon size={22} className="text-white" />
       </div>
-      <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{label}</p>
         <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
       </div>
+      {badge && (
+        <span className={cn(
+          'absolute top-3 right-3 flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+          badgePositive
+            ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+            : 'bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400',
+        )}>
+          {badgePositive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+          {badge}
+        </span>
+      )}
     </div>
   )
 }

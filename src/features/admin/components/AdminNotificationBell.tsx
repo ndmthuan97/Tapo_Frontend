@@ -7,17 +7,21 @@
  */
 import { useState, useRef, useEffect } from 'react'
 import { Bell, WifiOff, X, Check } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useAdminNotifications, TYPE_CONFIG, type AdminNotification } from '../hooks/useAdminNotifications'
 
 // ── Static JSX (react skill §5: rendering-hoist-jsx) ────────────────────────────
 
-const EMPTY_STATE = (
-  <div className="flex flex-col items-center justify-center py-10 text-center">
-    <Bell size={28} className="text-gray-200 dark:text-white/10 mb-2" />
-    <p className="text-sm text-gray-400">Chưa có thông báo mới</p>
-  </div>
-)
+function EmptyState() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col items-center justify-center py-10 text-center">
+      <Bell size={28} className="text-gray-200 dark:text-white/10 mb-2" />
+      <p className="text-sm text-gray-400">{t('notification.empty')}</p>
+    </div>
+  )
+}
 
 // ── Notification Item ──────────────────────────────────────────────────────────
 
@@ -43,6 +47,7 @@ function NotificationItem({ n }: { n: AdminNotification }) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export function AdminNotificationBell() {
+  const { t } = useTranslation()
   const { notifications, unreadCount, isConnected, clearUnread, clearHistory } = useAdminNotifications()
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -67,7 +72,7 @@ export function AdminNotificationBell() {
       <button
         onClick={handleOpen}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
-        title="Thông báo"
+        title={t('notification.title')}
       >
         <Bell size={18} />
         {/* Unread badge */}
@@ -91,7 +96,7 @@ export function AdminNotificationBell() {
           <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell size={14} className="text-orange-500" />
-              <span className="text-sm font-bold text-gray-900 dark:text-white">Thông báo</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-white">{t('notification.title')}</span>
             </div>
             <div className="flex items-center gap-1">
               {notifications.length > 0 && (
@@ -99,7 +104,7 @@ export function AdminNotificationBell() {
                   onClick={clearHistory}
                   className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-600 transition-colors"
                 >
-                  <Check size={10} /> Xóa hết
+                  <Check size={10} /> {t('notification.clearAll')}
                 </button>
               )}
               <button onClick={() => setOpen(false)} className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
@@ -111,14 +116,14 @@ export function AdminNotificationBell() {
           {/* Connection status */}
           {!isConnected && (
             <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/10 px-4 py-2 text-[11px] text-amber-600 dark:text-amber-400">
-              <WifiOff size={11} /> Đang kết nối lại...
+              <WifiOff size={11} /> {t('notification.reconnecting')}
             </div>
           )}
 
           {/* Notification list */}
           <div className="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-white/5">
             {notifications.length === 0
-              ? EMPTY_STATE
+              ? <EmptyState />
               : notifications.map(n => <NotificationItem key={n.id} n={n} />)
             }
           </div>

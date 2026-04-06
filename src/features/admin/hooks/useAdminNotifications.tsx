@@ -13,6 +13,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { ShoppingBag, RotateCcw, MessageSquare } from 'lucide-react'
 import React from 'react'
 
@@ -46,6 +47,7 @@ export const TYPE_CONFIG: Record<NotificationType, {
 // ── Hook ───────────────────────────────────────────────────────────────────────
 
 export function useAdminNotifications() {
+  const { t } = useTranslation()
   const [notifications, setNotifications] = useState<AdminNotification[]>([])
   const [unreadCount,   setUnreadCount]   = useState(0)
   const [isConnected,   setIsConnected]   = useState(false)
@@ -54,15 +56,22 @@ export function useAdminNotifications() {
   const onMessageRef = useRef<(raw: AdminNotification) => void>(() => undefined)
 
   onMessageRef.current = useCallback((data: AdminNotification) => {
+    // Compose localized title + message from type + meta
+    const meta = data.meta ?? {}
+    const localTitle   = t(`notification.${data.type}.title` as any)
+    const localMessage = t(`notification.${data.type}.message` as any, meta)
+
     const notification: AdminNotification = {
       ...data,
+      title:   localTitle,
+      message: localMessage,
       id: `${Date.now()}-${Math.random()}`,
     }
 
     setNotifications(prev => [notification, ...prev].slice(0, MAX_HISTORY))
     setUnreadCount(c => c + 1)
 
-    // Toast with icon — react skill §4: always surface events to user
+    // Toast with icon
     const cfg = TYPE_CONFIG[notification.type] ?? TYPE_CONFIG.NEW_CONTACT_MESSAGE
     const Icon = cfg.icon
     toast(notification.title, {
@@ -70,7 +79,7 @@ export function useAdminNotifications() {
       icon: React.createElement(Icon, { size: 16, className: cfg.color }),
       duration: 6000,
     })
-  }, [])
+  }, [t])
 
   useEffect(() => {
     // Read JWT from localStorage (same key as http-client.ts interceptor)

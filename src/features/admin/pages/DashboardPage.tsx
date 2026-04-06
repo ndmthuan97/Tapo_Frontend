@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
-  Users, UserCheck, UserX, ShoppingBag, TrendingUp, TrendingDown, ArrowUpRight,
-  Package, Tag, Bookmark, Activity, BarChart3,
-  CheckCircle2, XCircle, Timer, Download,
+  Users, ShoppingBag, TrendingUp,
+  Package, BarChart3, ArrowUpRight,
+  Timer, Tag, Bookmark, Download, Loader2,
 } from 'lucide-react'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { statisticsApi, type DashboardStatsDto, type RevenueDataPoint } from '@/lib/http/statistics.api'
+import { StatCard } from '@/features/admin/components/AdminShared'
 import { toast } from 'sonner'
 
 // ── SVG Revenue Bar Chart ─────────────────────────────────────────────────────
@@ -62,46 +63,18 @@ function RevenueChart({ data }: { data: RevenueDataPoint[] }) {
   )
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
-
-interface StatCardProps {
-  label: string; value: string; change: string | null; positive: boolean
-  icon: typeof Users; color: string; bg: string
-}
-
-function StatCard({ label, value, change, positive, icon: Icon, color, bg }: StatCardProps) {
-  return (
-    <div className="rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', bg)}>
-          <Icon size={20} className={color} />
-        </div>
-        {change && (
-          <span className={cn(
-            'flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-            positive
-              ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-              : 'bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400',
-          )}>
-            {positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-            {change}
-          </span>
-        )}
-      </div>
-      <p className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-      <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{label}</p>
-    </div>
-  )
-}
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function DashboardSkeleton() {
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto animate-pulse">
-      <div className="h-28 rounded-2xl bg-orange-100 dark:bg-orange-900/20" />
-      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-28 rounded-xl bg-gray-100 dark:bg-white/5" />)}
+    <div className="p-6 space-y-6 animate-pulse">
+      <div className="h-8 w-56 rounded-lg bg-gray-100 dark:bg-white/5" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-xl bg-gray-100 dark:bg-white/5" />)}
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {[...Array(5)].map((_, i) => <div key={i} className="h-28 rounded-xl bg-gray-100 dark:bg-white/5" />)}
       </div>
       <div className="grid gap-5 lg:grid-cols-5">
         <div className="lg:col-span-3 h-52 rounded-2xl bg-gray-100 dark:bg-white/5" />
@@ -111,14 +84,74 @@ function DashboardSkeleton() {
   )
 }
 
-// ── Quick access links ────────────────────────────────────────────────────────
+// ── SVG Donut Chart ───────────────────────────────────────────────────────────
 
-// QUICK_LINKS are defined inside component to access t() — labels move to locale
+interface DonutSegment { value: number; color: string; label: string }
+
+function DonutChart({
+  segments, centerValue, centerLabel,
+}: {
+  segments: DonutSegment[]
+  centerValue: number
+  centerLabel: string
+}) {
+  const total = Math.max(segments.reduce((s, v) => s + v.value, 0), 1)
+  const r = 32, circ = 2 * Math.PI * r
+  let acc = 0
+  return (
+    <div className="flex items-start gap-4">
+      {/* Donut ring */}
+      <div className="relative shrink-0">
+        <svg viewBox="0 0 100 100" className="h-[100px] w-[100px]">
+          <g style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px' }}>
+            <circle cx={50} cy={50} r={r} fill="none"
+              stroke="currentColor" strokeWidth={14} className="text-gray-100 dark:text-white/5" />
+            {segments.filter(s => s.value > 0).map((seg, i) => {
+              const pct = seg.value / total
+              const dash = pct * circ
+              const off  = -(acc * circ)
+              acc += pct
+              return (
+                <circle key={i} cx={50} cy={50} r={r} fill="none"
+                  stroke={seg.color} strokeWidth={14}
+                  strokeDasharray={`${dash} ${circ - dash}`}
+                  strokeDashoffset={off}
+                  className="transition-all duration-700" />
+              )
+            })}
+          </g>
+          <text x={50} y={46} textAnchor="middle" fontSize={14} fontWeight={700}
+            className="fill-gray-900 dark:fill-white">
+            {centerValue.toLocaleString()}
+          </text>
+          <text x={50} y={60} textAnchor="middle" fontSize={7} className="fill-gray-400">
+            {centerLabel}
+          </text>
+        </svg>
+      </div>
+      {/* Legend */}
+      <div className="flex flex-col justify-center gap-2 py-1">
+        {segments.map((seg, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full shrink-0" style={{ background: seg.color }} />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-1">{seg.label}</span>
+            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 ml-2">
+              {seg.value.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Quick access links ───────────────────────────────────────────────────────
+
 const QUICK_LINK_DEFS = [
-  { key: 'users',      href: '/admin/users',     icon: Users,       color: 'bg-orange-500' },
-  { key: 'products',   href: '/admin/products',   icon: Package,     color: 'bg-blue-500' },
-  { key: 'categories', href: '/admin/categories', icon: Tag,         color: 'bg-purple-500' },
-  { key: 'brands',     href: '/admin/brands',     icon: Bookmark,    color: 'bg-teal-500' },
+  { key: 'users',      href: '/admin/users',     icon: Users,       color: 'bg-orange-500'  },
+  { key: 'products',   href: '/admin/products',   icon: Package,     color: 'bg-blue-500'    },
+  { key: 'categories', href: '/admin/categories', icon: Tag,         color: 'bg-purple-500'  },
+  { key: 'brands',     href: '/admin/brands',     icon: Bookmark,    color: 'bg-teal-500'    },
   { key: 'orders',     href: '/admin/orders',     icon: ShoppingBag, color: 'bg-emerald-500' },
 ] as const
 
@@ -144,7 +177,7 @@ function DashboardPage() {
         setStats(res.data)
       } else {
         setHasError(true)
-        toast.error('Không tải được dữ liệu thống kê')
+        toast.error(t('admin.dashboard.loadError', 'Không tải được dữ liệu thống kê'))
       }
     })
   }, [year, retryKey])
@@ -157,7 +190,6 @@ function DashboardPage() {
       toast.error(t('admin.dashboard.export.failed'))
       return
     }
-    // Trigger browser download
     const url = URL.createObjectURL(result.blob)
     const a = document.createElement('a')
     a.href = url
@@ -166,11 +198,6 @@ function DashboardPage() {
     URL.revokeObjectURL(url)
     toast.success(t('admin.dashboard.export.success'))
   }
-
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? t('admin.dashboard.morning')
-    : hour < 18 ? t('admin.dashboard.afternoon')
-    : t('admin.dashboard.evening')
 
   const formatGrowth = (pct: number) =>
     `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
@@ -183,137 +210,74 @@ function DashboardPage() {
       <p className="text-xs text-gray-400">Kiểm tra kết nối backend hoặc thử lại</p>
       <button
         onClick={() => { setStats(null); setRetryKey(k => k + 1) }}
-        className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition"
+        className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition cursor-pointer"
       >
         Thử lại
       </button>
     </div>
   )
 
-  const statCards: StatCardProps[] = [
-    {
-      label: t('admin.dashboard.revenueMonth'),
-      value: formatCurrency(stats.revenueThisMonth),
-      change: formatGrowth(stats.revenueGrowthPct),
-      positive: stats.revenueGrowthPct >= 0,
-      icon: BarChart3,
-      color: 'text-orange-500',
-      bg: 'bg-orange-50 dark:bg-orange-500/10',
-    },
-    {
-      label: t('admin.dashboard.orders'),
-      value: stats.ordersThisMonth.toLocaleString(),
-      change: formatGrowth(stats.ordersGrowthPct),
-      positive: stats.ordersGrowthPct >= 0,
-      icon: ShoppingBag,
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-500/10',
-    },
-    {
-      label: t('admin.dashboard.totalUsers'),
-      value: stats.totalUsers.toLocaleString(),
-      change: `+${stats.newUsersThisMonth} ${t('admin.dashboard.newUsersMonth')}`,
-      positive: true,
-      icon: Users,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-    },
-    {
-      label: t('admin.dashboard.pendingOrders'),
-      value: stats.pendingOrders.toLocaleString(),
-      change: null,
-      positive: stats.pendingOrders === 0,
-      icon: Timer,
-      color: 'text-amber-500',
-      bg: 'bg-amber-50 dark:bg-amber-500/10',
-    },
-    {
-      label: t('admin.dashboard.avgOrder'),
-      value: formatCurrency(stats.avgOrderValue ?? 0),
-      change: null,
-      positive: true,
-      icon: BarChart3,
-      color: 'text-purple-500 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-500/10',
-    },
-  ]
-
   const chartData = chartPeriod === 'month' ? stats.monthlyRevenue : stats.quarterlyRevenue
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Welcome banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white shadow-lg shadow-orange-500/20">
-        <div className="relative z-10 flex items-start justify-between">
-          <div>
-            <p className="text-orange-100 text-sm font-medium">{greeting},</p>
-            <h1 className="text-2xl font-bold mt-0.5">{user?.fullName} 👋</h1>
-            <p className="text-orange-100 text-sm mt-1">{t('admin.dashboard.welcomeDesc')}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Export button */}
-            <button
-              id="dashboard-export-btn"
-              onClick={handleExport}
-              disabled={isExporting || isLoading}
-              className="flex items-center gap-1.5 rounded-xl bg-white/20 border border-white/30 px-3 py-2 text-sm font-semibold text-white hover:bg-white/30 transition disabled:opacity-50 backdrop-blur"
-            >
-              <Download size={14} />
-              {isExporting ? t('admin.dashboard.export.loading') : t('admin.dashboard.export.button')}
-            </button>
-            {/* Year selector */}
-            <select
-              value={year}
-              onChange={e => setYear(Number(e.target.value))}
-              className="rounded-xl bg-white/20 border border-white/30 px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur"
-            >
-              {[2023, 2024, 2025, 2026].map(y => (
-                <option key={y} value={y} className="text-gray-800">{y}</option>
-              ))}
-            </select>
-          </div>
+    <div className="p-6 space-y-6">
+
+      {/* ── Page header ────────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+            {t('admin.nav.dashboard')}
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+            {t('admin.dashboard.welcomeDesc')}, <span className="font-medium text-gray-700 dark:text-gray-300">{user?.fullName}</span>
+          </p>
         </div>
-        <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -right-2 top-12 h-24 w-24 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-6 right-24 h-20 w-20 rounded-full bg-white/10" />
+        {/* Controls */}
+        <div className="flex items-center gap-2">
+          <select
+            value={year}
+            onChange={e => setYear(Number(e.target.value))}
+            className="rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400/30 transition cursor-pointer"
+          >
+            {[2023, 2024, 2025, 2026].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <button
+            id="dashboard-export-btn"
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-orange-200/50 hover:bg-orange-600 disabled:opacity-60 transition cursor-pointer"
+          >
+            {isExporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+            {isExporting ? t('admin.dashboard.export.loading') : t('admin.dashboard.export.button')}
+          </button>
+        </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {statCards.map(s => <StatCard key={s.label} {...s} />)}
+      {/* ── Summary stat cards ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatCard icon={BarChart3}   label={t('admin.dashboard.revenueMonth')} value={formatCurrency(stats.revenueThisMonth)} color="bg-orange-500"
+          badge={formatGrowth(stats.revenueGrowthPct)} badgePositive={stats.revenueGrowthPct >= 0} />
+        <StatCard icon={ShoppingBag} label={t('admin.dashboard.orders')}        value={stats.ordersThisMonth.toLocaleString()}  color="bg-blue-500"
+          badge={formatGrowth(stats.ordersGrowthPct)}  badgePositive={stats.ordersGrowthPct >= 0}  />
+        <StatCard icon={Users}       label={t('admin.dashboard.totalUsers')}     value={stats.totalUsers.toLocaleString()}        color="bg-emerald-500" />
+        <StatCard icon={Timer}       label={t('admin.dashboard.pendingOrders')}  value={stats.pendingOrders.toLocaleString()}     color="bg-amber-500"  />
       </div>
 
-      {/* Order status mini row */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { key: 'pending',    value: stats.pendingOrders,    icon: Timer,         color: 'text-amber-500',   bg: 'bg-amber-50 dark:bg-amber-500/10' },
-          { key: 'processing', value: stats.processingOrders, icon: Activity,       color: 'text-blue-500',    bg: 'bg-blue-50 dark:bg-blue-500/10' },
-          { key: 'delivered',  value: stats.deliveredOrders,  icon: CheckCircle2,   color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-          { key: 'cancelled',  value: stats.cancelledOrders,  icon: XCircle,        color: 'text-red-500',     bg: 'bg-red-50 dark:bg-red-500/10' },
-        ].map(item => (
-          <div key={item.key} className={cn('flex items-center gap-3 rounded-xl p-4 border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d]')}>
-            <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', item.bg)}>
-              <item.icon size={16} className={item.color} />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{item.value.toLocaleString()}</p>
-              <p className="text-[11px] text-gray-400">{t(`admin.dashboard.orderStatusLabels.${item.key}` as any)}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Revenue chart + Top products */}
+      {/* ── Revenue chart + Top products ─────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-        {/* Chart */}
-        <div className="lg:col-span-3 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={16} className="text-orange-500" />
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                {t('admin.dashboard.revenueChart', { year })}{' —'}{' '}
+
+        {/* Chart card */}
+        <div className="lg:col-span-3 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
+          <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+            <div className="flex items-center gap-2 mr-auto">
+              <BarChart3 size={15} className="text-orange-500" />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                {t('admin.dashboard.revenueChart', { year })}
+                {' — '}
                 <span className="text-orange-500">{formatCurrency(stats.totalRevenue)}</span>
-              </h3>
+              </p>
             </div>
             <div className="flex gap-1 rounded-lg border border-gray-100 dark:border-white/10 p-0.5">
               {(['month', 'quarter'] as const).map(p => (
@@ -321,8 +285,8 @@ function DashboardPage() {
                   key={p}
                   onClick={() => setChartPeriod(p)}
                   className={cn(
-                    'rounded-md px-3 py-1 text-xs font-medium transition-all',
-                    chartPeriod === p ? 'bg-orange-500 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700',
+                    'rounded-md px-3 py-1 text-xs font-medium transition-all cursor-pointer',
+                    chartPeriod === p ? 'bg-orange-500 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
                   )}
                 >
                   {p === 'month' ? t('admin.dashboard.monthly') : t('admin.dashboard.quarterly')}
@@ -330,99 +294,129 @@ function DashboardPage() {
               ))}
             </div>
           </div>
-          <RevenueChart data={chartData} />
+          <div className="p-5">
+            <RevenueChart data={chartData} />
+          </div>
         </div>
 
-        {/* Top products */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
+        {/* Top products card */}
+        <div className="lg:col-span-2 rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
             <TrendingUp size={15} className="text-orange-500" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">{t('admin.dashboard.bestSeller')}</h3>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.bestSeller')}</p>
           </div>
-          {stats.topProducts.length === 0 ? (
-            <p className="text-center text-sm text-gray-400 py-8">{t('admin.dashboard.noData')}</p>
-          ) : (
-            <div className="space-y-3">
-              {stats.topProducts.map((p, i) => (
-                <div key={p.productId} className="flex items-center gap-3">
-                  <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white',
-                    i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-orange-400' : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400'
-                  )}>{i + 1}</span>
-                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-white/5">
-                    {p.thumbnailUrl ? (
-                      <img src={p.thumbnailUrl} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <Package size={14} className="text-gray-300 dark:text-white/20" />
-                      </div>
-                    )}
+          <div className="p-5">
+            {stats.topProducts.length === 0 ? (
+              <p className="text-center text-sm text-gray-400 py-8">{t('admin.dashboard.noData')}</p>
+            ) : (
+              <div className="space-y-3">
+                {stats.topProducts.map((p, i) => (
+                  <div key={p.productId} className="flex items-center gap-3">
+                    <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white',
+                      i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-orange-400' : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400'
+                    )}>{i + 1}</span>
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                      {p.thumbnailUrl ? (
+                        <img src={p.thumbnailUrl} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Package size={14} className="text-gray-300 dark:text-white/20" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 line-clamp-1">{p.name}</p>
+                      <p className="text-[10px] text-gray-400">{t('admin.dashboard.soldCount', { count: p.totalSold.toLocaleString() })}</p>
+                    </div>
+                    <p className="text-xs font-bold text-orange-500 shrink-0">{formatCurrency(p.totalRevenue)}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 line-clamp-1">{p.name}</p>
-                    <p className="text-[10px] text-gray-400">{t('admin.dashboard.soldCount', { count: p.totalSold.toLocaleString() })}</p>
-                  </div>
-                  <p className="text-xs font-bold text-orange-500 shrink-0">{formatCurrency(p.totalRevenue)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Quick access */}
-        <div className="rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity size={15} className="text-orange-500" />
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.quickAccess')}</h3>
-          </div>
-          <div className="space-y-1">
-            {QUICK_LINK_DEFS.map(link => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="flex items-center gap-3 rounded-lg p-2.5 transition hover:bg-gray-50 dark:hover:bg-white/5 group"
-              >
-                <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', link.color)}>
-                  <link.icon size={14} className="text-white" />
-                </div>
-                <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition">
-                  {t(`admin.dashboard.quickLinks.${link.key}` as any)}
-                </span>
-                <ArrowUpRight size={13} className="ml-auto text-gray-300 dark:text-gray-600 group-hover:text-orange-500 transition" />
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* User stats */}
-        <div className="lg:col-span-2 rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-5">
-            <Users size={15} className="text-orange-500" />
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.userStats')}</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { key: 'totalUsers',  value: stats.totalUsers,   icon: Users,    color: 'text-orange-500',  bg: 'bg-orange-50 dark:bg-orange-500/10' },
-              { key: 'activeUsers', value: stats.activeUsers,  icon: UserCheck, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-              { key: 'lockedUsers', value: stats.lockedUsers,  icon: UserX,    color: 'text-red-500',     bg: 'bg-red-50 dark:bg-red-500/10' },
-            ].map(item => (
-              <div key={item.key} className="text-center">
-                <div className={cn('mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl', item.bg)}>
-                  <item.icon size={18} className={item.color} />
-                </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{item.value.toLocaleString()}</p>
-                <p className="text-[11px] text-gray-400">{t(`admin.dashboard.${item.key}` as any)}</p>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="mt-5 rounded-xl bg-orange-50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/10 px-4 py-3 text-center">
-            <span className="text-sm font-bold text-orange-500 mr-2">{stats.newUsersThisMonth}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{t('admin.dashboard.newUsersMonth')}</span>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ── Bottom row: Quick Access | Order Stats | User Stats (3-col) ── */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+        {/* Quick Access */}
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+            <BarChart3 size={15} className="text-orange-500" />
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.quickAccess')}</p>
+          </div>
+          <div className="p-4 flex flex-col gap-2">
+            {QUICK_LINK_DEFS.map(link => {
+              const Icon = link.icon
+              return (
+                <Link key={link.key} to={link.href}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
+                  <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', link.color)}>
+                    <Icon size={14} className="text-white" />
+                  </div>
+                  <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t(`admin.dashboard.quickLinks.${link.key}`)}
+                  </span>
+                  <ArrowUpRight size={13} className="text-gray-300 dark:text-white/20 group-hover:text-orange-400 transition-colors" />
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Order Statistics */}
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+            <ShoppingBag size={15} className="text-orange-500" />
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.orderStats')}</p>
+          </div>
+          <div className="p-5 flex flex-col gap-4">
+            {/* Donut with legend */}
+            <DonutChart
+              centerValue={stats.totalOrders ?? 0}
+              centerLabel={t('admin.dashboard.orders')}
+              segments={[
+                { value: stats.pendingOrders    ?? 0, color: '#f59e0b', label: t('admin.dashboard.orderStatusLabels.pending')    },
+                { value: stats.processingOrders ?? 0, color: '#3b82f6', label: t('admin.dashboard.orderStatusLabels.processing') },
+                { value: stats.deliveredOrders  ?? 0, color: '#10b981', label: t('admin.dashboard.orderStatusLabels.delivered')  },
+                { value: stats.cancelledOrders  ?? 0, color: '#ef4444', label: t('admin.dashboard.orderStatusLabels.cancelled')  },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* User Statistics */}
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+            <Users size={15} className="text-orange-500" />
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.userStats')}</p>
+          </div>
+          <div className="p-5">
+            {/* Donut with legend — segments must be mutually exclusive & sum to totalUsers */}
+            {(() => {
+              const active    = stats.activeUsers    ?? 0
+              const locked    = stats.lockedUsers    ?? 0
+              const returning = stats.returningUsers ?? 0
+              const inactive  = Math.max(0, (stats.totalUsers ?? 0) - active - locked)
+              return (
+                <DonutChart
+                  centerValue={stats.totalUsers ?? 0}
+                  centerLabel={t('admin.dashboard.totalUsers')}
+                  segments={[
+                    { value: active,    color: '#10b981', label: t('admin.dashboard.activeUsers')    },
+                    { value: returning, color: '#3b82f6', label: t('admin.dashboard.returningUsers') },
+                    { value: inactive,  color: '#f59e0b', label: 'Inactive'                         },
+                    { value: locked,    color: '#ef4444', label: t('admin.dashboard.lockedUsers')    },
+                  ]}
+                />
+              )
+            })()}
+          </div>
+        </div>
+
+      </div>
+
     </div>
   )
 }

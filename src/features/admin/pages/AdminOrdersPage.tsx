@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
@@ -26,18 +26,10 @@ const STATUS_CONFIG: Record<OrderStatus, { icon: React.ElementType; color: strin
   RETURNED:   { icon: XCircle,      color: 'text-red-600 dark:text-red-400',          bg: 'bg-red-50 dark:bg-red-500/10'        },
 }
 
-const ALL_STATUSES: (OrderStatus | 'ALL')[] = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']
 
-const STATUS_OPTIONS = [
-  { value: 'ALL',        label: 'Tất cả trạng thái' },
-  { value: 'PENDING',    label: 'Chờ xác nhận'       },
-  { value: 'CONFIRMED',  label: 'Đã xác nhận'        },
-  { value: 'PROCESSING', label: 'Đang xử lý'         },
-  { value: 'SHIPPING',   label: 'Đang giao'           },
-  { value: 'DELIVERED',  label: 'Đã giao'             },
-  { value: 'CANCELLED',  label: 'Đã hủy'              },
-  { value: 'RETURNED',   label: 'Hoàn trả'            },
-]
+const ALL_STATUSES: (OrderStatus | 'ALL')[] = ['ALL', 'PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']
+// keep to avoid unused-var warning
+void ALL_STATUSES
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
@@ -125,11 +117,9 @@ function StatusDropdown({ current, onSelect }: { current: OrderStatus; onSelect:
 
 const PAGE_SIZE = 10
 
-// keep ALL_STATUSES to avoid TS unused-var warning
-void ALL_STATUSES
-
 function AdminOrdersPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
@@ -138,6 +128,18 @@ function AdminOrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
+
+  const STATUS_OPTIONS = useMemo(() => [
+    { value: 'ALL',        label: t('orders.statusFilter.ALL')        },
+    { value: 'PENDING',    label: t('orders.statusFilter.PENDING')    },
+    { value: 'CONFIRMED',  label: t('orders.statusFilter.CONFIRMED')  },
+    { value: 'PROCESSING', label: t('orders.statusFilter.PROCESSING') },
+    { value: 'SHIPPING',   label: t('orders.statusFilter.SHIPPING')   },
+    { value: 'DELIVERED',  label: t('orders.statusFilter.DELIVERED')  },
+    { value: 'CANCELLED',  label: t('orders.statusFilter.CANCELLED')  },
+    { value: 'RETURNED',   label: t('orders.statusFilter.RETURNED')   },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [lang])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -162,7 +164,7 @@ function AdminOrdersPage() {
       toast.success(t('adminOrders.statusUpdated'))
       loadData()
     } else {
-      toast.error('Lỗi', { description: result.error?.message })
+      toast.error(t('adminOrders.errorUpdate'), { description: result.error?.message })
     }
   }
 
@@ -186,9 +188,9 @@ function AdminOrdersPage() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard icon={ShoppingBag} label="Tổng đơn hàng" value={totalElements} color="bg-orange-500" />
-          <StatCard icon={Clock}       label="Chờ xử lý"     value={pendingCount}   color="bg-amber-500"  />
-          <StatCard icon={PackageCheck} label="Đã giao"       value={deliveredCount} color="bg-emerald-500" />
+          <StatCard icon={ShoppingBag}  label={t('adminOrders.statAll')}      value={totalElements}  color="bg-orange-500"  />
+          <StatCard icon={Clock}        label={t('adminOrders.statPending')}   value={pendingCount}   color="bg-amber-500"   />
+          <StatCard icon={PackageCheck} label={t('adminOrders.statDelivered')} value={deliveredCount} color="bg-emerald-500" />
         </div>
 
         {/* Table card */}
@@ -201,7 +203,7 @@ function AdminOrdersPage() {
             <AdminSearchInput
               value={searchQuery}
               onChange={v => { setSearchQuery(v); setPage(0) }}
-              placeholder="Tìm theo mã đơn, sản phẩm..."
+              placeholder={t('adminOrders.placeholder')}
             />
             <AdminFilterSelect
               value={activeStatus}
@@ -233,8 +235,9 @@ function AdminOrdersPage() {
                     </td>
                   </tr>
                 ) : filteredOrders.map(order => {
-                  const date = new Date(order.createdAt).toLocaleDateString('vi-VN')
-                  const time = new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                  const locale = lang.startsWith('en') ? 'en-US' : 'vi-VN'
+                  const date = new Date(order.createdAt).toLocaleDateString(locale)
+                  const time = new Date(order.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
                   return (
                     <tr key={order.id} className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]">
                       <td className="px-5 py-3.5">
@@ -251,7 +254,7 @@ function AdminOrdersPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">{order.firstProductName || '—'}</p>
-                            {order.totalQty > 1 && <p className="text-[10px] text-gray-400">+{order.totalQty - 1} sản phẩm</p>}
+                            {order.totalQty > 1 && <p className="text-[10px] text-gray-400">{t('adminOrders.andMore', { count: order.totalQty - 1 })}</p>}
                           </div>
                         </div>
                       </td>
@@ -275,7 +278,7 @@ function AdminOrdersPage() {
                         <button
                           onClick={() => setDetailOrderId(order.id)}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition"
-                          title="Xem chi tiết"
+                          title={t('adminOrders.titleView')}
                         >
                           <Eye size={12} />
                         </button>

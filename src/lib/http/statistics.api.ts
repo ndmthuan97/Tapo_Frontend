@@ -32,11 +32,13 @@ export interface DashboardStatsDto {
   activeUsers: number
   lockedUsers: number
   newUsersThisMonth: number
+  returningUsers: number
   // Order status breakdown
   pendingOrders: number
   processingOrders: number
   deliveredOrders: number
   cancelledOrders: number
+  returnOrders: number
   // Chart data
   monthlyRevenue: RevenueDataPoint[]
   quarterlyRevenue: RevenueDataPoint[]
