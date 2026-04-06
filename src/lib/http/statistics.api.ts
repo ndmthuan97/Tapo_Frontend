@@ -33,6 +33,7 @@ export interface DashboardStatsDto {
   lockedUsers: number
   newUsersThisMonth: number
   returningUsers: number
+  returningUsersThisWeek: number
   // Order status breakdown
   pendingOrders: number
   processingOrders: number
@@ -42,6 +43,11 @@ export interface DashboardStatsDto {
   // Chart data
   monthlyRevenue: RevenueDataPoint[]
   quarterlyRevenue: RevenueDataPoint[]
+  // Product inventory
+  totalProducts: number
+  activeProducts: number
+  inactiveProducts: number
+  draftProducts: number
   // Top products
   topProducts: TopProductDto[]
 }

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
 import {
   Users, ShoppingBag, TrendingUp,
-  Package, BarChart3, ArrowUpRight,
-  Timer, Tag, Bookmark, Download, Loader2,
+  Package, BarChart3,
+  Timer, Download, Loader2,
 } from 'lucide-react'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { cn } from '@/lib/utils'
@@ -84,7 +83,7 @@ function DashboardSkeleton() {
   )
 }
 
-// ── SVG Donut Chart ───────────────────────────────────────────────────────────
+// ── SVG Donut Chart ──────────────────────────────────────────────────────
 
 interface DonutSegment { value: number; color: string; label: string }
 
@@ -96,16 +95,16 @@ function DonutChart({
   centerLabel: string
 }) {
   const total = Math.max(segments.reduce((s, v) => s + v.value, 0), 1)
-  const r = 32, circ = 2 * Math.PI * r
+  const r = 36, circ = 2 * Math.PI * r
   let acc = 0
   return (
-    <div className="flex items-start gap-4">
+    <div className="flex items-center gap-5 w-full">
       {/* Donut ring */}
       <div className="relative shrink-0">
-        <svg viewBox="0 0 100 100" className="h-[100px] w-[100px]">
+        <svg viewBox="0 0 100 100" className="h-[120px] w-[120px]">
           <g style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px' }}>
             <circle cx={50} cy={50} r={r} fill="none"
-              stroke="currentColor" strokeWidth={14} className="text-gray-100 dark:text-white/5" />
+              stroke="currentColor" strokeWidth={12} className="text-gray-100 dark:text-white/5" />
             {segments.filter(s => s.value > 0).map((seg, i) => {
               const pct = seg.value / total
               const dash = pct * circ
@@ -113,47 +112,40 @@ function DonutChart({
               acc += pct
               return (
                 <circle key={i} cx={50} cy={50} r={r} fill="none"
-                  stroke={seg.color} strokeWidth={14}
+                  stroke={seg.color} strokeWidth={12}
                   strokeDasharray={`${dash} ${circ - dash}`}
                   strokeDashoffset={off}
+                  strokeLinecap="round"
                   className="transition-all duration-700" />
               )
             })}
           </g>
-          <text x={50} y={46} textAnchor="middle" fontSize={14} fontWeight={700}
+          <text x={50} y={47} textAnchor="middle" fontSize={16} fontWeight={800}
             className="fill-gray-900 dark:fill-white">
             {centerValue.toLocaleString()}
           </text>
-          <text x={50} y={60} textAnchor="middle" fontSize={7} className="fill-gray-400">
+          <text x={50} y={62} textAnchor="middle" fontSize={8} className="fill-gray-400">
             {centerLabel}
           </text>
         </svg>
       </div>
       {/* Legend */}
-      <div className="flex flex-col justify-center gap-2 py-1">
-        {segments.map((seg, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full shrink-0" style={{ background: seg.color }} />
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-1">{seg.label}</span>
-            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 ml-2">
-              {seg.value.toLocaleString()}
-            </span>
-          </div>
-        ))}
+      <div className="flex flex-col gap-2.5 flex-1 min-w-0">
+        {segments.map((seg, i) => {
+          const pct = total > 0 ? Math.round((seg.value / total) * 100) : 0
+          return (
+            <div key={i} className="flex items-center gap-2 min-w-0">
+              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: seg.color }} />
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex-1 truncate">{seg.label}</span>
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-200 shrink-0">{seg.value.toLocaleString()}</span>
+              <span className="text-[10px] text-gray-400 w-7 text-right shrink-0">{pct}%</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
-
-// ── Quick access links ───────────────────────────────────────────────────────
-
-const QUICK_LINK_DEFS = [
-  { key: 'users',      href: '/admin/users',     icon: Users,       color: 'bg-orange-500'  },
-  { key: 'products',   href: '/admin/products',   icon: Package,     color: 'bg-blue-500'    },
-  { key: 'categories', href: '/admin/categories', icon: Tag,         color: 'bg-purple-500'  },
-  { key: 'brands',     href: '/admin/brands',     icon: Bookmark,    color: 'bg-teal-500'    },
-  { key: 'orders',     href: '/admin/orders',     icon: ShoppingBag, color: 'bg-emerald-500' },
-] as const
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -337,42 +329,49 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Bottom row: Quick Access | Order Stats | User Stats (3-col) ── */}
+      {/* ── Bottom row: Product Stats | Order Stats | User Stats (3-col) ── */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 
-        {/* Quick Access */}
-        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
-            <BarChart3 size={15} className="text-orange-500" />
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.quickAccess')}</p>
+        {/* Product Statistics */}
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+            <Package size={14} className="text-orange-500" />
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.productStats')}</p>
           </div>
-          <div className="p-4 flex flex-col gap-2">
-            {QUICK_LINK_DEFS.map(link => {
-              const Icon = link.icon
-              return (
-                <Link key={link.key} to={link.href}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
-                  <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', link.color)}>
-                    <Icon size={14} className="text-white" />
+          <div className="p-5 flex-1 flex flex-col gap-4 justify-center">
+            {/* Inventory donut — always has data */}
+            <DonutChart
+              centerValue={stats.totalProducts ?? 0}
+              centerLabel={t('admin.dashboard.totalProducts')}
+              segments={[
+                { value: stats.activeProducts   ?? 0, color: '#10b981', label: t('admin.dashboard.activeProducts')   },
+                { value: stats.inactiveProducts ?? 0, color: '#f59e0b', label: t('admin.dashboard.inactiveProducts') },
+                { value: stats.draftProducts    ?? 0, color: '#6b7280', label: t('admin.dashboard.draftProducts')    },
+              ]}
+            />
+            {/* Top-selling mini list — only when orders exist */}
+            {stats.topProducts.length > 0 && (
+              <div className="border-t border-gray-100 dark:border-white/5 pt-3 flex flex-col gap-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-1">{t('admin.dashboard.topSelling')}</p>
+                {stats.topProducts.slice(0, 3).map((p, i) => (
+                  <div key={p.productId} className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 w-3">{i + 1}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 flex-1 truncate">{p.name}</span>
+                    <span className="text-xs font-bold text-orange-500">{p.totalSold.toLocaleString()}</span>
                   </div>
-                  <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t(`admin.dashboard.quickLinks.${link.key}`)}
-                  </span>
-                  <ArrowUpRight size={13} className="text-gray-300 dark:text-white/20 group-hover:text-orange-400 transition-colors" />
-                </Link>
-              )
-            })}
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Order Statistics */}
-        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
-            <ShoppingBag size={15} className="text-orange-500" />
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+            <ShoppingBag size={14} className="text-orange-500" />
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.orderStats')}</p>
           </div>
-          <div className="p-5 flex flex-col gap-4">
-            {/* Donut with legend */}
+          <div className="p-5 flex-1 flex items-center">
             <DonutChart
               centerValue={stats.totalOrders ?? 0}
               centerLabel={t('admin.dashboard.orders')}
@@ -387,29 +386,42 @@ function DashboardPage() {
         </div>
 
         {/* User Statistics */}
-        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
-            <Users size={15} className="text-orange-500" />
+        <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-3.5">
+            <Users size={14} className="text-orange-500" />
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('admin.dashboard.userStats')}</p>
           </div>
-          <div className="p-5">
-            {/* Donut with legend — segments must be mutually exclusive & sum to totalUsers */}
+          <div className="p-5 flex-1 flex flex-col gap-3 justify-center">
             {(() => {
-              const active    = stats.activeUsers    ?? 0
-              const locked    = stats.lockedUsers    ?? 0
-              const returning = stats.returningUsers ?? 0
-              const inactive  = Math.max(0, (stats.totalUsers ?? 0) - active - locked)
+              const active   = stats.activeUsers ?? 0
+              const locked   = stats.lockedUsers ?? 0
+              const inactive = Math.max(0, (stats.totalUsers ?? 0) - active - locked)
               return (
-                <DonutChart
-                  centerValue={stats.totalUsers ?? 0}
-                  centerLabel={t('admin.dashboard.totalUsers')}
-                  segments={[
-                    { value: active,    color: '#10b981', label: t('admin.dashboard.activeUsers')    },
-                    { value: returning, color: '#3b82f6', label: t('admin.dashboard.returningUsers') },
-                    { value: inactive,  color: '#f59e0b', label: 'Inactive'                         },
-                    { value: locked,    color: '#ef4444', label: t('admin.dashboard.lockedUsers')    },
-                  ]}
-                />
+                <>
+                  <DonutChart
+                    centerValue={stats.totalUsers ?? 0}
+                    centerLabel={t('admin.dashboard.totalUsers')}
+                    segments={[
+                      { value: active,   color: '#10b981', label: t('admin.dashboard.activeUsers')   },
+                      { value: inactive, color: '#f59e0b', label: t('admin.dashboard.inactiveUsers') },
+                      { value: locked,   color: '#ef4444', label: t('admin.dashboard.lockedUsers')   },
+                    ]}
+                  />
+                  {/* Weekly returning users badge */}
+                  <div className="border-t border-gray-100 dark:border-white/5 pt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{t('admin.dashboard.returningThisWeek')}</span>
+                    </div>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      (stats.returningUsersThisWeek ?? 0) > 0
+                        ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-400'
+                    }`}>
+                      {stats.returningUsersThisWeek ?? 0} {t('admin.dashboard.users')}
+                    </span>
+                  </div>
+                </>
               )
             })()}
           </div>
