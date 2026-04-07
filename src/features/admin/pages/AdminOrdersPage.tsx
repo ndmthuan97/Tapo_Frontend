@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Eye, ImageOff,
   Clock, Package, Truck, PackageCheck, XCircle, ShoppingBag,
+  Download,
 } from 'lucide-react'
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderStatus, OrderSummary } from '@/lib/types/order/order.types'
@@ -13,6 +14,38 @@ import { toast } from 'sonner'
 import { AdminOrderDetailModal } from '@/features/admin/components/AdminOrderDetailModal'
 import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import React from 'react'
+
+// ── CSV Export helper ────────────────────────────────────────────────────
+
+function escapeCsvField(value: string | number | undefined | null): string {
+  if (value == null) return ''
+  const str = String(value)
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`
+  }
+  return str
+}
+
+function exportOrdersToCsv(orders: OrderSummary[], filename = 'orders.csv') {
+  const headers = ['M\u00e3 đơn', 'Sản phẩm', 'Tổng tiền', 'Thanh toán', 'Trạng thái', 'Ngày tạo']
+  const rows = orders.map(o => [
+    escapeCsvField(o.orderCode),
+    escapeCsvField(o.firstProductName),
+    escapeCsvField(o.totalAmount),
+    escapeCsvField(o.paymentStatus),
+    escapeCsvField(o.status),
+    escapeCsvField(new Date(o.createdAt).toLocaleString('vi-VN')),
+  ].join(','))
+  const csv = [headers.join(','), ...rows].join('\n')
+  // BOM for Excel to correctly detect UTF-8
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 // ── Status config ─────────────────────────────────────────────────────────────
 
@@ -210,6 +243,20 @@ function AdminOrdersPage() {
               onChange={v => { setActiveStatus(v as OrderStatus | 'ALL'); setPage(0) }}
               options={STATUS_OPTIONS}
             />
+            {/* Export CSV button */}
+            <button
+              id="export-orders-csv-btn"
+              type="button"
+              disabled={filteredOrders.length === 0}
+              onClick={() => {
+                const date = new Date().toISOString().slice(0, 10)
+                exportOrdersToCsv(filteredOrders, `orders_${activeStatus.toLowerCase()}_${date}.csv`)
+                toast.success(`Đã xuất ${filteredOrders.length} đơn hàng ra CSV`)
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 dark:hover:text-orange-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              <Download size={12} /> Export CSV
+            </button>
           </div>
 
           {/* Table */}

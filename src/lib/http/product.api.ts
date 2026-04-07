@@ -14,6 +14,8 @@ export interface ProductFilterParams {
   brandId?: string
   minPrice?: number
   maxPrice?: number
+  minRating?: number   // 1 | 2 | 3 | 4 — minimum avg rating
+  inStock?: boolean    // true = only products with stock > 0
   sort?: string
 }
 

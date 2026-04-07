@@ -67,4 +67,16 @@ export const voucherApi = {
       httpClient.put<ApiResponse<VoucherDto>>(`/api/admin/vouchers/${id}/toggle-status`),
     )
   },
+
+  adminUpdate(id: string, data: CreateVoucherRequest) {
+    return apiCall<VoucherDto>(
+      httpClient.put<ApiResponse<VoucherDto>>(`/api/admin/vouchers/${id}`, data),
+    )
+  },
+
+  adminDelete(id: string) {
+    return apiCall<null>(
+      httpClient.delete<ApiResponse<null>>(`/api/admin/vouchers/${id}`),
+    )
+  },
 }

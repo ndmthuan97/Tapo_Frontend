@@ -1,5 +1,12 @@
 export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE'
 
+export interface ProductImageDto {
+  id: string
+  imageUrl: string
+  altText: string | null
+  sortOrder: number
+}
+
 export interface ProductDto {
   id: string
   name: string
@@ -10,6 +17,7 @@ export interface ProductDto {
   stock: number
   status: ProductStatus
   thumbnailUrl: string | null
+  images: ProductImageDto[]   // gallery images (sorted by sortOrder ASC)
   avgRating: number
   reviewCount: number
   soldCount: number
@@ -32,6 +40,7 @@ export interface ProductRequest {
   originalPrice?: number
   stock: number
   thumbnailUrl?: string
+  imageUrls?: Array<{ url: string; altText?: string }>  // gallery images
   specifications?: Record<string, string>
   status: ProductStatus
 }

@@ -441,8 +441,19 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
 
   // Multi-image: lazy upload — files stored as ImageEntry until form submit
   const [entries, setEntries] = useState<ImageEntry[]>(() => {
-    if (!initial?.thumbnailUrl) return []
-    return [{ kind: 'url' as const, url: initial.thumbnailUrl }]
+    if (!initial) return []
+    // Start with thumbnail, then any extra gallery images
+    const result: ImageEntry[] = []
+    if (initial.thumbnailUrl) result.push({ kind: 'url' as const, url: initial.thumbnailUrl })
+    // Add gallery images that differ from thumbnail (already sorted by sortOrder from BE)
+    if (initial.images && initial.images.length > 0) {
+      initial.images.forEach(img => {
+        if (img.imageUrl && img.imageUrl !== initial.thumbnailUrl) {
+          result.push({ kind: 'url' as const, url: img.imageUrl })
+        }
+      })
+    }
+    return result
   })
 
   const [form, setForm] = useState<ProductRequest>(() =>
@@ -499,7 +510,9 @@ function ProductFormModal({ initial, categories: initialCats, brands: initialBra
       resolvedUrls = entries.map((en) => (en.kind === 'url' ? en.url : en.previewUrl))
     }
     const thumbnailUrl = resolvedUrls[0] ?? form.thumbnailUrl
-    const ok = await onSubmit({ ...form, thumbnailUrl, slug: form.slug || undefined })
+    // Send gallery images (all URLs after index 0) to backend as imageUrls
+    const imageUrls = resolvedUrls.map((url) => ({ url }))
+    const ok = await onSubmit({ ...form, thumbnailUrl, imageUrls, slug: form.slug || undefined })
     if (ok) onClose()
   }
 

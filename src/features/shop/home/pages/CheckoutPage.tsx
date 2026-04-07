@@ -11,11 +11,11 @@ import { useAddresses } from '@/features/shop/user/hooks/use-addresses'
 import { orderApi } from '@/lib/http/order.api'
 import { voucherApi } from '@/lib/http/voucher.api'
 import { paymentApi } from '@/lib/http/payment.api'
-import type { AddressDto } from '@/lib/types/user/user.types'
+import type { AddressDto, AddressRequest } from '@/lib/types/user/user.types'
 import {
   ChevronRight, MapPin, CreditCard, CheckCircle2,
   ShieldCheck, Truck, ChevronLeft, ImageOff, Check,
-  Loader2, AlertCircle, Tag, X,
+  Loader2, AlertCircle, Tag, X, Plus, User, Phone, Home, Building2, Globe2,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -198,6 +198,119 @@ function VoucherInput({
   )
 }
 
+// ── Quick Add Address Dialog (inline, no page leave) ────────────────────────────
+
+const EMPTY_ADDR: AddressRequest = {
+  recipientName: '',
+  phoneNumber: '',
+  address: '',
+  district: '',
+  city: '',
+}
+
+function QuickAddressDialog({
+  onSave,
+  onClose,
+  isSubmitting,
+}: {
+  onSave: (data: AddressRequest) => void
+  onClose: () => void
+  isSubmitting: boolean
+}) {
+  const { t } = useTranslation()
+  const [form, setForm] = useState<AddressRequest>(EMPTY_ADDR)
+
+  const set = (k: keyof AddressRequest) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, [k]: e.target.value }))
+
+  const valid = form.recipientName.trim() && form.phoneNumber.trim() && form.address.trim() && form.district.trim() && form.city.trim()
+
+  const inputCls = 'w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10">
+              <MapPin size={14} className="text-orange-500" />
+            </div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('address.addTitle')}</h3>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-3.5">
+          {/* Recipient + Phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <User size={11} className="text-orange-400" /> {t('address.recipientName')} *
+              </label>
+              <input id="addr-name" className={inputCls} placeholder="Nguyễn Văn A" value={form.recipientName} onChange={set('recipientName')} />
+            </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <Phone size={11} className="text-orange-400" /> {t('address.phoneNumber')} *
+              </label>
+              <input id="addr-phone" className={inputCls} placeholder="0901234567" value={form.phoneNumber} onChange={set('phoneNumber')} />
+            </div>
+          </div>
+
+          {/* Address line */}
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+              <Home size={11} className="text-orange-400" /> {t('address.addressLine')} *
+            </label>
+            <input id="addr-line" className={inputCls} placeholder="123 Đường ABC" value={form.address} onChange={set('address')} />
+          </div>
+
+          {/* District + City */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <Building2 size={11} className="text-orange-400" /> {t('address.district')} *
+              </label>
+              <input id="addr-district" className={inputCls} placeholder="Quận 1" value={form.district} onChange={set('district')} />
+            </div>
+            <div>
+              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <Globe2 size={11} className="text-orange-400" /> {t('address.city')} *
+              </label>
+              <input id="addr-city" className={inputCls} placeholder="TP. Hồ Chí Minh" value={form.city} onChange={set('city')} />
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2.5 border-t border-gray-100 dark:border-white/5 px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition"
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            id="save-address-btn"
+            type="button"
+            disabled={!valid || isSubmitting}
+            onClick={() => onSave(form)}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-500 py-2.5 text-sm font-bold text-white hover:bg-orange-600 disabled:opacity-60 transition shadow-md shadow-orange-200/50"
+          >
+            {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            {t('address.save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Step 1 — Pick address ─────────────────────────────────────────────────────
 
 function Step1Address({ selected, onSelect, onNext }: {
@@ -206,13 +319,35 @@ function Step1Address({ selected, onSelect, onNext }: {
   onNext: () => void
 }) {
   const { t } = useTranslation()
-  const { addresses, isLoading } = useAddresses()
+  const { addresses, isLoading, isSubmitting, addAddress } = useAddresses()
+  const [showAddDialog, setShowAddDialog] = useState(false)
+
+  async function handleSaveAddress(data: AddressRequest) {
+    const ok = await addAddress(data)
+    if (ok) {
+      setShowAddDialog(false)
+      // The newly added address appears at end of list — auto-select it
+      // useEffect in parent will auto-select default; we grab it from re-render
+    }
+  }
 
   return (
     <div className="rounded-2xl bg-white dark:bg-[#21232d] border border-gray-100 dark:border-white/5 p-6">
-      <h2 className="mb-5 flex items-center gap-2 text-base font-bold text-gray-900 dark:text-white">
-        <MapPin size={17} className="text-orange-500" /> {t('checkout.shippingTitle')}
-      </h2>
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-white">
+          <MapPin size={17} className="text-orange-500" /> {t('checkout.shippingTitle')}
+        </h2>
+        {addresses.length > 0 && (
+          <button
+            id="checkout-add-address-btn"
+            type="button"
+            onClick={() => setShowAddDialog(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition"
+          >
+            <Plus size={12} /> {t('checkout.addAddress')}
+          </button>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-8">
@@ -220,15 +355,16 @@ function Step1Address({ selected, onSelect, onNext }: {
         </div>
       ) : addresses.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-200 dark:border-white/10 py-10 text-center">
-          <AlertCircle size={28} className="mx-auto mb-2 text-orange-300" />
+          <MapPin size={32} className="mx-auto mb-3 text-orange-200 dark:text-orange-400/30" />
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('address.empty')}</p>
-          <Link
-            to="/profile/addresses"
-            target="_blank"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600"
+          <button
+            id="checkout-first-address-btn"
+            type="button"
+            onClick={() => setShowAddDialog(true)}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600 transition shadow-md shadow-orange-200/50"
           >
-            {t('checkout.addAddress')} <ChevronRight size={12} />
-          </Link>
+            <Plus size={14} /> {t('checkout.addAddress')}
+          </button>
         </div>
       ) : (
         <div className="space-y-3">
@@ -277,6 +413,15 @@ function Step1Address({ selected, onSelect, onNext }: {
           {t('checkout.continuePayment')} <ChevronRight size={16} />
         </button>
       </div>
+
+      {/* Inline Add Address Dialog */}
+      {showAddDialog && (
+        <QuickAddressDialog
+          onSave={handleSaveAddress}
+          onClose={() => setShowAddDialog(false)}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </div>
   )
 }
@@ -448,14 +593,22 @@ function CheckoutPage() {
   const [payment, setPayment] = useState<PaymentMethod>('cod')
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number; name: string } | null>(null)
 
-  // Auto-push to step 1 when address auto-selected
+  // Auto-select default address on load; if user just added a new address (last in list), select it
   const { addresses } = useAddresses()
   useEffect(() => {
-    if (!selectedAddress && addresses.length > 0) {
+    if (addresses.length === 0) return
+    if (!selectedAddress) {
+      // First load: prefer default, else first
       const def = addresses.find(a => a.isDefault) ?? addresses[0]
       setSelectedAddress(def)
+    } else {
+      // If currently selected address is no longer in the list (e.g., deleted externally), reset
+      const stillExists = addresses.some(a => a.id === selectedAddress.id)
+      if (!stillExists) {
+        setSelectedAddress(addresses.find(a => a.isDefault) ?? addresses[0])
+      }
     }
-  }, [addresses, selectedAddress])
+  }, [addresses]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleConfirm() {
     if (!selectedAddress) return

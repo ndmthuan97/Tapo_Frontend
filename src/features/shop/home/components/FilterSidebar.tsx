@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react'
+import { SlidersHorizontal, X, ChevronDown, Star, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface SidebarProps {
@@ -10,9 +10,13 @@ export interface SidebarProps {
   selectedBrand: string
   minPrice: string
   maxPrice: string
+  minRating?: number
+  inStock?: boolean
   onCategory: (id: string) => void
   onBrand: (id: string) => void
   onPriceApply: (min: string, max: string) => void
+  onMinRating: (rating: number | undefined) => void
+  onInStock: (v: boolean | undefined) => void
   onReset: () => void
   activeCount: number
 }
@@ -26,6 +30,8 @@ const PRICE_PRESETS: { key: PricePresetKey; min: string; max: string }[] = [
   { key: 'above5m',  min: '5000000', max: '' },
 ]
 
+const RATING_OPTIONS = [4, 3, 2, 1] as const
+
 function SectionHeader({ label, expanded, onToggle }: { label: string; expanded: boolean; onToggle: () => void }) {
   return (
     <button onClick={onToggle} className="flex w-full items-center justify-between py-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
@@ -38,7 +44,8 @@ function SectionHeader({ label, expanded, onToggle }: { label: string; expanded:
 export function FilterSidebar({
   categories, brands, selectedCategory, selectedBrand,
   minPrice: initMin, maxPrice: initMax,
-  onCategory, onBrand, onPriceApply, onReset, activeCount,
+  minRating, inStock,
+  onCategory, onBrand, onPriceApply, onMinRating, onInStock, onReset, activeCount,
 }: SidebarProps) {
   const { t } = useTranslation()
   const [min, setMin] = useState(initMin)
@@ -46,11 +53,13 @@ export function FilterSidebar({
   const [catExpanded, setCatExpanded] = useState(true)
   const [brandExpanded, setBrandExpanded] = useState(true)
   const [priceExpanded, setPriceExpanded] = useState(true)
+  const [ratingExpanded, setRatingExpanded] = useState(true)
 
   useEffect(() => { setMin(initMin); setMax(initMax) }, [initMin, initMax])
 
   return (
     <aside className="w-full space-y-1">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={15} className="text-orange-500" />
@@ -119,20 +128,14 @@ export function FilterSidebar({
             </div>
             <div className="flex items-center gap-1.5">
               <input
-                type="number"
-                inputMode="numeric"
-                placeholder={t('products.filter.priceFrom')}
-                value={min}
-                onChange={e => setMin(e.target.value)}
+                type="number" inputMode="numeric" placeholder={t('products.filter.priceFrom')}
+                value={min} onChange={e => setMin(e.target.value)}
                 className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#2a2d3a] px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <span className="shrink-0 text-gray-400 text-xs">–</span>
               <input
-                type="number"
-                inputMode="numeric"
-                placeholder={t('products.filter.priceTo')}
-                value={max}
-                onChange={e => setMax(e.target.value)}
+                type="number" inputMode="numeric" placeholder={t('products.filter.priceTo')}
+                value={max} onChange={e => setMax(e.target.value)}
                 className="min-w-0 flex-1 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-[#2a2d3a] px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
             </div>
@@ -141,6 +144,66 @@ export function FilterSidebar({
             </button>
           </div>
         )}
+      </div>
+
+      {/* Rating filter ── NEW */}
+      <div className="border-t border-gray-100 dark:border-white/5 pt-1">
+        <SectionHeader label={t('products.filter.rating', 'Đánh giá')} expanded={ratingExpanded} onToggle={() => setRatingExpanded(s => !s)} />
+        {ratingExpanded && (
+          <div className="space-y-0.5 pb-2">
+            <button
+              onClick={() => onMinRating(undefined)}
+              className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
+                !minRating ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
+                           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', !minRating ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
+              {t('products.filter.allRatings', 'Tất cả')}
+            </button>
+            {RATING_OPTIONS.map(r => (
+              <button
+                key={r}
+                onClick={() => onMinRating(minRating === r ? undefined : r)}
+                className={cn('flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors',
+                  minRating === r ? 'bg-orange-50 dark:bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
+                                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5')}
+              >
+                <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', minRating === r ? 'bg-orange-500' : 'bg-gray-300 dark:bg-white/20')} />
+                <span className="flex items-center gap-0.5">
+                  {Array.from({ length: r }).map((_, i) => (
+                    <Star key={`f${i}`} size={10} className="fill-amber-400 text-amber-400" />
+                  ))}
+                  {Array.from({ length: 5 - r }).map((_, i) => (
+                    <Star key={`e${i}`} size={10} className="text-gray-200 dark:text-white/20" />
+                  ))}
+                </span>
+                <span className="text-[11px]">{r} sao trở lên</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* In-Stock toggle ── NEW */}
+      <div className="border-t border-gray-100 dark:border-white/5 pt-3 pb-2">
+        <button
+          onClick={() => onInStock(inStock ? undefined : true)}
+          className={cn(
+            'flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-xs font-medium transition-all',
+            inStock
+              ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-emerald-300 hover:text-emerald-500',
+          )}
+        >
+          <Package size={13} />
+          {t('products.filter.inStock', 'Còn hàng')}
+          <span className={cn(
+            'ml-auto flex h-4 w-7 items-center rounded-full transition-all',
+            inStock ? 'bg-emerald-500 justify-end' : 'bg-gray-200 dark:bg-white/10 justify-start',
+          )}>
+            <span className="m-0.5 h-3 w-3 rounded-full bg-white shadow-sm" />
+          </span>
+        </button>
       </div>
     </aside>
   )

@@ -83,6 +83,8 @@ function ProductsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
+  const [minRating, setMinRating] = useState<number | undefined>(undefined)
+  const [inStock, setInStock] = useState<boolean | undefined>(undefined)
 
   // ── Debounce search ──────────────────────────────────────────────────────────────────
   const debouncedSearch = useDebounce(searchInput, 350)
@@ -125,16 +127,29 @@ function ProductsPage() {
     })
   }
 
+  function handleMinRating(rating: number | undefined) {
+    setMinRating(rating)
+    setFilter({ minRating: rating })
+  }
+
+  function handleInStock(v: boolean | undefined) {
+    setInStock(v)
+    setFilter({ inStock: v })
+  }
+
   function handleReset() {
     setSearchInput('')
     setMinPrice('')
     setMaxPrice('')
+    setMinRating(undefined)
+    setInStock(undefined)
     reset()
   }
 
   const activeFilterCount = [
     params.categoryId, params.brandId,
     params.minPrice !== undefined, params.maxPrice !== undefined,
+    params.minRating !== undefined, params.inStock,
     params.search,
   ].filter(Boolean).length
 
@@ -194,9 +209,13 @@ function ProductsPage() {
                   selectedBrand={params.brandId ?? ''}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
+                  minRating={minRating}
+                  inStock={inStock}
                   onCategory={id => setFilter({ categoryId: id || undefined })}
                   onBrand={id => setFilter({ brandId: id || undefined })}
                   onPriceApply={handlePriceApply}
+                  onMinRating={handleMinRating}
+                  onInStock={handleInStock}
                   onReset={handleReset}
                   activeCount={activeFilterCount}
                 />
@@ -270,6 +289,18 @@ function ProductsPage() {
                       <button onClick={() => { handlePriceApply('', ''); setMinPrice(''); setMaxPrice('') }}><X size={10} /></button>
                     </span>
                   )}
+                  {params.minRating !== undefined && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      ⭐ {params.minRating}+ sao
+                      <button onClick={() => handleMinRating(undefined)}><X size={10} /></button>
+                    </span>
+                  )}
+                  {params.inStock && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      📦 Còn hàng
+                      <button onClick={() => handleInStock(undefined)}><X size={10} /></button>
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -323,9 +354,13 @@ function ProductsPage() {
                 selectedBrand={params.brandId ?? ''}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
+                minRating={minRating}
+                inStock={inStock}
                 onCategory={id => { setFilter({ categoryId: id || undefined }); setSidebarOpen(false) }}
                 onBrand={id => { setFilter({ brandId: id || undefined }); setSidebarOpen(false) }}
                 onPriceApply={(min, max) => { handlePriceApply(min, max); setSidebarOpen(false) }}
+                onMinRating={r => { handleMinRating(r); setSidebarOpen(false) }}
+                onInStock={v => { handleInStock(v); setSidebarOpen(false) }}
                 onReset={handleReset}
                 activeCount={activeFilterCount}
               />

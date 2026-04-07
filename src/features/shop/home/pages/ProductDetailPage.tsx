@@ -262,7 +262,18 @@ function ProductDetailPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null
 
-  const images: string[] = product.thumbnailUrl ? [product.thumbnailUrl] : []
+  // Build gallery: thumbnail first (if not already in images list), then extra gallery images
+  const imageUrls: string[] = []
+  if (product.thumbnailUrl) imageUrls.push(product.thumbnailUrl)
+  // Append gallery images that are different from the thumbnail
+  if (product.images && product.images.length > 0) {
+    product.images.forEach(img => {
+      if (img.imageUrl && img.imageUrl !== product.thumbnailUrl) {
+        imageUrls.push(img.imageUrl)
+      }
+    })
+  }
+  const images = imageUrls.length > 0 ? imageUrls : []
 
   // Live rating distribution is computed directly in the reviews tab from the `reviews` state array
 
