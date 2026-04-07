@@ -13,9 +13,8 @@ import { voucherApi } from '@/lib/http/voucher.api'
 import { paymentApi } from '@/lib/http/payment.api'
 import type { AddressDto, AddressRequest } from '@/lib/types/user/user.types'
 import {
-  ChevronRight, MapPin, CreditCard, CheckCircle2,
-  ShieldCheck, Truck, ChevronLeft, ImageOff, Check,
-  Loader2, AlertCircle, Tag, X, Plus, User, Phone, Home, Building2, Globe2,
+  Home, User, Phone, Globe2, MapPin, ChevronRight, ChevronLeft, CreditCard, X, Plus, Loader2,
+  CheckCircle2, ShieldCheck, Truck, ImageOff, Check, AlertCircle, Tag,
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -204,7 +203,6 @@ const EMPTY_ADDR: AddressRequest = {
   recipientName: '',
   phoneNumber: '',
   address: '',
-  district: '',
   city: '',
 }
 
@@ -223,7 +221,7 @@ function QuickAddressDialog({
   const set = (k: keyof AddressRequest) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }))
 
-  const valid = form.recipientName.trim() && form.phoneNumber.trim() && form.address.trim() && form.district.trim() && form.city.trim()
+  const valid = form.recipientName.trim() && form.phoneNumber.trim() && form.address.trim() && form.city.trim()
 
   const inputCls = 'w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition'
 
@@ -261,28 +259,20 @@ function QuickAddressDialog({
             </div>
           </div>
 
-          {/* Address line */}
+          {/* Address line — số nhà + đường + phường/xã */}
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Home size={11} className="text-orange-400" /> {t('address.addressLine')} *
             </label>
-            <input id="addr-line" className={inputCls} placeholder="123 Đường ABC" value={form.address} onChange={set('address')} />
+            <input id="addr-line" className={inputCls} placeholder="123 Đường ABC, Phường XYZ" value={form.address} onChange={set('address')} />
           </div>
 
-          {/* District + City */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                <Building2 size={11} className="text-orange-400" /> {t('address.district')} *
-              </label>
-              <input id="addr-district" className={inputCls} placeholder="Quận 1" value={form.district} onChange={set('district')} />
-            </div>
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-                <Globe2 size={11} className="text-orange-400" /> {t('address.city')} *
-              </label>
-              <input id="addr-city" className={inputCls} placeholder="TP. Hồ Chí Minh" value={form.city} onChange={set('city')} />
-            </div>
+          {/* City / Province only — no district */}
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+              <Globe2 size={11} className="text-orange-400" /> {t('address.city')} *
+            </label>
+            <input id="addr-city" className={inputCls} placeholder="TP. Hồ Chí Minh" value={form.city} onChange={set('city')} />
           </div>
         </div>
 
@@ -396,7 +386,7 @@ function Step1Address({ selected, onSelect, onNext }: {
                     )}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{addr.phoneNumber}</p>
-                  <p className="text-xs text-gray-400">{addr.address}, {addr.district}, {addr.city}</p>
+                  <p className="text-xs text-gray-400">{addr.address}, {addr.city}</p>
                 </div>
               </div>
             </button>
@@ -516,7 +506,7 @@ function Step3Review({ address, paymentId, isSubmitting, onBack, onConfirm }: {
         </h3>
         <div className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
           <p className="font-semibold text-gray-800 dark:text-gray-100">{address.recipientName} • {address.phoneNumber}</p>
-          <p>{address.address}, {address.district}, {address.city}</p>
+          <p>{address.address}, {address.city}</p>
         </div>
       </div>
 

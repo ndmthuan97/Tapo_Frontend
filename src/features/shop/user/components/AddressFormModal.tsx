@@ -28,7 +28,6 @@ interface ComboboxProps {
 }
 
 // ─── LocationCombobox ─────────────────────────────────────────────────────────
-// Single responsibility: searchable select for location fields only.
 
 function LocationCombobox({
   label, value, onChange, options,
@@ -185,6 +184,8 @@ function InputField({
 }
 
 // ─── AddressFormModal ─────────────────────────────────────────────────────────
+// Cấu trúc địa chỉ 2 cấp (sau sát nhập VN 2025):
+//   Tên → SĐT → Địa chỉ (số nhà + đường + phường/xã) → Tỉnh/TP
 
 export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: Props) {
   const { t } = useTranslation()
@@ -195,12 +196,12 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
   })
   const addr = useVietnamAddress()
 
-  // Pre-fill province + district when editing an existing address (runs once)
+  // Pre-fill province when editing an existing address (runs once on provinces loaded)
   const initialized = useRef(false)
   useEffect(() => {
     if (!initial || initialized.current || addr.provinces.length === 0) return
     initialized.current = true
-    addr.initAddress(initial.city, initial.district)
+    addr.initAddress(initial.city)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addr.provinces.length])  // fire when province list becomes available
 
@@ -211,17 +212,20 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
     e.preventDefault()
     if (!addr.selectedProvince) return
 
+    // Compose full address: user-typed street + ward name + province
+    const wardSuffix = addr.selectedWard ? `, ${addr.selectedWard.name}` : ''
+    const fullAddress = form.address.trim() + wardSuffix
+
     const ok = await onSubmit({
       recipientName: form.recipientName,
       phoneNumber:   form.phoneNumber,
-      address:       form.address,
-      district:      addr.selectedDistrict?.name ?? '',
+      address:       fullAddress,
       city:          addr.selectedProvince.name,
     })
     if (ok) onClose()
   }
 
-  const canSubmit = !isSubmitting && !!addr.selectedProvince && !!addr.selectedDistrict
+  const canSubmit = !isSubmitting && !!addr.selectedProvince && form.recipientName.trim() && form.phoneNumber.trim() && form.address.trim()
 
   return (
     <div
@@ -247,22 +251,24 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
         {/* ── Form ── */}
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-4 overflow-y-auto p-6">
 
-          <InputField
-            label={t('address.recipientName')}
-            value={form.recipientName}
-            onChange={patch('recipientName')}
-            placeholder="Họ và tên người nhận"
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <InputField
+              label={t('address.recipientName')}
+              value={form.recipientName}
+              onChange={patch('recipientName')}
+              placeholder="Họ và tên người nhận"
+            />
 
-          <InputField
-            label={t('address.phone')}
-            type="tel"
-            value={form.phoneNumber}
-            onChange={patch('phoneNumber')}
-            placeholder="0912 345 678"
-          />
+            <InputField
+              label={t('address.phone')}
+              type="tel"
+              value={form.phoneNumber}
+              onChange={patch('phoneNumber')}
+              placeholder="0912 345 678"
+            />
+          </div>
 
-          {/* Province API error */}
+          {/* Province / City */}
           {addr.errorProvinces && (
             <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
               <AlertCircle size={14} className="shrink-0" />
@@ -270,7 +276,6 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
             </div>
           )}
 
-          {/* Position relative needed for floating dropdown */}
           <div className="relative">
             <LocationCombobox
               label={t('address.city')}
@@ -283,31 +288,20 @@ export function AddressFormModal({ initial, onSubmit, onClose, isSubmitting }: P
             />
           </div>
 
-          <div className="relative">
-            <LocationCombobox
-              label={t('address.district')}
-              value={addr.selectedDistrict?.code ?? null}
-              onChange={addr.pickDistrict}
-              options={addr.districts}
-              disabled={!addr.selectedProvince}
-              loading={addr.loadingDistricts}
-              placeholder="Chọn quận / huyện"
-              required
-            />
-          </div>
-
+          {/* Ward / Commune — directly under province (no district level) */}
           <div className="relative">
             <LocationCombobox
               label={t('address.ward')}
               value={addr.selectedWard?.code ?? null}
               onChange={addr.pickWard}
               options={addr.wards}
-              disabled={!addr.selectedDistrict}
+              disabled={!addr.selectedProvince}
               loading={addr.loadingWards}
               placeholder="Chọn phường / xã (tuỳ chọn)"
             />
           </div>
 
+          {/* Street address — số nhà + tên đường */}
           <InputField
             label={t('address.street')}
             value={form.address}

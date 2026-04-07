@@ -27,8 +27,8 @@ export interface AddressDto {
   id: string
   recipientName: string
   phoneNumber: string
+  /** Địa chỉ đầy đủ: số nhà + đường + phường/xã (không còn quận/huyện sau sát nhập VN 2025) */
   address: string
-  district: string
   city: string
   isDefault: boolean
 }
@@ -48,8 +48,8 @@ export interface ChangePasswordRequest {
 export interface AddressRequest {
   recipientName: string
   phoneNumber: string
+  /** Số nhà + tên đường + phường/xã */
   address: string
-  district: string
   city: string
 }
 

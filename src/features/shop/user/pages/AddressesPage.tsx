@@ -83,7 +83,7 @@ function AddressesPage() {
                           )}
                         </div>
                         <p className="mt-1 text-sm text-gray-500">
-                          {addr.address}, {addr.district}, {addr.city}
+                          {addr.address}, {addr.city}
                         </p>
                       </div>
                     </div>

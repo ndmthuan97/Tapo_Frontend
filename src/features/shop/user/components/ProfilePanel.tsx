@@ -273,7 +273,7 @@ function ProfilePanel({
                               )}
                             </div>
                             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {addr.address}, {addr.district}, {addr.city}
+                              {addr.address}, {addr.city}
                             </p>
                           </div>
                         </div>
