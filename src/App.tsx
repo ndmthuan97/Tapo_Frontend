@@ -30,6 +30,7 @@ import { AddressesPage }       from '@/features/shop/user/pages/AddressesPage'
 import { BlogPage }            from '@/features/shop/home/pages/BlogPage'
 import { BlogDetailPage }      from '@/features/shop/home/pages/BlogDetailPage'
 import { ContactPage }         from '@/features/shop/home/pages/ContactPage'
+import { VouchersPage }        from '@/features/shop/home/pages/VouchersPage'
 
 // ── Admin (lazy-loaded — code splitting cho admin bundle) ──────────────────────────────
 const AdminLayout         = lazy(() => import('@/features/admin/components/AdminLayout').then(m => ({ default: m.AdminLayout })))
@@ -99,6 +100,7 @@ function App() {
           <Route path="/verify-email-notice" element={<VerifyEmailNoticePage />} />
           <Route path="/reset-password"     element={<ResetPasswordPage />} />
           <Route path="/oauth/callback"     element={<OAuthCallbackPage />} />
+          <Route path="/vouchers"           element={<VouchersPage />} />
 
           {/* ── Authenticated customer ──────────────────────────────── */}
           <Route path="/profile"          element={<PrivateRoute><ProfilePage /></PrivateRoute>} />

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { UserAvatarMenu } from '@/components/common/UserAvatarMenu'
+import { NotificationBell } from '@/components/common/NotificationBell'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useShopTheme } from '@/hooks/use-shop-theme'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
@@ -117,7 +118,10 @@ function Header() {
 
             {/* User */}
             {user ? (
-              <UserAvatarMenu />
+              <>
+                <NotificationBell />
+                <UserAvatarMenu />
+              </>
             ) : (
               <Link
                 to="/login"
