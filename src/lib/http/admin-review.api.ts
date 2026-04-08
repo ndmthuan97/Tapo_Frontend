@@ -16,6 +16,9 @@ export interface AdminReviewDto {
   images: string[] | null
   status: ReviewStatus
   createdAt: string
+  /** Admin reply — null nếu chưa có */
+  adminReply: string | null
+  repliedAt: string | null
 }
 
 export const adminReviewApi = {
@@ -42,6 +45,13 @@ export const adminReviewApi = {
   pendingCount() {
     return apiCall<{ count: number }>(
       httpClient.get<ApiResponse<{ count: number }>>('/api/admin/reviews/pending-count'),
+    )
+  },
+
+  /** Gửi hoặc xóa reply của admin cho một review */
+  reply(id: string, reply: string) {
+    return apiCall<AdminReviewDto>(
+      httpClient.post<ApiResponse<AdminReviewDto>>(`/api/admin/reviews/${id}/reply`, { reply }),
     )
   },
 }

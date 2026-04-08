@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Star, CheckCircle2, XCircle, Clock, Search, ChevronLeft,
-  ChevronRight, Package,
+  ChevronRight, Package, MessageSquare, SendHorizonal, Pencil, Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -39,16 +39,140 @@ function StatusBadge({ status }: { status: ReviewStatus }) {
   )
 }
 
+// ── Inline Reply Box ──────────────────────────────────────────────────────────
+// §1: Single responsibility — handles only reply state + submit
+
+interface ReplyBoxProps {
+  reviewId: string
+  current: string | null
+  onSaved: (updated: AdminReviewDto) => void
+}
+
+function ReplyBox({ reviewId, current, onSaved }: ReplyBoxProps) {
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(current ?? '')
+  const [saving, setSaving] = useState(false)
+
+  // Sync if parent updates (e.g. after approve/reject returns updated dto)
+  useEffect(() => { setText(current ?? '') }, [current])
+
+  async function handleSave() {
+    if (!text.trim() && !current) return   // nothing to save
+    setSaving(true)
+    const res = await adminReviewApi.reply(reviewId, text.trim())
+    setSaving(false)
+    if (res.success && res.data) {
+      toast.success(text.trim() ? 'Đã lưu phản hồi' : 'Đã xóa phản hồi')
+      onSaved(res.data)
+      setEditing(false)
+    } else {
+      toast.error(res.error?.message ?? 'Lưu phản hồi thất bại')
+    }
+  }
+
+  async function handleDelete() {
+    setSaving(true)
+    const res = await adminReviewApi.reply(reviewId, '')
+    setSaving(false)
+    if (res.success && res.data) {
+      toast.success('Đã xóa phản hồi')
+      setText('')
+      onSaved(res.data)
+      setEditing(false)
+    }
+  }
+
+  // ── Show existing reply (read mode) ────────────────────────────────────────
+  if (current && !editing) {
+    return (
+      <div className="mt-3 rounded-xl border border-orange-100 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/5 px-4 py-3">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-orange-600 dark:text-orange-400">
+            <MessageSquare size={11} /> Phản hồi từ Shop
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-gray-400 hover:text-orange-500 hover:bg-orange-100 dark:hover:bg-orange-500/10 transition"
+            >
+              <Pencil size={10} /> Sửa
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={saving}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition disabled:opacity-50"
+            >
+              <Trash2 size={10} /> Xóa
+            </button>
+          </div>
+        </div>
+        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{current}</p>
+      </div>
+    )
+  }
+
+  // ── Editor mode ────────────────────────────────────────────────────────────
+  if (editing || !current) {
+    return (
+      <div className="mt-3">
+        {!editing && !current && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-dashed border-gray-200 dark:border-white/10 px-4 py-2.5 text-xs text-gray-400 hover:border-orange-300 hover:text-orange-500 dark:hover:border-orange-500/30 dark:hover:text-orange-400 transition w-full"
+          >
+            <MessageSquare size={12} /> Thêm phản hồi từ Shop...
+          </button>
+        )}
+        {editing && (
+          <div className="rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50/60 dark:bg-orange-500/5 p-3">
+            <textarea
+              autoFocus
+              value={text}
+              onChange={e => setText(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="Nhập phản hồi của Shop..."
+              className="w-full resize-none rounded-lg bg-white dark:bg-[#1a1c23] border border-gray-200 dark:border-white/10 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition"
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-[10px] text-gray-400">{text.length}/2000</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setEditing(false); setText(current ?? '') }}
+                  className="rounded-lg border border-gray-200 dark:border-white/10 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !text.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition shadow-sm shadow-orange-200/50"
+                >
+                  <SendHorizonal size={12} />
+                  {saving ? 'Đang lưu...' : 'Gửi phản hồi'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return null
+}
+
 // ── Review row ────────────────────────────────────────────────────────────────
 
 interface ReviewRowProps {
   review: AdminReviewDto
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onUpdate: (updated: AdminReviewDto) => void
   loading: boolean
 }
 
-function ReviewRow({ review, onApprove, onReject, loading }: ReviewRowProps) {
+function ReviewRow({ review, onApprove, onReject, onUpdate, loading }: ReviewRowProps) {
   return (
     <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 hover:shadow-md transition-shadow">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -94,6 +218,13 @@ function ReviewRow({ review, onApprove, onReject, loading }: ReviewRowProps) {
               ))}
             </div>
           )}
+
+          {/* Inline reply box — §1: extracted as separate component */}
+          <ReplyBox
+            reviewId={review.id}
+            current={review.adminReply}
+            onSaved={onUpdate}
+          />
         </div>
 
         {/* Actions */}
@@ -202,6 +333,11 @@ function AdminReviewsPage() {
     }
   }
 
+  // §4: Optimistic local update after reply saved
+  const handleUpdate = (updated: AdminReviewDto) => {
+    setReviews(prev => prev.map(r => r.id === updated.id ? updated : r))
+  }
+
   // Client-side search filter
   const filtered = reviews.filter(r =>
     !search ||
@@ -284,6 +420,7 @@ function AdminReviewsPage() {
               review={review}
               onApprove={handleApprove}
               onReject={handleReject}
+              onUpdate={handleUpdate}
               loading={actionLoading}
             />
           ))}

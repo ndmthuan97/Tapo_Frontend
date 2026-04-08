@@ -303,7 +303,7 @@ function OrderDetailPage() {
                   <p className="font-semibold text-gray-800 dark:text-gray-100">{order.shippingRecipientName}</p>
                   <p>{order.shippingPhone}</p>
                   <p>{order.shippingAddress}</p>
-                  <p>{order.shippingDistrict}, {order.shippingCity}</p>
+                  <p>{order.shippingCity}</p>
                 </div>
               </div>
 

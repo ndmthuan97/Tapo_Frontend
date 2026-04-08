@@ -149,7 +149,6 @@ function AdminOrderDetailModal({ orderId, onClose }: AdminOrderDetailModalProps)
                 <InfoRow label="Người nhận" value={order.shippingRecipientName} />
                 <InfoRow label="Số điện thoại" value={order.shippingPhone} mono />
                 <InfoRow label="Địa chỉ" value={order.shippingAddress} />
-                <InfoRow label="Quận / Huyện" value={order.shippingDistrict} />
                 <InfoRow label="Tỉnh / TP" value={order.shippingCity} />
                 {order.customerNote && (
                   <InfoRow label="Ghi chú" value={
