@@ -28,6 +28,7 @@ import { ResetPasswordPage }   from '@/features/shop/auth/pages/ResetPasswordPag
 import { OAuthCallbackPage }   from '@/features/shop/auth/pages/OAuthCallbackPage'
 import { ProfilePage }         from '@/features/shop/user/pages/ProfilePage'
 import { AddressesPage }       from '@/features/shop/user/pages/AddressesPage'
+import { NotificationsPage }   from '@/features/shop/user/pages/NotificationsPage'
 import { BlogPage }            from '@/features/shop/home/pages/BlogPage'
 import { BlogDetailPage }      from '@/features/shop/home/pages/BlogDetailPage'
 import { ContactPage }         from '@/features/shop/home/pages/ContactPage'
@@ -111,6 +112,7 @@ function App() {
           <Route path="/orders/:id"       element={<PrivateRoute><OrderDetailPage /></PrivateRoute>} />
           <Route path="/orders/:id/return" element={<PrivateRoute><OrderReturnPage /></PrivateRoute>} />
           <Route path="/orders/returns"    element={<PrivateRoute><MyReturnsPage /></PrivateRoute>} />
+          <Route path="/notifications"     element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
 
           {/* ── Admin panel ──────────────────────────────────────────── */}
           <Route path="/admin"             element={<AdminPage><DashboardPage /></AdminPage>} />

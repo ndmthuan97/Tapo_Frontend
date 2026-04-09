@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
@@ -8,7 +8,7 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import {
   Star, Heart, ShoppingCart, ChevronRight, ChevronLeft, Share2, ArrowLeftRight,
   Shield, Truck, RefreshCw, Award, Minus, Plus, ImageOff, Tag, Clock,
-  MessageSquare, ThumbsUp, Check, Loader2, Send, PenLine,
+  MessageSquare, ThumbsUp, Check, Loader2, Send, PenLine, X, ZoomIn,
 } from 'lucide-react'
 import { productApi } from '@/lib/http/product.api'
 import type { ProductDto } from '@/lib/types/product/product.types'
@@ -60,53 +60,181 @@ function StarDisplay({ rating, size = 14 }: { rating: number; size?: number }) {
   )
 }
 
-function ImageGallery({ images }: { images: string[] }) {
-  const [active, setActive] = useState(0)
+// ── Image Zoom Modal ─────────────────────────────────────────────────────────
+// §1: Extracted component — handles only lightbox state (keyboard, scroll-zoom)
 
-  function prev() { setActive(i => (i - 1 + images.length) % images.length) }
-  function next() { setActive(i => (i + 1) % images.length) }
+function ImageZoomModal({
+  images, initialIndex, onClose,
+}: { images: string[]; initialIndex: number; onClose: () => void }) {
+  const [idx, setIdx] = useState(initialIndex)
+  const [scale, setScale] = useState(1)
+
+  // Keyboard navigation + ESC
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowRight') setIdx(i => (i + 1) % images.length)
+      if (e.key === 'ArrowLeft')  setIdx(i => (i - 1 + images.length) % images.length)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [images.length, onClose])
+
+  // Scroll-to-zoom (clamp 1×–4×)
+  function onWheel(e: React.WheelEvent) {
+    e.preventDefault()
+    setScale(s => Math.min(4, Math.max(1, s - e.deltaY * 0.002)))
+  }
+
+  // Reset zoom on image change
+  function goTo(i: number) { setIdx(i); setScale(1) }
 
   return (
-    <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-white/5 aspect-[4/3]">
-        {images[active] ? (
-          <img src={images[active]} alt="product" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <ImageOff size={48} className="text-gray-300 dark:text-white/20" />
-          </div>
-        )}
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      {/* Toolbar */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10" onClick={e => e.stopPropagation()}>
+        <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white font-medium">
+          {idx + 1} / {images.length}
+        </span>
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+          aria-label="Đóng"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Main image — stop propagation so click on image doesn't close */}
+      <div
+        className="relative flex items-center justify-center w-full max-w-5xl px-16"
+        onClick={e => e.stopPropagation()}
+        onWheel={onWheel}
+      >
         {images.length > 1 && (
-          <>
-            <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#21232d]/90 shadow-md text-gray-700 dark:text-gray-300 hover:bg-white transition">
-              <ChevronLeft size={18} />
-            </button>
-            <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#21232d]/90 shadow-md text-gray-700 dark:text-gray-300 hover:bg-white transition">
-              <ChevronRight size={18} />
-            </button>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {images.map((_, i) => (
-                <button key={i} onClick={() => setActive(i)} className={cn('h-1.5 rounded-full transition-all', i === active ? 'w-5 bg-orange-500' : 'w-1.5 bg-white/60')} />
-              ))}
-            </div>
-          </>
+          <button
+            onClick={() => goTo((idx - 1 + images.length) % images.length)}
+            className="absolute left-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/25 transition"
+          >
+            <ChevronLeft size={22} />
+          </button>
+        )}
+        <img
+          src={images[idx]}
+          alt={`zoom-${idx}`}
+          draggable={false}
+          style={{ transform: `scale(${scale})`, transformOrigin: 'center', transition: 'transform 0.15s ease' }}
+          className="max-h-[80vh] max-w-full rounded-xl object-contain select-none"
+        />
+        {images.length > 1 && (
+          <button
+            onClick={() => goTo((idx + 1) % images.length)}
+            className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/25 transition"
+          >
+            <ChevronRight size={22} />
+          </button>
         )}
       </div>
 
+      {/* Thumbnails strip */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="absolute bottom-5 flex gap-2 overflow-x-auto max-w-lg px-4" onClick={e => e.stopPropagation()}>
           {images.map((img, i) => (
             <button
               key={i}
-              onClick={() => setActive(i)}
-              className={cn('h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all', i === active ? 'border-orange-400 shadow-sm shadow-orange-200/60' : 'border-gray-100 dark:border-white/10 opacity-70 hover:opacity-100')}
+              onClick={() => goTo(i)}
+              className={cn(
+                'h-14 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                i === idx
+                  ? 'border-orange-400 opacity-100'
+                  : 'border-white/20 opacity-50 hover:opacity-80',
+              )}
             >
               <img src={img} alt={`thumb-${i}`} className="h-full w-full object-cover" />
             </button>
           ))}
         </div>
       )}
+
+      {/* Zoom hint */}
+      <p className="absolute bottom-24 text-[11px] text-white/40">
+        Scroll để phóng to · ESC để đóng · ← → để chuyển ảnh
+      </p>
     </div>
+  )
+}
+
+function ImageGallery({ images }: { images: string[] }) {
+  const [active, setActive] = useState(0)
+  const [zoomOpen, setZoomOpen] = useState(false)
+
+  function prev() { setActive(i => (i - 1 + images.length) % images.length) }
+  function next() { setActive(i => (i + 1) % images.length) }
+
+  return (
+    <>
+      <div className="space-y-3">
+        <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-white/5 aspect-[4/3] group">
+          {images[active] ? (
+            <button
+              id="product-image-zoom-trigger"
+              onClick={() => setZoomOpen(true)}
+              className="h-full w-full cursor-zoom-in block relative"
+              aria-label="Phong to anh"
+            >
+              <img src={images[active]} alt="product" className="h-full w-full object-cover" />
+              <span className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                <ZoomIn size={11} /> Phong to
+              </span>
+            </button>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <ImageOff size={48} className="text-gray-300 dark:text-white/20" />
+            </div>
+          )}
+          {images.length > 1 && (
+            <>
+              <button onClick={e => { e.stopPropagation(); prev() }} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#21232d]/90 shadow-md text-gray-700 dark:text-gray-300 hover:bg-white transition z-10">
+                <ChevronLeft size={18} />
+              </button>
+              <button onClick={e => { e.stopPropagation(); next() }} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 dark:bg-[#21232d]/90 shadow-md text-gray-700 dark:text-gray-300 hover:bg-white transition z-10">
+                <ChevronRight size={18} />
+              </button>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                {images.map((_, i) => (
+                  <button key={i} onClick={e => { e.stopPropagation(); setActive(i) }} className={cn('h-1.5 rounded-full transition-all', i === active ? 'w-5 bg-orange-500' : 'w-1.5 bg-white/60')} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                className={cn('h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all', i === active ? 'border-orange-400 shadow-sm shadow-orange-200/60' : 'border-gray-100 dark:border-white/10 opacity-70 hover:opacity-100')}
+              >
+                <img src={img} alt={`thumb-${i}`} className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {zoomOpen && (
+        <ImageZoomModal
+          images={images}
+          initialIndex={active}
+          onClose={() => setZoomOpen(false)}
+        />
+      )}
+    </>
   )
 }
 

@@ -42,6 +42,7 @@ export interface OrderDto {
   shippingFee: number
   totalAmount: number
   customerNote: string | null
+  cancelReason: string | null
   items: OrderItemDto[]
   statusHistory: OrderStatusHistoryDto[]
   createdAt: string
@@ -72,4 +73,8 @@ export interface CreateOrderRequest {
   customerNote?: string
   voucherCode?: string
   paymentMethod: 'COD' | 'VNPAY' | 'MOMO' | 'BANK'
+}
+
+export interface CancelOrderRequest {
+  cancelReason: string
 }

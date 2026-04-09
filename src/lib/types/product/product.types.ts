@@ -62,3 +62,11 @@ export interface ProductPage {
   number: number   // current page (0-indexed)
   size: number
 }
+
+export interface SuggestDto {
+  id: string
+  name: string
+  slug: string
+  thumbnailUrl: string | null
+  price: number
+}

@@ -26,9 +26,9 @@ export const orderApi = {
     )
   },
 
-  cancelOrder(id: string) {
+  cancelOrder(id: string, reason?: string) {
     return apiCall<OrderDto>(
-      httpClient.put<ApiResponse<OrderDto>>(`${BASE}/${id}/cancel`, {}),
+      httpClient.put<ApiResponse<OrderDto>>(`${BASE}/${id}/cancel`, reason ? { cancelReason: reason } : {}),
     )
   },
 

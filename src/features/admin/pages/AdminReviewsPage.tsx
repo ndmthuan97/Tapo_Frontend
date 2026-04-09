@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Star, CheckCircle2, XCircle, Clock, Search, ChevronLeft,
   ChevronRight, Package, MessageSquare, SendHorizonal, Pencil, Trash2,
+  CheckSquare, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { adminReviewApi, type AdminReviewDto, type ReviewStatus } from '@/lib/http/admin-review.api'
+import { adminReviewApi, type AdminReviewDto, type ReviewStatus, type BulkReviewAction } from '@/lib/http/admin-review.api'
 
 // ── Star display ──────────────────────────────────────────────────────────────
 
@@ -166,16 +167,40 @@ function ReplyBox({ reviewId, current, onSaved }: ReplyBoxProps) {
 
 interface ReviewRowProps {
   review: AdminReviewDto
+  selected: boolean
+  onToggle: (id: string) => void
   onApprove: (id: string) => void
   onReject: (id: string) => void
   onUpdate: (updated: AdminReviewDto) => void
   loading: boolean
 }
 
-function ReviewRow({ review, onApprove, onReject, onUpdate, loading }: ReviewRowProps) {
+function ReviewRow({ review, selected, onToggle, onApprove, onReject, onUpdate, loading }: ReviewRowProps) {
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] p-5 hover:shadow-md transition-shadow">
+    <div className={cn(
+      'rounded-2xl border bg-white dark:bg-[#21232d] p-5 hover:shadow-md transition-all duration-150',
+      selected
+        ? 'border-orange-300 dark:border-orange-500/40 ring-1 ring-orange-300/30 dark:ring-orange-500/20'
+        : 'border-gray-100 dark:border-white/5',
+    )}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        {/* Checkbox */}
+        <div className="flex items-center pt-0.5 sm:pt-1">
+          <button
+            id={`select-review-${review.id}`}
+            onClick={() => onToggle(review.id)}
+            aria-label={selected ? 'Bỏ chọn' : 'Chọn'}
+            className={cn(
+              'flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all duration-150 shrink-0',
+              selected
+                ? 'border-orange-500 bg-orange-500 text-white'
+                : 'border-gray-300 dark:border-white/20 hover:border-orange-400'
+            )}
+          >
+            {selected && <CheckSquare size={12} />}
+          </button>
+        </div>
+
         {/* Product info */}
         <div className="flex items-center gap-3 sm:w-52 shrink-0">
           <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-white/5">
@@ -255,6 +280,57 @@ function ReviewRow({ review, onApprove, onReject, onUpdate, loading }: ReviewRow
   )
 }
 
+// ── Bulk Action Floating Bar ───────────────────────────────────────────────────
+// §1: Extracted component, §6: animate-in per ui-ux-pro-max
+
+interface BulkBarProps {
+  count: number
+  loading: boolean
+  onApprove: () => void
+  onReject: () => void
+  onClear: () => void
+}
+
+function BulkBar({ count, loading, onApprove, onReject, onClear }: BulkBarProps) {
+  if (count === 0) return null
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-gray-900 dark:bg-[#1a1c23] px-5 py-3 shadow-2xl shadow-black/30 backdrop-blur-sm">
+        <span className="flex items-center gap-2 text-sm font-semibold text-white">
+          <ListChecks size={16} className="text-orange-400" />
+          {count} đã chọn
+        </span>
+        <div className="h-4 w-px bg-white/20" />
+        <button
+          id="bulk-approve-btn"
+          disabled={loading}
+          onClick={onApprove}
+          className="flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-600 transition disabled:opacity-60 shadow-sm shadow-emerald-500/30"
+        >
+          <CheckCircle2 size={13} />
+          {loading ? 'Đang xử lý...' : 'Duyệt tất cả'}
+        </button>
+        <button
+          id="bulk-reject-btn"
+          disabled={loading}
+          onClick={onReject}
+          className="flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-xs font-bold text-white hover:bg-red-600 transition disabled:opacity-60 shadow-sm shadow-red-500/30"
+        >
+          <XCircle size={13} />
+          {loading ? 'Đang xử lý...' : 'Từ chối tất cả'}
+        </button>
+        <button
+          onClick={onClear}
+          disabled={loading}
+          className="rounded-xl border border-white/10 px-3 py-2 text-xs text-gray-400 hover:text-white hover:border-white/30 transition disabled:opacity-60"
+        >
+          Bỏ chọn
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function ReviewSkeleton() {
@@ -287,8 +363,12 @@ function AdminReviewsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [pendingCount, setPendingCount] = useState(0)
 
+  // ── Bulk selection state (§1: local, co-located with handlers) ────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
   const loadReviews = useCallback(async () => {
     setIsLoading(true)
+    setSelectedIds(new Set())   // clear selection on page change
     const res = await adminReviewApi.listAll({
       status: activeTab === 'ALL' ? undefined : activeTab,
       rating: ratingFilter,
@@ -311,6 +391,34 @@ function AdminReviewsPage() {
     })
   }, [reviews]) // re-count after any action
 
+  // ── Row selection handlers ────────────────────────────────────────────────
+  const toggleRow = (id: string) =>
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const filteredPending = reviews.filter(r =>
+    r.status === 'PENDING' &&
+    (!search ||
+      r.userName.toLowerCase().includes(search.toLowerCase()) ||
+      r.productName.toLowerCase().includes(search.toLowerCase()) ||
+      r.comment?.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const allPendingSelected = filteredPending.length > 0 &&
+    filteredPending.every(r => selectedIds.has(r.id))
+
+  const toggleAll = () => {
+    if (allPendingSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredPending.map(r => r.id)))
+    }
+  }
+
+  // ── Single-row actions ────────────────────────────────────────────────────
   const handleApprove = async (id: string) => {
     setActionLoading(true)
     const res = await adminReviewApi.approve(id)
@@ -318,6 +426,7 @@ function AdminReviewsPage() {
     if (res.success) {
       toast.success('Đã duyệt đánh giá')
       setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r))
+      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n })
     } else {
       toast.error(res.error?.message ?? 'Có lỗi xảy ra')
     }
@@ -330,8 +439,32 @@ function AdminReviewsPage() {
     if (res.success) {
       toast.success('Đã từ chối đánh giá')
       setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED' } : r))
+      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n })
     } else {
       toast.error(res.error?.message ?? 'Có lỗi xảy ra')
+    }
+  }
+
+  // ── Bulk actions ──────────────────────────────────────────────────────────
+  const handleBulk = async (action: BulkReviewAction) => {
+    if (selectedIds.size === 0) return
+    setActionLoading(true)
+    const res = await adminReviewApi.bulkAction([...selectedIds], action)
+    setActionLoading(false)
+    if (res.success && res.data) {
+      const processed = new Set(res.data)
+      const targetStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED'
+      toast.success(
+        action === 'APPROVE'
+          ? `Đã duyệt ${processed.size} đánh giá`
+          : `Đã từ chối ${processed.size} đánh giá`
+      )
+      setReviews(prev =>
+        prev.map(r => processed.has(r.id) ? { ...r, status: targetStatus } : r)
+      )
+      setSelectedIds(new Set())
+    } else {
+      toast.error(res.error?.message ?? 'Xử lý hàng loạt thất bại')
     }
   }
 
@@ -347,6 +480,11 @@ function AdminReviewsPage() {
     r.productName.toLowerCase().includes(search.toLowerCase()) ||
     r.comment?.toLowerCase().includes(search.toLowerCase()),
   )
+
+  // Only PENDING reviews can be bulk-acted on
+  const selectedPendingCount = [...selectedIds].filter(id =>
+    reviews.find(r => r.id === id)?.status === 'PENDING'
+  ).length
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
@@ -404,7 +542,7 @@ function AdminReviewsPage() {
         ))}
       </div>
 
-      {/* Rating filter chips — UI/UX §2 touch, §5 color, §6 animation */}
+      {/* Rating filter chips */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs font-medium text-gray-400 dark:text-gray-500 whitespace-nowrap">Lọc sao:</span>
         <button
@@ -435,6 +573,26 @@ function AdminReviewsPage() {
             {r} sao
           </button>
         ))}
+
+        {/* Toggle-all (chỉ hiện khi tab PENDING) */}
+        {activeTab === 'PENDING' && filteredPending.length > 0 && (
+          <>
+            <div className="h-4 w-px bg-gray-200 dark:bg-white/10 mx-1" />
+            <button
+              id="toggle-all-reviews"
+              onClick={toggleAll}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-150',
+                allPendingSelected
+                  ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                  : 'border-gray-200 dark:border-white/10 text-gray-500 hover:border-orange-300 hover:text-orange-500',
+              )}
+            >
+              <CheckSquare size={11} />
+              {allPendingSelected ? 'Bỏ chọn tất cả' : `Chọn ${filteredPending.length} chờ duyệt`}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Content */}
@@ -453,6 +611,8 @@ function AdminReviewsPage() {
             <ReviewRow
               key={review.id}
               review={review}
+              selected={selectedIds.has(review.id)}
+              onToggle={toggleRow}
               onApprove={handleApprove}
               onReject={handleReject}
               onUpdate={handleUpdate}
@@ -484,6 +644,15 @@ function AdminReviewsPage() {
           </button>
         </div>
       )}
+
+      {/* Floating bulk action bar — §6 animate-in (ui-ux-pro-max) */}
+      <BulkBar
+        count={selectedPendingCount}
+        loading={actionLoading}
+        onApprove={() => handleBulk('APPROVE')}
+        onReject={() => handleBulk('REJECT')}
+        onClear={() => setSelectedIds(new Set())}
+      />
     </div>
   )
 }

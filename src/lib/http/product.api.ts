@@ -1,6 +1,6 @@
 import { httpClient } from '@/lib/http/http-client'
 import { apiCall } from '@/lib/http/http-client'
-import type { ProductDto, ProductPage, ProductMeta } from '@/lib/types/product/product.types'
+import type { ProductDto, ProductPage, ProductMeta, SuggestDto } from '@/lib/types/product/product.types'
 import type { ApiResponse } from '@/lib/types/common/api.types'
 
 const BASE = '/api/products'
@@ -44,6 +44,15 @@ export const productApi = {
     return apiCall<ProductDto[]>(
       httpClient.get<ApiResponse<ProductDto[]>>(`${BASE}/${productId}/related`, {
         params: { limit },
+      }),
+    )
+  },
+
+  /** Autocomplete search suggestions */
+  getSuggestProducts(query: string) {
+    return apiCall<SuggestDto[]>(
+      httpClient.get<ApiResponse<SuggestDto[]>>(`${BASE}/suggest`, {
+        params: { q: query },
       }),
     )
   },

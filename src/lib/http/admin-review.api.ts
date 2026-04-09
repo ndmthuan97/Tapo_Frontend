@@ -2,6 +2,7 @@ import { httpClient, apiCall } from '@/lib/http/http-client'
 import type { ApiResponse, PageResponse } from '@/lib/types/common/api.types'
 
 export type ReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type BulkReviewAction = 'APPROVE' | 'REJECT'
 
 export interface AdminReviewDto {
   id: string
@@ -52,6 +53,19 @@ export const adminReviewApi = {
   reply(id: string, reply: string) {
     return apiCall<AdminReviewDto>(
       httpClient.post<ApiResponse<AdminReviewDto>>(`/api/admin/reviews/${id}/reply`, { reply }),
+    )
+  },
+
+  /**
+   * Bulk approve / reject nhiều reviews cùng lúc.
+   * @returns danh sách reviewId đã được xử lý
+   */
+  bulkAction(reviewIds: string[], action: BulkReviewAction) {
+    return apiCall<string[]>(
+      httpClient.patch<ApiResponse<string[]>>('/api/admin/reviews/bulk-action', {
+        reviewIds,
+        action,
+      }),
     )
   },
 }

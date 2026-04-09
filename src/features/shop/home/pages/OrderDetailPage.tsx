@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+﻿import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Header } from '@/components/layout/Header'
@@ -12,7 +12,7 @@ import type { OrderDto, OrderStatus } from '@/lib/types/order/order.types'
 import {
   ChevronRight, Package, MapPin, CreditCard, ImageOff,
   CheckCircle2, Clock, Truck, PackageCheck, XCircle, RotateCcw,
-  Loader2, AlertCircle, RefreshCw,
+  Loader2, AlertCircle, RefreshCw, X
 } from 'lucide-react'
 import { OrderDetailSkeleton } from '@/components/ui/SkeletonComponents'
 
@@ -52,6 +52,20 @@ function OrderDetailPage() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [isRetryingPayment, setIsRetryingPayment] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  
+  // Cancel modal state
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [otherReason, setOtherReason] = useState('')
+
+  const PREDEFINED_REASONS = [
+    'Thay đổi địa chỉ giao hàng',
+    'Thay đổi phương thức thanh toán',
+    'Tìm thấy giá rẻ hơn ở nơi khác',
+    'Không muốn mua nữa',
+    'Thay đổi sản phẩm/thuộc tính',
+    'Khác'
+  ]
 
   const fetchOrder = useCallback(async () => {
     if (!id) return
@@ -92,12 +106,29 @@ function OrderDetailPage() {
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCancel() {
-    if (!id || !window.confirm(t('orderDetail.cancelConfirm'))) return
+    if (!id) return
+    if (!cancelReason) {
+      toast.error('Vui lòng chọn hoặc nhập lý do hủy đơn')
+      return
+    }
+    
+    let finalReason = cancelReason
+    if (cancelReason === 'Khác') {
+      if (!otherReason.trim()) {
+        toast.error('Vui lòng nhập lý do khác')
+        return
+      }
+      finalReason = otherReason.trim()
+    }
+    
     setIsCancelling(true)
-    const result = await orderApi.cancelOrder(id)
+    const result = await orderApi.cancelOrder(id, finalReason)
     setIsCancelling(false)
     if (result.success && result.data) {
       setOrder(result.data)
+      setCancelModalOpen(false)
+      setCancelReason('')
+      setOtherReason('')
       toast.success(t('orderDetail.cancelSuccess'))
     } else {
       toast.error(t('orderDetail.cancelFailed'), { description: result.error?.message })
@@ -367,7 +398,7 @@ function OrderDetailPage() {
                 )}
                 {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
                   <button
-                    onClick={handleCancel}
+                    onClick={() => setCancelModalOpen(true)}
                     disabled={isCancelling}
                     className="flex items-center justify-center gap-2 w-full rounded-xl border border-red-200 dark:border-red-500/20 text-red-500 py-2.5 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-60 transition-colors"
                   >
@@ -387,6 +418,78 @@ function OrderDetailPage() {
         </div>
       </main>
       <Footer />
+      
+      {/* Cancel Order Modal */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+            onClick={() => !isCancelling && setCancelModalOpen(false)}
+          />
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 px-5 py-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Lý do hủy đơn</h3>
+              <button 
+                onClick={() => !isCancelling && setCancelModalOpen(false)}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Vui lòng chọn lý do bạn muốn hủy đơn hàng <b>{order.orderCode}</b>.
+              </p>
+              
+              <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                {PREDEFINED_REASONS.map(reason => (
+                  <label key={reason} className="flex items-center gap-3 rounded-lg border border-gray-100 dark:border-white/10 p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <input 
+                      type="radio" 
+                      name="cancel_reason" 
+                      value={reason}
+                      checked={cancelReason === reason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="text-orange-500 focus:ring-orange-500 h-4 w-4"
+                    />
+                    <span>{reason}</span>
+                  </label>
+                ))}
+              </div>
+              
+              {cancelReason === 'Khác' && (
+                <div className="animate-in slide-in-from-top-2">
+                  <textarea
+                    placeholder="Vui lòng nhập lý do cụ thể..."
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-trasparent p-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-transparent dark:text-white dark:bg-[#1a1b23] min-h-[80px]"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-5 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setCancelModalOpen(false)}
+                disabled={isCancelling}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
+              >
+                Đóng
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={isCancelling || !cancelReason}
+                className="flex items-center gap-2 rounded-xl bg-red-500 px-6 py-2 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {isCancelling && <Loader2 size={14} className="animate-spin" />}
+                Xác nhận hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

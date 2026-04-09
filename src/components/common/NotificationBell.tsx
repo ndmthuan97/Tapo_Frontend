@@ -8,7 +8,8 @@
  * Performance: useRef cho panel (react skill §5: advanced-event-handler-refs)
  */
 import { useRef, useEffect, useState } from 'react'
-import { Bell, BellRing, Package, CheckCheck } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Bell, BellRing, Package, CheckCheck, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   useUserNotifications,
@@ -176,6 +177,17 @@ function NotificationBell() {
               ? EMPTY_BELL
               : preview.map(n => <NotificationItem key={n.id} notification={n} />)
             }
+          </div>
+
+          {/* Footer link */}
+          <div className="border-t border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-[#1a1c23]">
+            <Link
+              to="/notifications"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-1.5 w-full py-2.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors"
+            >
+              Xem tất cả <ChevronRight size={14} />
+            </Link>
           </div>
         </div>
       )}
