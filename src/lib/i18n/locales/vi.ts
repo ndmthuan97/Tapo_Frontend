@@ -397,6 +397,8 @@ const vi = {
       messages: 'Tin nhắn',
       returns: 'Đổi / Trả hàng',
       blog: 'Blog',
+      banners: 'Banners',
+      reviews: 'Đánh giá',
     },
 
     dashboard: {

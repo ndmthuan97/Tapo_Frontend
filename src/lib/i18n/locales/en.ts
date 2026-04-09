@@ -397,6 +397,8 @@ const en = {
       messages: 'Messages',
       returns: 'Returns',
       blog: 'Blog',
+      banners: 'Banners',
+      reviews: 'Reviews',
     },
 
     dashboard: {

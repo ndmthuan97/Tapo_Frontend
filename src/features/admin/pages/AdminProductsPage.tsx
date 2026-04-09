@@ -21,6 +21,7 @@ import {
   CheckCircle,
   CircleOff,
   FileText,
+  AlertTriangle,
 } from 'lucide-react'
 
 import { toast } from 'sonner'
@@ -792,7 +793,12 @@ function AdminProductsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isBulkProcessing, setIsBulkProcessing] = useState(false)
   const [detailProduct, setDetailProduct] = useState<ProductDto | null>(null)
+  const [lowStockOnly, setLowStockOnly] = useState(false)
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Client-side low-stock filter (stock < 10)
+  const displayProducts = lowStockOnly ? products.filter(p => p.stock > 0 && p.stock < 10) : products
+  const lowStockCount = products.filter(p => p.stock > 0 && p.stock < 10).length
 
 
   function handleSearch(val: string) {
@@ -809,7 +815,7 @@ function AdminProductsPage() {
   }
 
   // ── Bulk selection helpers ────────────────────────────────────────────────
-  const allPageIds = products.map(p => p.id)
+  const allPageIds = displayProducts.map(p => p.id)
   const allSelected = allPageIds.length > 0 && allPageIds.every(id => selectedIds.has(id))
   const someSelected = selectedIds.size > 0
 
@@ -873,6 +879,28 @@ function AdminProductsPage() {
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">{t('adminProducts.title')}</p>
           <AdminSearchInput value={searchInput} onChange={handleSearch} placeholder={t('adminProducts.searchPlaceholder')} />
           <AdminFilterSelect value={params.status ?? ''} onChange={setStatus} options={STATUS_OPTIONS} />
+          {/* Low stock quick-filter chip */}
+          <button
+            id="admin-products-low-stock-filter"
+            onClick={() => setLowStockOnly(v => !v)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold border transition',
+              lowStockOnly
+                ? 'bg-amber-500 border-amber-500 text-white shadow-sm shadow-amber-200/50'
+                : 'border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:border-amber-400',
+            )}
+          >
+            <AlertTriangle size={12} />
+            Sắp hết hàng
+            {lowStockCount > 0 && (
+              <span className={cn(
+                'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                lowStockOnly ? 'bg-white/20 text-white' : 'bg-amber-500 text-white',
+              )}>
+                {lowStockCount}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setModal({ open: true })}
             className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-orange-200/50 hover:bg-orange-600 transition"
@@ -940,10 +968,12 @@ function AdminProductsPage() {
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {isLoading ? (
                 <ProductSkeleton />
-              ) : products.length === 0 ? (
-                <tr><td colSpan={8} className="py-16 text-center text-gray-400 text-sm">{t('adminProducts.empty')}</td></tr>
+              ) : displayProducts.length === 0 ? (
+                <tr><td colSpan={8} className="py-16 text-center text-gray-400 text-sm">
+                  {lowStockOnly ? 'Không có sản phẩm sắp hết hàng' : t('adminProducts.empty')}
+                </td></tr>
               ) : (
-                products.map((p) => (
+                displayProducts.map((p) => (
                   <tr key={p.id} className={cn('group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]', selectedIds.has(p.id) && 'bg-orange-50/40 dark:bg-orange-500/5')}>
                     <td className="px-4 py-3.5">
                       <button onClick={() => toggleOne(p.id)} className="flex items-center justify-center text-gray-300 hover:text-orange-500 transition">

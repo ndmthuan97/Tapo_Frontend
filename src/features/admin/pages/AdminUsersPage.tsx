@@ -9,6 +9,8 @@ import {
   Users,
   UserCheck,
   UserX,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react'
 
 import { useAdminUsers } from '@/features/admin/hooks/use-admin-users'
@@ -35,8 +37,74 @@ const ROLE_LABEL: Record<string, string> = {
   CUSTOMER: 'Customer',
 }
 
-// ── Helpers & Sub-components ──────────────────────────────────────────────────
+// ── Lock/Unlock Confirm Dialog ────────────────────────────────────────────────
 
+interface LockConfirmDialogProps {
+  action: 'lock' | 'unlock'
+  userName: string
+  isProcessing: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function LockConfirmDialog({ action, userName, isProcessing, onConfirm, onCancel }: LockConfirmDialogProps) {
+  const { t } = useTranslation()
+  const isLock = action === 'lock'
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={onCancel}>
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl animate-in zoom-in-95 duration-150"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Icon */}
+        <div className="flex flex-col items-center pt-8 pb-4 px-6">
+          <div className={cn(
+            'flex h-16 w-16 items-center justify-center rounded-2xl mb-4',
+            isLock ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10',
+          )}>
+            {isLock
+              ? <AlertTriangle size={28} className="text-red-500" />
+              : <CheckCircle size={28} className="text-emerald-500" />}
+          </div>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white text-center">
+            {isLock ? 'Khóa tài khoản?' : 'Mở khóa tài khoản?'}
+          </h3>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center leading-relaxed">
+            {isLock
+              ? <>Bạn có chắc muốn <span className="font-semibold text-red-500">khóa</span> tài khoản của <span className="font-semibold text-gray-800 dark:text-gray-200">{userName}</span>? Họ sẽ không thể đăng nhập và nhận email thông báo.</>
+              : <>Bạn có chắc muốn <span className="font-semibold text-emerald-600">mở khóa</span> tài khoản của <span className="font-semibold text-gray-800 dark:text-gray-200">{userName}</span>? Họ sẽ đăng nhập lại được và nhận email xác nhận.</>}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 border-t border-gray-100 dark:border-white/5 px-6 py-4">
+          <button
+            id="user-lock-confirm-cancel"
+            onClick={onCancel}
+            disabled={isProcessing}
+            className="flex-1 rounded-xl border border-gray-200 dark:border-white/10 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition disabled:opacity-50"
+          >
+            {t('common.cancel', 'Hủy')}
+          </button>
+          <button
+            id="user-lock-confirm-ok"
+            onClick={onConfirm}
+            disabled={isProcessing}
+            className={cn(
+              'flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition disabled:opacity-50',
+              isLock ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600',
+            )}
+          >
+            {isProcessing && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />}
+            {isLock ? 'Khóa tài khoản' : 'Mở khóa'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Info row ──────────────────────────────────────────────────────────────────
 function InfoRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-white/5 last:border-0">
@@ -144,6 +212,8 @@ function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [detailUser, setDetailUser] = useState<UserDto | null>(null)
+  const [pendingAction, setPendingAction] = useState<{ action: 'lock' | 'unlock'; user: UserDto } | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   // Debounce 350ms
   useEffect(() => {
@@ -314,6 +384,7 @@ function AdminUsersPage() {
                       <div className="inline-flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setDetailUser(user)}
+                          id={`admin-user-view-${user.id}`}
                           aria-label={t('adminUsers.modal.viewBtn')}
                           title={t('adminUsers.modal.viewBtn')}
                           className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-orange-50 dark:hover:bg-orange-500/10 hover:text-orange-500 hover:border-orange-300 transition cursor-pointer"
@@ -324,7 +395,8 @@ function AdminUsersPage() {
                         {user.role !== UserRole.ADMIN ? (
                           user.status === UserStatus.ACTIVE ? (
                             <button
-                              onClick={() => lockUser(user.id)}
+                              id={`admin-user-lock-${user.id}`}
+                              onClick={() => setPendingAction({ action: 'lock', user })}
                               aria-label={t('adminUsers.lock')}
                               title={t('adminUsers.lock')}
                               className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition cursor-pointer"
@@ -333,7 +405,8 @@ function AdminUsersPage() {
                             </button>
                           ) : (
                             <button
-                              onClick={() => unlockUser(user.id)}
+                              id={`admin-user-unlock-${user.id}`}
+                              onClick={() => setPendingAction({ action: 'unlock', user })}
                               aria-label={t('adminUsers.unlock')}
                               title={t('adminUsers.unlock')}
                               className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition cursor-pointer"
@@ -367,6 +440,25 @@ function AdminUsersPage() {
 
       {detailUser && (
         <UserDetailModal user={detailUser} onClose={() => setDetailUser(null)} />
+      )}
+
+      {pendingAction && (
+        <LockConfirmDialog
+          action={pendingAction.action}
+          userName={pendingAction.user.fullName}
+          isProcessing={isProcessing}
+          onCancel={() => !isProcessing && setPendingAction(null)}
+          onConfirm={async () => {
+            setIsProcessing(true)
+            if (pendingAction.action === 'lock') {
+              await lockUser(pendingAction.user.id)
+            } else {
+              await unlockUser(pendingAction.user.id)
+            }
+            setIsProcessing(false)
+            setPendingAction(null)
+          }}
+        />
       )}
     </div>
   )

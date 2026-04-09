@@ -1,5 +1,5 @@
-﻿import { ShoppingCart, Search, User, Heart, Menu, X, Sun, Moon } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
+import { ShoppingCart, Search, User, Heart, Menu, X, Sun, Moon, ImageOff } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -9,12 +9,93 @@ import { NotificationBell } from '@/components/common/NotificationBell'
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher'
 import { useShopTheme } from '@/hooks/use-shop-theme'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
+import { productApi } from '@/lib/http/product.api'
+import type { SuggestDto } from '@/lib/types/product/product.types'
+
+// ── Search Autocomplete Dropdown ─────────────────────────────────────────────
+
+interface SearchDropdownProps {
+  results: SuggestDto[]
+  query: string
+  activeIndex: number
+  onSelect: (item: SuggestDto) => void
+  onViewAll: () => void
+  isLoading: boolean
+}
+
+function SearchDropdown({ results, query, activeIndex, onSelect, onViewAll, isLoading }: SearchDropdownProps) {
+  if (!query.trim()) return null
+  return (
+    <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#21232d] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+      {isLoading && results.length === 0 ? (
+        <div className="flex items-center justify-center py-6">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+        </div>
+      ) : results.length === 0 ? (
+        <div className="py-6 text-center text-sm text-gray-400">
+          Không tìm thấy &ldquo;{query}&rdquo;
+        </div>
+      ) : (
+        <>
+          <ul role="listbox" className="max-h-72 overflow-y-auto py-1.5">
+            {results.map((item, i) => (
+              <li
+                key={item.id}
+                role="option"
+                aria-selected={i === activeIndex}
+                onMouseDown={e => { e.preventDefault(); onSelect(item) }}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors',
+                  i === activeIndex
+                    ? 'bg-orange-50 dark:bg-orange-500/10'
+                    : 'hover:bg-gray-50 dark:hover:bg-white/5',
+                )}
+              >
+                {/* Thumbnail */}
+                <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-white/5 flex items-center justify-center">
+                  {item.thumbnailUrl
+                    ? <img src={item.thumbnailUrl} alt={item.name} className="h-full w-full object-cover" />
+                    : <ImageOff size={14} className="text-gray-400" />}
+                </div>
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">{item.name}</p>
+                  {item.price != null && (
+                    <p className="text-xs font-semibold text-orange-500">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {/* View all link */}
+          <div className="border-t border-gray-100 dark:border-white/5 px-4 py-2.5">
+            <button
+              onMouseDown={e => { e.preventDefault(); onViewAll() }}
+              className="text-xs font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+            >
+              Xem tất cả kết quả cho &ldquo;{query}&rdquo; →
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
 
 function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
+  const [suggestions, setSuggestions] = useState<SuggestDto[]>([])
+  const [suggestLoading, setSuggestLoading] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const [showDropdown, setShowDropdown] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navigate = useNavigate()
   const { user } = useAuthContext()
   const { t } = useTranslation()
@@ -32,6 +113,10 @@ function Header() {
   useEffect(() => {
     if (searchOpen) {
       setTimeout(() => searchInputRef.current?.focus(), 50)
+    } else {
+      setSuggestions([])
+      setShowDropdown(false)
+      setActiveIndex(-1)
     }
   }, [searchOpen])
 
@@ -44,12 +129,70 @@ function Header() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
+  // Debounced autocomplete fetch — 300ms delay
+  const fetchSuggestions = useCallback((q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!q.trim() || q.trim().length < 2) {
+      setSuggestions([])
+      setShowDropdown(false)
+      setSuggestLoading(false)
+      return
+    }
+    setSuggestLoading(true)
+    debounceRef.current = setTimeout(async () => {
+      const res = await productApi.getSuggestProducts(q.trim())
+      setSuggestLoading(false)
+      if (res.success && res.data) {
+        setSuggestions(res.data)
+        setShowDropdown(true)
+      }
+    }, 300)
+  }, [])
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    setSearchValue(val)
+    setActiveIndex(-1)
+    fetchSuggestions(val)
+    if (!val.trim()) setShowDropdown(false)
+  }
+
+  function navigateToSearch(q: string) {
+    if (!q.trim()) return
+    navigate(`/search?q=${encodeURIComponent(q.trim())}`)
+    setSearchOpen(false)
+    setSearchValue('')
+    setSuggestions([])
+    setShowDropdown(false)
+  }
+
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (searchValue.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchValue.trim())}`)
-      setSearchOpen(false)
-      setSearchValue('')
+    // If an item is keyboard-selected, navigate to it
+    if (activeIndex >= 0 && suggestions[activeIndex]) {
+      handleSelectItem(suggestions[activeIndex])
+    } else {
+      navigateToSearch(searchValue)
+    }
+  }
+
+  function handleSelectItem(item: SuggestDto) {
+    navigate(`/products/${item.slug}`)
+    setSearchOpen(false)
+    setSearchValue('')
+    setSuggestions([])
+    setShowDropdown(false)
+  }
+
+  // Keyboard navigation: ArrowUp / ArrowDown / Enter
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown || suggestions.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex(i => Math.max(i - 1, -1))
     }
   }
 
@@ -82,6 +225,7 @@ function Header() {
           <div className="flex items-center gap-1">
             {/* Search button */}
             <button
+              id="header-search-btn"
               aria-label="Search"
               onClick={() => setSearchOpen(s => !s)}
               className={cn(
@@ -158,33 +302,61 @@ function Header() {
         </div>
       </div>
 
-      {/* ── Inline search bar (slides in below header) ─────────────────────────── */}
+      {/* ── Inline search bar with autocomplete ────────────────────────────────── */}
       <div className={cn(
-        'overflow-hidden border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] transition-all duration-200',
-        searchOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0',
+        'border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] transition-all duration-200',
+        searchOpen ? 'opacity-100' : 'max-h-0 opacity-0 overflow-hidden',
       )}>
-        <form onSubmit={handleSearchSubmit} className="mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
-          <Search size={16} className="shrink-0 text-gray-400" />
-          <input
-            ref={searchInputRef}
-            value={searchValue}
-            onChange={e => setSearchValue(e.target.value)}
-            placeholder={t('products.searchPlaceholder')}
-            className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
-          />
-          {searchValue && (
-            <button type="button" onClick={() => setSearchValue('')} className="shrink-0 text-gray-400 hover:text-gray-600">
-              <X size={14} />
+        <div className="relative mx-auto max-w-2xl px-4 py-3">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
+            <Search size={16} className="shrink-0 text-gray-400" />
+            <input
+              id="header-search-input"
+              ref={searchInputRef}
+              value={searchValue}
+              onChange={handleSearchChange}
+              onKeyDown={handleSearchKeyDown}
+              onFocus={() => { if (suggestions.length > 0) setShowDropdown(true) }}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              placeholder={t('products.searchPlaceholder')}
+              autoComplete="off"
+              aria-autocomplete="list"
+              aria-controls="search-suggestions"
+              aria-activedescendant={activeIndex >= 0 ? `suggestion-${activeIndex}` : undefined}
+              className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
+            />
+            {searchValue && (
+              <button
+                type="button"
+                onClick={() => { setSearchValue(''); setSuggestions([]); setShowDropdown(false) }}
+                className="shrink-0 text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={!searchValue.trim()}
+              className="shrink-0 rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+            >
+              {t('search.pageTitle')}
             </button>
+          </form>
+
+          {/* Autocomplete dropdown */}
+          {showDropdown && (
+            <div id="search-suggestions">
+              <SearchDropdown
+                results={suggestions}
+                query={searchValue}
+                activeIndex={activeIndex}
+                isLoading={suggestLoading}
+                onSelect={handleSelectItem}
+                onViewAll={() => navigateToSearch(searchValue)}
+              />
+            </div>
           )}
-          <button
-            type="submit"
-            disabled={!searchValue.trim()}
-            className="shrink-0 rounded-full bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
-          >
-            {t('search.pageTitle')}
-          </button>
-        </form>
+        </div>
       </div>
 
       {/* Mobile Menu */}

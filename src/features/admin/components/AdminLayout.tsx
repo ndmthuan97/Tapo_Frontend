@@ -21,6 +21,8 @@ import {
   Ticket,
   RotateCcw,
   FileText,
+  Star,
+  Image,
 } from 'lucide-react'
 
 import { useTranslation } from 'react-i18next'
@@ -58,6 +60,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/categories', icon: Tag,         labelKey: 'admin.nav.categories' },
       { to: '/admin/brands',     icon: Bookmark,    labelKey: 'admin.nav.brands' },
       { to: '/admin/blog',       icon: FileText,    labelKey: 'admin.nav.blog' },
+      { to: '/admin/banners',    icon: Image,       labelKey: 'admin.nav.banners' },
     ],
   },
 
@@ -68,6 +71,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/vouchers', icon: Ticket,       labelKey: 'admin.nav.vouchers' },
       { to: '/admin/returns',  icon: RotateCcw,    labelKey: 'admin.nav.returns' },
       { to: '/admin/messages', icon: Mail,         labelKey: 'admin.nav.messages' },
+      { to: '/admin/reviews',  icon: Star,         labelKey: 'admin.nav.reviews' },
     ],
   },
 ]
