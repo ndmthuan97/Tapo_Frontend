@@ -1,14 +1,34 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   RefreshCw, RotateCcw, CheckCircle2, XCircle, Clock,
-  ImageOff, Loader2, AlertCircle, Eye,
+  ImageOff, Loader2, AlertCircle, Eye, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { returnRequestApi, type ReturnRequestDto, type ReturnRequestStatus } from '@/lib/http/return-request.api'
 import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
+import * as XLSX from 'xlsx'
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Excel Export helper ───────────────────────────────────────────────────────
+
+function exportReturnsToExcel(requests: ReturnRequestDto[]) {
+  const rows = requests.map(r => ({
+    'Mã đơn hàng': r.orderCode ?? '',
+    'Khách hàng':  r.userName  ?? '',
+    'Lý do':       r.reason    ?? '',
+    'Trạng thái':  r.status    ?? '',
+    'Ghi chú':     r.staffNote ?? '',
+    'Ngày gửi':    new Date(String(r.createdAt)).toLocaleString('vi-VN'),
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  ws['!cols'] = [{ wch: 16 }, { wch: 24 }, { wch: 40 }, { wch: 12 }, { wch: 30 }, { wch: 20 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Đổi trả')
+  const date = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(wb, `tapo-returns-${date}.xlsx`)
+  toast.success('Đã xuất file Excel Đổi/Trả')
+}
+
 
 const PAGE_SIZE = 20
 
@@ -241,6 +261,13 @@ function AdminReturnsPage() {
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">Danh sách yêu cầu</p>
             <AdminSearchInput value={searchQuery} onChange={v => { setSearchQuery(v); setPage(0) }} placeholder="Tìm theo mã đơn, khách hàng..." />
             <AdminFilterSelect value={activeStatus} onChange={v => { setActiveStatus(v as ReturnRequestStatus | 'ALL'); setPage(0) }} options={STATUS_FILTER_OPTIONS} />
+            <button
+              onClick={() => exportReturnsToExcel(filteredRequests)}
+              disabled={filteredRequests.length === 0}
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Download size={12} /> Export Excel
+            </button>
             <button onClick={loadData} className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:border-orange-400 hover:text-orange-500 transition-colors">
               <RefreshCw size={12} /> Làm mới
             </button>

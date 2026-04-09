@@ -55,4 +55,13 @@ export const orderApi = {
       httpClient.get<ApiResponse<OrderDto>>(`/api/admin/orders/${id}`),
     )
   },
+
+  adminBulkUpdateStatus(orderIds: string[], newStatus: OrderStatus, note?: string) {
+    return apiCall<string[]>(
+      httpClient.patch<ApiResponse<string[]>>(
+        '/api/admin/orders/bulk-status',
+        { orderIds, newStatus, note: note ?? '' },
+      ),
+    )
+  },
 }

@@ -6,7 +6,7 @@ import {
   ChevronDown,
   Eye, ImageOff,
   Clock, Package, Truck, PackageCheck, XCircle, ShoppingBag,
-  Download,
+  Download, CheckSquare, Square, Loader2 as BulkLoader,
 } from 'lucide-react'
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderStatus, OrderSummary } from '@/lib/types/order/order.types'
@@ -15,36 +15,25 @@ import { AdminOrderDetailModal } from '@/features/admin/components/AdminOrderDet
 import { StatCard, AdminSearchInput, AdminFilterSelect, AdminTablePagination } from '@/features/admin/components/AdminShared'
 import React from 'react'
 
-// ── CSV Export helper ────────────────────────────────────────────────────
+// ── Excel Export helper (SheetJS) ────────────────────────────────────────
+import * as XLSX from 'xlsx'
 
-function escapeCsvField(value: string | number | undefined | null): string {
-  if (value == null) return ''
-  const str = String(value)
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return `"${str.replace(/"/g, '""')}"`
-  }
-  return str
-}
-
-function exportOrdersToCsv(orders: OrderSummary[], filename = 'orders.csv') {
-  const headers = ['M\u00e3 đơn', 'Sản phẩm', 'Tổng tiền', 'Thanh toán', 'Trạng thái', 'Ngày tạo']
-  const rows = orders.map(o => [
-    escapeCsvField(o.orderCode),
-    escapeCsvField(o.firstProductName),
-    escapeCsvField(o.totalAmount),
-    escapeCsvField(o.paymentStatus),
-    escapeCsvField(o.status),
-    escapeCsvField(new Date(o.createdAt).toLocaleString('vi-VN')),
-  ].join(','))
-  const csv = [headers.join(','), ...rows].join('\n')
-  // BOM for Excel to correctly detect UTF-8
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+function exportOrdersToExcel(orders: OrderSummary[], filename = 'orders.xlsx') {
+  const rows = orders.map(o => ({
+    'Mã đơn':     o.orderCode ?? '',
+    'Sản phẩm':   o.firstProductName ?? '',
+    'Tổng tiền':  o.totalAmount,
+    'Thanh toán': o.paymentStatus ?? '',
+    'Trạng thái': o.status ?? '',
+    'Ngày tạo':   new Date(o.createdAt).toLocaleString('vi-VN'),
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  ws['!cols'] = [
+    { wch: 18 }, { wch: 36 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 20 },
+  ]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Đơn hàng')
+  XLSX.writeFile(wb, filename)
 }
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -161,6 +150,8 @@ function AdminOrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkLoading, setIsBulkLoading] = useState(false)
 
   const STATUS_OPTIONS = useMemo(() => [
     { value: 'ALL',        label: t('orders.statusFilter.ALL')        },
@@ -209,6 +200,36 @@ function AdminOrdersPage() {
   const pendingCount  = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED').length
   const deliveredCount = orders.filter(o => o.status === 'DELIVERED').length
 
+  async function handleBulkStatus(newStatus: OrderStatus) {
+    if (selectedIds.size === 0) return
+    setIsBulkLoading(true)
+    const res = await orderApi.adminBulkUpdateStatus([...selectedIds], newStatus)
+    setIsBulkLoading(false)
+    if (res.success) {
+      toast.success(`Đã cập nhật ${res.data?.length ?? 0} đơn hàng → ${newStatus}`)
+      setSelectedIds(new Set())
+      loadData()
+    } else {
+      toast.error('Có lỗi khi bulk update', { description: res.error?.message })
+    }
+  }
+
+  function toggleRow(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === filteredOrders.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredOrders.map(o => o.id)))
+    }
+  }
+
   return (
     <>
       <div className="p-6 space-y-6">
@@ -243,19 +264,19 @@ function AdminOrdersPage() {
               onChange={v => { setActiveStatus(v as OrderStatus | 'ALL'); setPage(0) }}
               options={STATUS_OPTIONS}
             />
-            {/* Export CSV button */}
+            {/* Export Excel button */}
             <button
-              id="export-orders-csv-btn"
+              id="export-orders-excel-btn"
               type="button"
               disabled={filteredOrders.length === 0}
               onClick={() => {
                 const date = new Date().toISOString().slice(0, 10)
-                exportOrdersToCsv(filteredOrders, `orders_${activeStatus.toLowerCase()}_${date}.csv`)
-                toast.success(`Đã xuất ${filteredOrders.length} đơn hàng ra CSV`)
+                exportOrdersToExcel(filteredOrders, `orders_${activeStatus.toLowerCase()}_${date}.xlsx`)
+                toast.success(`Đã xuất ${filteredOrders.length} đơn hàng ra Excel`)
               }}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:border-orange-300 hover:text-orange-500 dark:hover:text-orange-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:border-green-400 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
-              <Download size={12} /> Export CSV
+              <Download size={12} /> Export Excel
             </button>
           </div>
 
@@ -264,6 +285,13 @@ function AdminOrdersPage() {
             <table className="w-full min-w-[700px] text-sm">
               <thead>
                 <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
+                  <th className="px-4 py-3.5">
+                    <button onClick={toggleAll} className="flex items-center justify-center text-gray-300 hover:text-orange-500 transition">
+                      {selectedIds.size > 0 && selectedIds.size === filteredOrders.length
+                        ? <CheckSquare size={15} className="text-orange-500" />
+                        : <Square size={15} />}
+                    </button>
+                  </th>
                   <th className="px-5 py-3.5">{t('adminOrders.col.orderId')}</th>
                   <th className="px-5 py-3.5">{t('adminOrders.col.product')}</th>
                   <th className="px-5 py-3.5">{t('adminOrders.col.total')}</th>
@@ -277,7 +305,7 @@ function AdminOrdersPage() {
                   <OrdersSkeleton />
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-sm text-gray-400">
+                    <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
                       {t('adminOrders.noResults')}
                     </td>
                   </tr>
@@ -286,7 +314,14 @@ function AdminOrdersPage() {
                   const date = new Date(order.createdAt).toLocaleDateString(locale)
                   const time = new Date(order.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
                   return (
-                    <tr key={order.id} className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]">
+                    <tr key={order.id} className={cn('group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]', selectedIds.has(order.id) && 'bg-orange-50/40 dark:bg-orange-500/5')}>
+                      <td className="px-4 py-3.5">
+                        <button onClick={() => toggleRow(order.id)} className="flex items-center justify-center text-gray-300 hover:text-orange-500 transition">
+                          {selectedIds.has(order.id)
+                            ? <CheckSquare size={15} className="text-orange-500" />
+                            : <Square size={15} />}
+                        </button>
+                      </td>
                       <td className="px-5 py-3.5">
                         <p className="text-xs font-bold text-gray-800 dark:text-gray-100">{order.orderCode}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">{time} · {date}</p>
@@ -343,6 +378,37 @@ function AdminOrdersPage() {
 
       {detailOrderId !== null && (
         <AdminOrderDetailModal orderId={detailOrderId} onClose={() => setDetailOrderId(null)} />
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-2xl border border-orange-200 dark:border-orange-500/30 bg-white dark:bg-[#21232d] px-5 py-3 shadow-2xl shadow-orange-100/50 dark:shadow-black/40 transition-all animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+            {selectedIds.size} đơn đã chọn
+          </span>
+          <div className="h-4 w-px bg-gray-200 dark:bg-white/10" />
+          {(['CONFIRMED', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] as OrderStatus[]).map(s => (
+            <button
+              key={s}
+              disabled={isBulkLoading}
+              onClick={() => handleBulkStatus(s)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50',
+                STATUS_CONFIG[s].color, STATUS_CONFIG[s].bg,
+                'hover:opacity-80 active:scale-95',
+              )}
+            >
+              {isBulkLoading ? <BulkLoader size={11} className="animate-spin" /> : React.createElement(STATUS_CONFIG[s].icon, { size: 11 })}
+              {s}
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-2 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-1.5 text-xs font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          >
+            Bỏ chọn
+          </button>
+        </div>
       )}
     </>
   )

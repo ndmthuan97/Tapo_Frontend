@@ -17,6 +17,7 @@ import { CheckoutPage }        from '@/features/shop/home/pages/CheckoutPage'
 import { OrdersPage }          from '@/features/shop/home/pages/OrdersPage'
 import { OrderDetailPage }     from '@/features/shop/home/pages/OrderDetailPage'
 import { OrderReturnPage }     from '@/features/shop/home/pages/OrderReturnPage'
+import { MyReturnsPage }       from '@/features/shop/home/pages/MyReturnsPage'
 import { ComparePage }         from '@/features/shop/home/pages/ComparePage'
 import { LoginPage }           from '@/features/shop/auth/pages/LoginPage'
 import { RegisterPage }        from '@/features/shop/auth/pages/RegisterPage'
@@ -109,6 +110,7 @@ function App() {
           <Route path="/orders"           element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
           <Route path="/orders/:id"       element={<PrivateRoute><OrderDetailPage /></PrivateRoute>} />
           <Route path="/orders/:id/return" element={<PrivateRoute><OrderReturnPage /></PrivateRoute>} />
+          <Route path="/orders/returns"    element={<PrivateRoute><MyReturnsPage /></PrivateRoute>} />
 
           {/* ── Admin panel ──────────────────────────────────────────── */}
           <Route path="/admin"             element={<AdminPage><DashboardPage /></AdminPage>} />

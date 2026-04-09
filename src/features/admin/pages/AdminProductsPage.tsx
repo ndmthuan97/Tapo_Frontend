@@ -973,8 +973,22 @@ function AdminProductsPage() {
                     <td className="px-5 py-3.5 text-right font-medium text-gray-900 dark:text-gray-100">
                       {p.price.toLocaleString('vi-VN')}₫
                     </td>
-                    <td className={cn('px-5 py-3.5 text-right font-medium', p.stock === 0 ? 'text-red-500' : 'text-gray-900 dark:text-gray-100')}>
-                      {p.stock.toLocaleString()}
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {p.stock > 0 && p.stock < 10 && (
+                          <span className="rounded-full bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+                            Sắp hết
+                          </span>
+                        )}
+                        <span className={cn(
+                          'font-medium',
+                          p.stock === 0 ? 'text-red-500'
+                            : p.stock < 10 ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-gray-900 dark:text-gray-100',
+                        )}>
+                          {p.stock.toLocaleString()}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-3.5"><StatusBadge status={p.status} /></td>
                     <td className="px-5 py-3.5">

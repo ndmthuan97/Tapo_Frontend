@@ -22,7 +22,7 @@ export interface AdminReviewDto {
 }
 
 export const adminReviewApi = {
-  listAll(params?: { status?: ReviewStatus; page?: number; size?: number }) {
+  listAll(params?: { status?: ReviewStatus; rating?: number; page?: number; size?: number }) {
     return apiCall<PageResponse<AdminReviewDto>>(
       httpClient.get<ApiResponse<PageResponse<AdminReviewDto>>>('/api/admin/reviews', {
         params: { page: 0, size: 20, ...params },

@@ -119,6 +119,39 @@ function VoucherCard({ voucher }: { voucher: VoucherDto }) {
           )}
         </p>
 
+        {/* Usage progress bar — shows only when usageLimit is defined */}
+        {voucher.usageLimit && voucher.usageLimit > 0 && (() => {
+          const used    = voucher.usageCount
+          const limit   = voucher.usageLimit
+          const pct     = Math.min(100, Math.round((used / limit) * 100))
+          const left    = limit - used
+          const leftPct = 100 - pct
+          const barColor =
+            leftPct < 20  ? 'bg-red-500'
+            : leftPct < 50 ? 'bg-amber-400'
+            : 'bg-emerald-500'
+          const textColor =
+            leftPct < 20  ? 'text-red-500 dark:text-red-400'
+            : leftPct < 50 ? 'text-amber-600 dark:text-amber-400'
+            : 'text-emerald-600 dark:text-emerald-400'
+          return (
+            <div className="mt-3">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">Đã dùng {used}/{limit}</span>
+                <span className={cn('text-[10px] font-bold', textColor)}>
+                  Còn {left} lượt
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
+                <div
+                  className={cn('h-full rounded-full transition-all duration-500', barColor)}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Divider dashed */}
         <div className="my-4 border-t border-dashed border-gray-200 dark:border-white/10" />
 
@@ -159,21 +192,38 @@ function VoucherCard({ voucher }: { voucher: VoucherDto }) {
 function VouchersPage() {
   const [vouchers, setVouchers] = useState<VoucherDto[]>([])
   const [loading,  setLoading]  = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    httpClient.get<{ data: { content: VoucherDto[] } }>('/api/vouchers/active?size=24')
-      .then(res => {
-        if (!cancelled) setVouchers(res.data.data?.content ?? [])
-      })
-      .catch(() => {
-        if (!cancelled) setError('Không thể tải danh sách voucher')
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [])
+  const PAGE_SIZE = 12
+
+  async function loadVouchers(pageNum: number, append = false) {
+    if (append) setLoadingMore(true)
+    else setLoading(true)
+    try {
+      const res = await httpClient.get<{ data: { content: VoucherDto[]; last: boolean } }>(
+        `/api/vouchers/active?page=${pageNum}&size=${PAGE_SIZE}`,
+      )
+      const content = res.data.data?.content ?? []
+      setVouchers(prev => append ? [...prev, ...content] : content)
+      setHasMore(!(res.data.data?.last ?? true))
+    } catch {
+      if (!append) setError('Không thể tải danh sách voucher')
+    } finally {
+      if (append) setLoadingMore(false)
+      else setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadVouchers(0) }, [])
+
+  function handleLoadMore() {
+    const next = page + 1
+    setPage(next)
+    loadVouchers(next, true)
+  }
 
   return (
     <>
@@ -230,11 +280,28 @@ function VouchersPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {vouchers.map(v => (
-                <VoucherCard key={v.id} voucher={v} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {vouchers.map(v => (
+                  <VoucherCard key={v.id} voucher={v} />
+                ))}
+              </div>
+              {hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    id="vouchers-load-more-btn"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="flex items-center gap-2 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-white dark:bg-[#21232d] px-6 py-2.5 text-sm font-semibold text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                  >
+                    {loadingMore
+                      ? <><Loader2 size={14} className="animate-spin" /> Đang tải...</>
+                      : <><Ticket size={14} /> Xem thêm voucher</>
+                    }
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

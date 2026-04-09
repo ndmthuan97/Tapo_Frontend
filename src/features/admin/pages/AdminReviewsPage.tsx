@@ -281,6 +281,7 @@ function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<ReviewStatus | 'ALL'>('PENDING')
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -290,6 +291,7 @@ function AdminReviewsPage() {
     setIsLoading(true)
     const res = await adminReviewApi.listAll({
       status: activeTab === 'ALL' ? undefined : activeTab,
+      rating: ratingFilter,
       page,
       size: 15,
     })
@@ -298,7 +300,7 @@ function AdminReviewsPage() {
       setReviews(res.data.content)
       setTotalPages(res.data.totalPages)
     }
-  }, [activeTab, page])
+  }, [activeTab, ratingFilter, page])
 
   useEffect(() => { loadReviews() }, [loadReviews])
 
@@ -384,9 +386,9 @@ function AdminReviewsPage() {
           <button
             key={tab.value}
             id={`tab-${tab.value.toLowerCase()}`}
-            onClick={() => { setActiveTab(tab.value); setPage(0) }}
+            onClick={() => { setActiveTab(tab.value); setRatingFilter(undefined); setPage(0) }}
             className={cn(
-              'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-xs font-semibold transition-all',
+              'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2 text-xs font-semibold transition-all duration-150',
               activeTab === tab.value
                 ? 'bg-white dark:bg-[#21232d] text-orange-500 shadow-sm'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
@@ -398,6 +400,39 @@ function AdminReviewsPage() {
                 {pendingCount}
               </span>
             )}
+          </button>
+        ))}
+      </div>
+
+      {/* Rating filter chips — UI/UX §2 touch, §5 color, §6 animation */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-gray-400 dark:text-gray-500 whitespace-nowrap">Lọc sao:</span>
+        <button
+          id="rating-all"
+          onClick={() => { setRatingFilter(undefined); setPage(0) }}
+          className={cn(
+            'flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-150',
+            !ratingFilter
+              ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 shadow-sm'
+              : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-orange-300 dark:hover:border-orange-500/30 hover:text-orange-500',
+          )}
+        >
+          Tất cả
+        </button>
+        {[5, 4, 3, 2, 1].map(r => (
+          <button
+            key={r}
+            id={`rating-${r}`}
+            onClick={() => { setRatingFilter(ratingFilter === r ? undefined : r); setPage(0) }}
+            className={cn(
+              'flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-150',
+              ratingFilter === r
+                ? 'border-amber-400 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-amber-300 dark:hover:border-amber-500/30 hover:text-amber-500',
+            )}
+          >
+            <Star size={11} className={cn('transition-colors', ratingFilter === r ? 'fill-amber-400 text-amber-400' : 'fill-gray-300 text-gray-300 dark:fill-white/20 dark:text-white/20')} />
+            {r} sao
           </button>
         ))}
       </div>

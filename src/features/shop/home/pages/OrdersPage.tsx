@@ -7,7 +7,7 @@ import { formatCurrency } from '@/utils/formatCurrency'
 import { cn } from '@/lib/utils'
 import { orderApi } from '@/lib/http/order.api'
 import type { OrderSummary, OrderStatus, OrderPage } from '@/lib/types/order/order.types'
-import { ChevronRight, Package, ImageOff, Search, X } from 'lucide-react'
+import { ChevronRight, Package, ImageOff, Search, X, RotateCcw } from 'lucide-react'
 import { OrderCardSkeletonList } from '@/components/ui/SkeletonComponents'
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -77,12 +77,22 @@ function OrderCard({ order }: { order: OrderSummary }) {
           <span className="text-xs text-gray-400">{t('orders.total')}: </span>
           <span className="text-base font-bold text-orange-500">{formatCurrency(order.totalAmount)}</span>
         </div>
-        <Link
-          to={`/orders/${order.id}`}
-          className="flex items-center gap-1.5 rounded-full border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-4 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors"
-        >
-          {t('orders.viewDetail')} <ChevronRight size={12} />
-        </Link>
+        <div className="flex items-center gap-2">
+          {order.status === 'DELIVERED' && (
+            <Link
+              to={`/orders/${order.id}/return`}
+              className="flex items-center gap-1 rounded-full border border-gray-200 dark:border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:border-rose-300 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+            >
+              <RotateCcw size={11} /> Đổi/Trả
+            </Link>
+          )}
+          <Link
+            to={`/orders/${order.id}`}
+            className="flex items-center gap-1.5 rounded-full border border-orange-200 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 px-4 py-1.5 text-xs font-semibold text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors"
+          >
+            {t('orders.viewDetail')} <ChevronRight size={12} />
+          </Link>
+        </div>
       </div>
     </div>
   )
@@ -145,9 +155,17 @@ function OrdersPage() {
         </div>
 
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6 flex items-center gap-3">
-            <Package size={22} className="text-orange-500" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.pageTitle')}</h1>
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Package size={22} className="text-orange-500" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('orders.pageTitle')}</h1>
+            </div>
+            <Link
+              to="/orders/returns"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-white/10 px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:border-rose-300 hover:text-rose-500 transition-colors"
+            >
+              <RotateCcw size={12} /> Đổi/Trả của tôi
+            </Link>
           </div>
 
           {/* Search */}
