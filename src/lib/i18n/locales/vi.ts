@@ -399,6 +399,9 @@ const vi = {
       blog: 'Blog',
       banners: 'Banners',
       reviews: 'Đánh giá',
+      chat: 'Live Chat',
+      flashSales: 'Flash Sales',
+      inventory: 'Quản lý kho',
     },
 
     dashboard: {

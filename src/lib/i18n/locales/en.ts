@@ -399,6 +399,9 @@ const en = {
       blog: 'Blog',
       banners: 'Banners',
       reviews: 'Reviews',
+      chat: 'Live Chat',
+      flashSales: 'Flash Sales',
+      inventory: 'Inventory',
     },
 
     dashboard: {

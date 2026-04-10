@@ -34,6 +34,8 @@ import { BlogDetailPage }      from '@/features/shop/home/pages/BlogDetailPage'
 import { ContactPage }         from '@/features/shop/home/pages/ContactPage'
 import { VouchersPage }        from '@/features/shop/home/pages/VouchersPage'
 
+import { CustomerChatWidget } from '@/features/shop/user/components/CustomerChatWidget'
+
 // ── Admin (lazy-loaded — code splitting cho admin bundle) ──────────────────────────────
 const AdminLayout         = lazy(() => import('@/features/admin/components/AdminLayout').then(m => ({ default: m.AdminLayout })))
 const DashboardPage       = lazy(() => import('@/features/admin/pages/DashboardPage').then(m => ({ default: m.DashboardPage })))
@@ -49,6 +51,9 @@ const AdminVouchersPage   = lazy(() => import('@/features/admin/pages/AdminVouch
 const AdminReturnsPage    = lazy(() => import('@/features/admin/pages/AdminReturnsPage').then(m => ({ default: m.AdminReturnsPage })))
 const AdminBlogPage       = lazy(() => import('@/features/admin/pages/AdminBlogPage').then(m => ({ default: m.AdminBlogPage })))
 const AdminBannersPage    = lazy(() => import('@/features/admin/pages/AdminBannersPage').then(m => ({ default: m.AdminBannersPage })))
+const AdminChatPage       = lazy(() => import('@/features/admin/pages/AdminChatPage').then(m => ({ default: m.AdminChatPage })))
+const AdminFlashSalesPage = lazy(() => import('@/features/admin/pages/AdminFlashSalesPage').then(m => ({ default: m.AdminFlashSalesPage })))
+const AdminInventoryPage  = lazy(() => import('@/features/admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })))
 
 
 
@@ -82,6 +87,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster position="top-right" richColors closeButton duration={4000} />
+        <CustomerChatWidget />
         <Routes>
           {/* ── Public / Shop ───────────────────────────────────────── */}
           <Route path="/"         element={<HomePage />} />
@@ -127,6 +133,9 @@ function App() {
           <Route path="/admin/reviews"     element={<AdminPage><AdminReviewsPage /></AdminPage>} />
           <Route path="/admin/blog"        element={<AdminPage><AdminBlogPage /></AdminPage>} />
           <Route path="/admin/banners"     element={<AdminPage><AdminBannersPage /></AdminPage>} />
+          <Route path="/admin/chat"        element={<AdminPage><AdminChatPage /></AdminPage>} />
+          <Route path="/admin/flash-sales" element={<AdminPage><AdminFlashSalesPage /></AdminPage>} />
+          <Route path="/admin/inventory"   element={<AdminPage><AdminInventoryPage /></AdminPage>} />
           <Route path="/admin/profile"     element={<AdminPage><AdminProfilePage /></AdminPage>} />
 
           {/* ── 404 catch-all ─────────────────────────── */}

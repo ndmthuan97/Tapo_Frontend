@@ -23,6 +23,9 @@ import {
   FileText,
   Star,
   Image,
+  MessageCircle,
+  Zap,
+  Archive,
 } from 'lucide-react'
 
 import { useTranslation } from 'react-i18next'
@@ -70,8 +73,11 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/admin/orders',   icon: ShoppingBag, labelKey: 'admin.nav.orders' },
       { to: '/admin/vouchers', icon: Ticket,       labelKey: 'admin.nav.vouchers' },
       { to: '/admin/returns',  icon: RotateCcw,    labelKey: 'admin.nav.returns' },
-      { to: '/admin/messages', icon: Mail,         labelKey: 'admin.nav.messages' },
-      { to: '/admin/reviews',  icon: Star,         labelKey: 'admin.nav.reviews' },
+      { to: '/admin/messages', icon: Mail,          labelKey: 'admin.nav.messages' },
+      { to: '/admin/reviews',  icon: Star,          labelKey: 'admin.nav.reviews' },
+      { to: '/admin/chat',        icon: MessageCircle, labelKey: 'admin.nav.chat' },
+      { to: '/admin/flash-sales', icon: Zap,           labelKey: 'admin.nav.flashSales' },
+      { to: '/admin/inventory',   icon: Archive,       labelKey: 'admin.nav.inventory' },
     ],
   },
 ]
