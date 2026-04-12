@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# .github/workflows/lint-and-build.yml  (repo: ndmthuan97/Tapo_Frontend)
+#
+# CI/CD Pipeline: TypeScript check → ESLint → Production build
+#
+# Deploy: Vercel GitHub Integration tự xử lý sau khi workflow này pass.
+#         Không cần thêm deploy step.
+#
+# Secrets: Không cần — Vercel inject qua GitHub App integration
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: "Lint + TypeCheck + Build"
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+# ──────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  validate:
+    name: "🔍 TypeScript + Lint + Build"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        # react skill: --noEmit kiểm tra types mà không emit file (nhanh hơn build)
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Production build
+        # Stub tất cả VITE_* vars để Vite không lỗi missing env
+        run: npm run build
+        env:
+          VITE_API_BASE_URL:             https://placeholder.example.com/api
+          VITE_SUPABASE_URL:             https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY:        placeholder-anon-key
+          VITE_SUPABASE_AVATAR_BUCKET:   avatars
+          VITE_SUPABASE_PRODUCT_BUCKET:  products
+          VITE_WS_URL:                   wss://placeholder.example.com/ws
+          VITE_EMAILJS_SERVICE_ID:       placeholder
+          VITE_EMAILJS_TEMPLATE_ID:      placeholder
+          VITE_EMAILJS_PUBLIC_KEY:       placeholder
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 3
+
+      - name: Summary
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          {
+            echo "### Frontend CI passed"
+            echo ""
+            echo "| Check | Status |"
+            echo "|-------|--------|"
+            echo "| TypeScript | No type errors |"
+            echo "| ESLint | No lint errors |"
+            echo "| Vite build | Production build OK |"
+            echo ""
+            echo "Vercel sẽ deploy tự động sau commit này."
+          } >> "$GITHUB_STEP_SUMMARY"
