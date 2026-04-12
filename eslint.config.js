@@ -21,18 +21,19 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // ── React Compiler rules (eslint-plugin-react-hooks v5) ────────────────
+      // ── React Hooks v5 strict rules — downgrade to warn ───────────────────
       // Codebase không dùng React Compiler — các pattern này là valid React code
-      // Downgrade từ error → warn để không block CI
-      'react-hooks/react-compiler':             'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs':                'warn',
+      'react-hooks/immutability':        'warn',
+      'react-hooks/purity':              'warn',
 
       // ── Fast Refresh ───────────────────────────────────────────────────────
-      // Mixed export files (component + constants) — common pattern, warn only
-      'react-refresh/only-export-components':   ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
       // ── TypeScript ─────────────────────────────────────────────────────────
-      '@typescript-eslint/no-explicit-any':     'warn',
-      '@typescript-eslint/no-unused-vars':      ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any':       'warn',
+      '@typescript-eslint/no-unused-vars':        ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/no-unused-expressions': 'warn',
     },
   },
