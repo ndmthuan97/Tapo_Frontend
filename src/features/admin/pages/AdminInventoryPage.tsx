@@ -129,8 +129,8 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
 
     const payload: CreateReceiptRequest = { type: receiptType, note: note || undefined, items }
     try {
-      const receipt = await inventoryApi.createReceipt(payload)
-      toast.success(`Phiếu ${receipt.receiptCode} đã được tạo — stock đã cập nhật`)
+      const res = await inventoryApi.createReceipt(payload)
+      toast.success(`Phiếu ${res.data!.receiptCode} đã được tạo — stock đã cập nhật`)
       onSaved()
     } catch {
       toast.error('Không thể tạo phiếu kho. Kiểm tra lại Product ID và tồn kho.')
@@ -252,7 +252,7 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
 
   useEffect(() => {
     inventoryApi.getReceipt(id)
-      .then(setReceipt)
+      .then(res => setReceipt(res.data))
       .catch(() => toast.error('Không thể tải chi tiết phiếu'))
       .finally(() => setLoading(false))
   }, [id])

@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Zap, Clock, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { flashSaleApi, type FlashSaleDto } from '@/lib/http/flash-sale.api'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 
 // ── Countdown hook ────────────────────────────────────────────────────────────
 function useCountdown(endTime: string) {
@@ -130,15 +129,14 @@ function FlashCard({ sale, onClick }: { sale: FlashSaleDto; onClick: () => void 
 // ── Main Banner ───────────────────────────────────────────────────────────────
 export function FlashSaleBanner() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
   const [sales, setSales]       = useState<FlashSaleDto[]>([])
   const [loading, setLoading]   = useState(true)
   const [current, setCurrent]   = useState(0)
 
   const loadSales = useCallback(async () => {
     try {
-      const data = await flashSaleApi.getActiveSales()
-      setSales(data)
+      const res = await flashSaleApi.getActiveSales()
+      setSales(res.data ?? [])
     } catch {
       // Silent fail — banner is non-critical
     } finally {

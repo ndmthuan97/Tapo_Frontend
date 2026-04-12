@@ -59,10 +59,11 @@ export function CustomerChatWidget() {
     if (room) return // already loaded
     setLoading(true)
     try {
-      const r = await chatApi.openRoom()
+      const roomRes = await chatApi.openRoom()
+      const r = roomRes.data!
       setRoom(r)
-      const msgs = await chatApi.getMessages(r.id)
-      setMessages(msgs)
+      const msgsRes = await chatApi.getMessages(r.id)
+      setMessages(msgsRes.data ?? [])
       chatApi.markAsRead(r.id).catch(() => undefined)
     } catch {
       toast.error('Không thể kết nối chat. Thử lại sau.')
@@ -110,9 +111,11 @@ export function CustomerChatWidget() {
         stompSend(content)
       } else {
         // Fallback to REST if WS not connected
-        const sent = await chatApi.sendMessage(room.id, content)
+        const sentRes = await chatApi.sendMessage(room.id, content)
         // Replace optimistic with server response
-        setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? sent : m))
+        if (sentRes.data) {
+          setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? sentRes.data! : m))
+        }
       }
     } catch {
       // Rollback optimistic update on error
@@ -207,7 +210,7 @@ export function CustomerChatWidget() {
           {room?.status !== 'CLOSED' && (
             <div className="flex items-end gap-2 px-3 py-3 border-t border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
               {!isConnected && (
-                <WifiOff size={14} className="text-gray-400 mt-1 shrink-0" title="Đang dùng REST fallback" />
+                <WifiOff size={14} className="text-gray-400 mt-1 shrink-0" aria-label="Đang dùng REST fallback" />
               )}
               <textarea
                 id="chat-input"

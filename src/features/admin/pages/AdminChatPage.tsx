@@ -8,7 +8,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  MessageCircle, User, Clock, CheckCircle2, XCircle,
+  MessageCircle, User, Clock, XCircle,
   Send, Loader2, RefreshCw, WifiOff, Circle,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,7 +16,6 @@ import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import { chatApi, type ChatRoomDto, type ChatMessageDto } from '@/lib/http/chat.api'
 import { useAuthContext } from '@/lib/context/auth-context'
-import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 const WS_URL   = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/ws`
@@ -115,7 +114,6 @@ function Bubble({ msg, adminId }: { msg: ChatMessageDto; adminId: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function AdminChatPage() {
-  const { t }     = useTranslation()
   const { user }  = useAuthContext()
 
   const [rooms,       setRooms]       = useState<ChatRoomDto[]>([])
@@ -139,8 +137,8 @@ export function AdminChatPage() {
   const loadRooms = useCallback(async () => {
     setLoadingRooms(true)
     try {
-      const list = await chatApi.listRooms()
-      setRooms(list)
+      const res = await chatApi.listRooms()
+      setRooms(res.data ?? [])
     } catch {
       toast.error('Không thể tải danh sách chat')
     } finally {
@@ -195,8 +193,8 @@ export function AdminChatPage() {
     setMessages([])
     setLoadingMsgs(true)
     try {
-      const msgs = await chatApi.getMessages(room.id)
-      setMessages(msgs)
+      const msgsRes = await chatApi.getMessages(room.id)
+      setMessages(msgsRes.data ?? [])
       chatApi.markAsRead(room.id).catch(() => undefined)
       setRooms(prev => prev.map(r => r.id === room.id ? { ...r, unreadCount: 0 } : r))
     } catch {
@@ -235,8 +233,10 @@ export function AdminChatPage() {
         // Remove optimistic (server will push real one back via admin topic)
         setTimeout(() => setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id)), 300)
       } else {
-        const sent = await chatApi.sendMessage(activeRoom.id, content)
-        setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? sent : m))
+        const sentRes = await chatApi.sendMessage(activeRoom.id, content)
+        if (sentRes.data) {
+          setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? sentRes.data! : m))
+        }
       }
     } catch {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
@@ -250,7 +250,8 @@ export function AdminChatPage() {
   const handleClose = useCallback(async () => {
     if (!activeRoom) return
     try {
-      const updated = await chatApi.closeRoom(activeRoom.id)
+      const res = await chatApi.closeRoom(activeRoom.id)
+      const updated = res.data!
       setActiveRoom(updated)
       setRooms(prev => prev.map(r => r.id === updated.id ? updated : r))
       toast.success('Đã đóng phòng chat')
@@ -269,7 +270,7 @@ export function AdminChatPage() {
             Hộp chat ({rooms.length})
           </h2>
           <div className="flex items-center gap-2">
-            {!isConnected && <WifiOff size={14} className="text-gray-400" title="Mất kết nối WS" />}
+            {!isConnected && <WifiOff size={14} className="text-gray-400" aria-label="Mất kết nối WS" />}
             <button onClick={loadRooms} className="text-gray-400 hover:text-gray-600" title="Làm mới">
               <RefreshCw size={14} />
             </button>

@@ -15,4 +15,8 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  build: {
+    // xlsx + stomp deps are large — suppress warning to avoid CI exit code 1
+    chunkSizeWarningLimit: 900,
+  },
 })

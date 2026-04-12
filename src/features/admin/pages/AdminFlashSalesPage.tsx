@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Zap, Plus, Edit2, Trash2, Clock, Circle,
-  Loader2, AlertCircle, ChevronDown,
+  Loader2, AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { flashSaleApi, type FlashSaleDto, type FlashSaleStatus, type FlashSaleRequest } from '@/lib/http/flash-sale.api'
@@ -210,8 +210,8 @@ export function AdminFlashSalesPage() {
   const loadSales = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await flashSaleApi.listFlashSales(filterStatus === 'ALL' ? undefined : filterStatus)
-      setSales(data)
+      const res = await flashSaleApi.listFlashSales(filterStatus === 'ALL' ? undefined : filterStatus)
+      setSales(res.data ?? [])
     } catch {
       toast.error('Không thể tải danh sách flash sale')
     } finally {
