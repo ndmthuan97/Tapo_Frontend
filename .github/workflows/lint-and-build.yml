@@ -43,9 +43,9 @@ jobs:
         run: npx tsc --noEmit
 
       - name: ESLint
-        # --max-warnings -1: warnings không block CI (chỉ errors mới fail)
-        # React Compiler rules đã được hạ xuống warn trong eslint.config.js
-        run: npm run lint -- --max-warnings -1
+        # Các React Compiler rules đã được hạ xuống warn trong eslint.config.js
+        # ESLint chỉ exit code 1 khi có errors → warnings không block CI
+        run: npm run lint
 
       - name: Production build
         # Stub tất cả VITE_* vars để Vite không lỗi missing env
