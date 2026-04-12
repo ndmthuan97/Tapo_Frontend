@@ -193,7 +193,6 @@ function AdminReturnsPage() {
   const [activeStatus, setActiveStatus] = useState<ReturnRequestStatus | 'ALL'>('ALL')
   const [page, setPage]                 = useState(0)
   const [totalPages, setTotalPages]     = useState(1)
-  const [totalElements, setTotalElements] = useState(0)
   const [searchQuery, setSearchQuery]   = useState('')
   const [detailRequest, setDetailRequest] = useState<ReturnRequestDto | null>(null)
   const [noteModal, setNoteModal]       = useState<{ id: string; action: 'approve' | 'reject' } | null>(null)
@@ -234,7 +233,6 @@ function AdminReturnsPage() {
     if (res.success && res.data) {
       setRequests(res.data.content)
       setTotalPages(res.data.totalPages)
-      setTotalElements(res.data.totalElements)
     }
   }, [activeStatus, page])
 

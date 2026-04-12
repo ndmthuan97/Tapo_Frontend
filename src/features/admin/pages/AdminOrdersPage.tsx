@@ -143,7 +143,6 @@ function AdminOrdersPage() {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
   const [orders, setOrders] = useState<OrderSummary[]>([])
-  const [totalElements, setTotalElements] = useState(0)
   const [totalPages,    setTotalPages]    = useState(0)
   const [activeStatus, setActiveStatus]   = useState<OrderStatus | 'ALL'>('ALL')
   const [page, setPage]                   = useState(0)
@@ -195,7 +194,6 @@ function AdminOrdersPage() {
     setIsLoading(false)
     if (result.success && result.data) {
       setOrders(result.data.content)
-      setTotalElements(result.data.totalElements)
       setTotalPages(result.data.totalPages)
     }
   }, [page, activeStatus])

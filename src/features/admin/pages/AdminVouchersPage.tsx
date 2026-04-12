@@ -355,7 +355,6 @@ function AdminVouchersPage() {
   const { t } = useTranslation()
   const [vouchers, setVouchers]         = useState<VoucherDto[]>([])
   const [totalPages, setTotalPages]     = useState(0)
-  const [totalElements, setTotalElements] = useState(0)
   const [page, setPage]                 = useState(0)
   const [isLoading, setIsLoading]       = useState(true)
   const [showCreate, setShowCreate]     = useState(false)
@@ -396,7 +395,6 @@ function AdminVouchersPage() {
     if (res.success && res.data) {
       setVouchers(res.data.content)
       setTotalPages(res.data.totalPages)
-      setTotalElements(res.data.totalElements)
     }
   }, [page])
 

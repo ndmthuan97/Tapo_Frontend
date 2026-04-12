@@ -487,7 +487,7 @@ export function AdminInventoryPage() {
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {loading ? (
                 <InventorySkeleton />
-              ) : receipts.length === 0 ? (
+              ) : !(data?.content?.length) ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center">
                     <div className="flex flex-col items-center gap-3">
@@ -505,7 +505,7 @@ export function AdminInventoryPage() {
                   </td>
                 </tr>
               ) : (
-                receipts.map(r => (
+                (data?.content ?? []).map(r => (
                   <tr
                     key={r.id}
                     className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03] cursor-pointer"

@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Zap, Plus, Edit2, Trash2, Clock, Circle,
+  Zap, Plus, Edit2, Trash2, Clock,
   Loader2, AlertCircle, TrendingUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
