@@ -36,17 +36,6 @@
         }
       ]
     }
-  ],
-
-  "env": {
-    "VITE_API_BASE_URL": "@tapo_api_base_url",
-    "VITE_WS_URL": "@tapo_ws_url",
-    "VITE_SUPABASE_URL": "@tapo_supabase_url",
-    "VITE_SUPABASE_ANON_KEY": "@tapo_supabase_anon_key",
-    "VITE_SUPABASE_AVATAR_BUCKET": "@tapo_supabase_avatar_bucket",
-    "VITE_SUPABASE_PRODUCT_BUCKET": "@tapo_supabase_product_bucket",
-    "VITE_EMAILJS_SERVICE_ID": "@tapo_emailjs_service_id",
-    "VITE_EMAILJS_TEMPLATE_ID": "@tapo_emailjs_template_id",
-    "VITE_EMAILJS_PUBLIC_KEY": "@tapo_emailjs_public_key"
-  }
+  ]
 }
+
