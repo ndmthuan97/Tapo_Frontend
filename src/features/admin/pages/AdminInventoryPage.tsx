@@ -7,6 +7,7 @@
  * ui-ux-pro-max: đồng bộ design system với AdminUsersPage
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Package, Plus, ArrowDownToLine, ArrowUpFromLine,
   Loader2, X, Trash2, AlertCircle, Eye,
@@ -35,13 +36,14 @@ function fmtDate(iso: string) {
 
 // ── Type Badge ────────────────────────────────────────────────────────────────
 function TypeBadge({ type }: { type: ReceiptType }) {
+  const { t } = useTranslation()
   return type === 'IMPORT' ? (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-semibold px-2.5 py-0.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />IMPORT
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{t('adminInventory.type.IMPORT')}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 text-[11px] font-semibold px-2.5 py-0.5">
-      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />EXPORT
+      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />{t('adminInventory.type.EXPORT')}
     </span>
   )
 }
@@ -119,6 +121,7 @@ interface CreateModalProps {
 }
 
 function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
+  const { t } = useTranslation()
   const [receiptType, setType]   = useState<ReceiptType>('IMPORT')
   const [note,        setNote]   = useState('')
   const [items,       setItems]  = useState<ItemEntry[]>([{ productId: '', quantity: 1, unitPrice: 0 }])
@@ -139,11 +142,11 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
 
   const handleSubmit = useCallback(async () => {
     const errs: string[] = []
-    if (items.length === 0) errs.push('Phải có ít nhất 1 sản phẩm')
+    if (items.length === 0) errs.push(t('adminInventory.validation.minOneItem'))
     items.forEach((it, i) => {
-      if (!it.productId.trim()) errs.push(`Dòng ${i + 1}: Product ID bắt buộc`)
-      if (it.quantity < 1)      errs.push(`Dòng ${i + 1}: Số lượng tối thiểu 1`)
-      if (it.unitPrice < 0)     errs.push(`Dòng ${i + 1}: Đơn giá không hợp lệ`)
+      if (!it.productId.trim()) errs.push(t('adminInventory.validation.productIdRequired', { n: i + 1 }))
+      if (it.quantity < 1)      errs.push(t('adminInventory.validation.quantityMin', { n: i + 1 }))
+      if (it.unitPrice < 0)     errs.push(t('adminInventory.validation.unitPriceInvalid', { n: i + 1 }))
     })
     if (errs.length) { setErrors(errs); return }
     setErrors([])
@@ -152,14 +155,14 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
     const payload: CreateReceiptRequest = { type: receiptType, note: note || undefined, items }
     try {
       const res = await inventoryApi.createReceipt(payload)
-      toast.success(`Phiếu ${res.data!.receiptCode} đã được tạo — stock đã cập nhật`)
+      toast.success(t('adminInventory.toast.createSuccess', { code: res.data!.receiptCode }))
       onSaved()
     } catch {
-      toast.error('Không thể tạo phiếu kho. Kiểm tra lại Product ID và tồn kho.')
+      toast.error(t('adminInventory.toast.createFailed'))
     } finally {
       setSaving(false)
     }
-  }, [receiptType, note, items, onSaved])
+  }, [receiptType, note, items, onSaved, t])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
@@ -172,7 +175,7 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/10">
             <Package size={15} className="text-orange-500" />
           </div>
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex-1">Tạo Phiếu Kho</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex-1">{t('adminInventory.form.title')}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition cursor-pointer">
             <X size={15} />
           </button>
@@ -192,23 +195,23 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
 
           {/* Type selector */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Loại phiếu *</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('adminInventory.form.typeLabel')}</label>
             <div className="flex gap-3">
-              {(['IMPORT', 'EXPORT'] as ReceiptType[]).map(t => (
+              {(['IMPORT', 'EXPORT'] as ReceiptType[]).map(rcpType => (
                 <button
-                  key={t}
-                  onClick={() => setType(t)}
+                  key={rcpType}
+                  onClick={() => setType(rcpType)}
                   className={cn(
                     'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all border cursor-pointer',
-                    receiptType === t
-                      ? t === 'IMPORT'
+                    receiptType === rcpType
+                      ? rcpType === 'IMPORT'
                         ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
                         : 'bg-rose-500 text-white border-rose-500 shadow-sm'
                       : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300',
                   )}
                 >
-                  {t === 'IMPORT' ? <ArrowDownToLine size={14} /> : <ArrowUpFromLine size={14} />}
-                  {t === 'IMPORT' ? 'Nhập kho' : 'Xuất kho'}
+                  {rcpType === 'IMPORT' ? <ArrowDownToLine size={14} /> : <ArrowUpFromLine size={14} />}
+                  {t(`adminInventory.type.${rcpType}`)}
                 </button>
               ))}
             </div>
@@ -216,11 +219,11 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
 
           {/* Note */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Ghi chú</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminInventory.form.noteLabel')}</label>
             <input
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Nhập ghi chú (không bắt buộc)"
+              placeholder={t('adminInventory.form.notePh')}
               className={cn(inputCls, 'w-full')}
             />
           </div>
@@ -228,12 +231,12 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Danh sách sản phẩm *</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('adminInventory.form.itemsLabel')}</label>
               <button
                 onClick={addItem}
                 className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
               >
-                <Plus size={12} />Thêm dòng
+                <Plus size={12} />{t('adminInventory.form.addLine')}
               </button>
             </div>
             <div className="space-y-2">
@@ -260,7 +263,7 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
             onClick={onClose}
             className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition cursor-pointer"
           >
-            Huỷ
+            {t('adminInventory.form.cancel')}
           </button>
           <button
             id="inventory-create-btn"
@@ -269,7 +272,7 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
             className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition disabled:opacity-50 shadow-sm shadow-orange-500/20 cursor-pointer"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Package size={13} />}
-            Tạo phiếu kho
+            {t('adminInventory.form.submit')}
           </button>
         </div>
       </div>
@@ -279,15 +282,16 @@ function CreateReceiptModal({ onClose, onSaved }: CreateModalProps) {
 
 // ── Detail Drawer ─────────────────────────────────────────────────────────────
 function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void }) {
+  const { t } = useTranslation()
   const [receipt, setReceipt] = useState<InventoryReceiptDto | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     inventoryApi.getReceipt(id)
       .then(res => setReceipt(res.data))
-      .catch(() => toast.error('Không thể tải chi tiết phiếu'))
+      .catch(() => toast.error(t('adminInventory.toast.detailFailed')))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
   const total = receipt?.items.reduce((sum, i) => sum + i.lineTotal, 0) ?? 0
 
@@ -303,7 +307,7 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
             <Package size={15} className="text-orange-500" />
           </div>
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex-1 truncate">
-            {receipt?.receiptCode ?? 'Chi tiết phiếu'}
+            {receipt?.receiptCode ?? t('adminInventory.detail.title')}
           </h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition cursor-pointer">
             <X size={15} />
@@ -316,16 +320,16 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
               <Loader2 size={24} className="animate-spin text-orange-400" />
             </div>
           ) : !receipt ? (
-            <p className="text-center text-gray-400 text-sm py-8">Không tìm thấy phiếu</p>
+            <p className="text-center text-gray-400 text-sm py-8">{t('adminInventory.detail.notFound')}</p>
           ) : (
             <>
               {/* Meta */}
               <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 p-4 space-y-3 text-sm">
                 {[
-                  { label: 'Loại', value: <TypeBadge type={receipt.type} /> },
-                  { label: 'Người tạo', value: <span className="font-medium text-gray-700 dark:text-gray-200">{receipt.createdByName}</span> },
-                  { label: 'Ngày tạo',  value: <span className="text-gray-600 dark:text-gray-300">{fmtDate(receipt.createdAt)}</span> },
-                  ...(receipt.orderCode ? [{ label: 'Đơn hàng', value: <span className="font-mono text-xs text-gray-700 dark:text-gray-200">{receipt.orderCode}</span> }] : []),
+                  { label: t('adminInventory.detail.type'),      value: <TypeBadge type={receipt.type} /> },
+                  { label: t('adminInventory.detail.createdBy'), value: <span className="font-medium text-gray-700 dark:text-gray-200">{receipt.createdByName}</span> },
+                  { label: t('adminInventory.detail.createdAt'), value: <span className="text-gray-600 dark:text-gray-300">{fmtDate(receipt.createdAt)}</span> },
+                  ...(receipt.orderCode ? [{ label: t('adminInventory.detail.order'), value: <span className="font-mono text-xs text-gray-700 dark:text-gray-200">{receipt.orderCode}</span> }] : []),
                 ].map(row => (
                   <div key={row.label} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-white/5 last:border-0">
                     <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{row.label}</span>
@@ -334,7 +338,7 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
                 ))}
                 {receipt.note && (
                   <div className="pt-1">
-                    <span className="text-xs text-gray-400 dark:text-gray-500 block mb-1">Ghi chú</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 block mb-1">{t('adminInventory.detail.note')}</span>
                     <p className="text-xs text-gray-600 dark:text-gray-300">{receipt.note}</p>
                   </div>
                 )}
@@ -342,7 +346,7 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
 
               {/* Items */}
               <div>
-                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Chi tiết sản phẩm</h3>
+                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('adminInventory.detail.items')}</h3>
                 <div className="divide-y divide-gray-100 dark:divide-white/5 rounded-xl border border-gray-100 dark:border-white/5 overflow-hidden">
                   {receipt.items.map((item, i) => (
                     <div key={i} className="flex gap-3 p-3 items-center hover:bg-gray-50 dark:hover:bg-white/[0.03] transition">
@@ -363,7 +367,7 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
 
               {/* Total */}
               <div className="flex justify-between items-center py-2 border-t border-gray-100 dark:border-white/5">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Tổng giá trị</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('adminInventory.detail.total')}</span>
                 <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{fmtVND(total)}</span>
               </div>
             </>
@@ -375,19 +379,36 @@ function ReceiptDetailDrawer({ id, onClose }: { id: string; onClose: () => void 
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const FILTER_OPTIONS = [
-  { value: 'ALL',    label: 'Tất cả' },
-  { value: 'IMPORT', label: 'Nhập kho' },
-  { value: 'EXPORT', label: 'Xuất kho' },
-]
-
 export function AdminInventoryPage() {
-  const [data,    setData]    = useState<PageResponse<InventoryReceiptDto> | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [filter,  setFilter]  = useState<FilterType>('ALL')
-  const [page,    setPage]    = useState(1)
+  const { t } = useTranslation()
+  const filterOptions = [
+    { value: 'ALL',    label: t('adminInventory.filter.all') },
+    { value: 'IMPORT', label: t('adminInventory.filter.IMPORT') },
+    { value: 'EXPORT', label: t('adminInventory.filter.EXPORT') },
+  ]
+  const [data,       setData]       = useState<PageResponse<InventoryReceiptDto> | null>(null)
+  const [loading,    setLoading]    = useState(true)
+  const [filter,     setFilter]     = useState<FilterType>('ALL')
+  const [page,       setPage]       = useState(1)
   const [showCreate, setShowCreate] = useState(false)
   const [detailId,   setDetailId]   = useState<string | null>(null)
+  // ── Global totals (independent of current filter/page) ─────────────────────
+  const [totalImport, setTotalImport] = useState(0)
+  const [totalExport, setTotalExport] = useState(0)
+  const [totalAll,    setTotalAll]    = useState(0)
+
+  const loadStats = useCallback(async () => {
+    try {
+      const [all, imp, exp] = await Promise.all([
+        inventoryApi.listReceipts(undefined,  0, 1),
+        inventoryApi.listReceipts('IMPORT',   0, 1),
+        inventoryApi.listReceipts('EXPORT',   0, 1),
+      ])
+      if (all.data) setTotalAll(all.data.totalElements)
+      if (imp.data) setTotalImport(imp.data.totalElements)
+      if (exp.data) setTotalExport(exp.data.totalElements)
+    } catch { /* ignore */ }
+  }, [])
 
   const loadReceipts = useCallback(async () => {
     setLoading(true)
@@ -395,36 +416,34 @@ export function AdminInventoryPage() {
       const res = await inventoryApi.listReceipts(filter === 'ALL' ? undefined : filter, page - 1, 20)
       if (res.data) setData(res.data)
     } catch {
-      toast.error('Không thể tải danh sách phiếu kho')
+      toast.error(t('adminInventory.toast.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [filter, page])
+  }, [filter, page, t])
 
+  // Load global stats once on mount
+  useEffect(() => { loadStats() }, [loadStats])
   useEffect(() => { loadReceipts() }, [loadReceipts])
   useEffect(() => { setPage(1) }, [filter])
-
-  const receipts    = data?.content ?? []
-  const importCount = receipts.filter(r => r.type === 'IMPORT').length
-  const exportCount = receipts.filter(r => r.type === 'EXPORT').length
 
   return (
     <div className="p-6 space-y-6">
       {/* Page title */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-          Quản lý Kho
+          {t('adminInventory.title')}
         </h1>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-          Phiếu nhập / xuất kho — stock cập nhật ngay lập tức
+          {t('adminInventory.subtitle')}
         </p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Package}          label="Tổng phiếu"  value={data?.totalElements ?? 0} color="bg-orange-500" />
-        <StatCard icon={ArrowDownToLine}  label="Nhập kho"    value={importCount}               color="bg-emerald-500" />
-        <StatCard icon={ArrowUpFromLine}  label="Xuất kho"    value={exportCount}               color="bg-rose-500" />
+        <StatCard icon={Package}         label={t('adminInventory.statTotal')}  value={totalAll}    color="bg-orange-500" />
+        <StatCard icon={ArrowDownToLine} label={t('adminInventory.statImport')} value={totalImport} color="bg-emerald-500" />
+        <StatCard icon={ArrowUpFromLine} label={t('adminInventory.statExport')} value={totalExport} color="bg-rose-500" />
       </div>
 
       {/* Table card */}
@@ -433,13 +452,13 @@ export function AdminInventoryPage() {
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">
-            Danh sách phiếu kho
+            {t('adminInventory.tableTitle')}
             {data && <span className="ml-2 text-xs font-normal text-gray-400">({data.totalElements})</span>}
           </p>
           <AdminFilterSelect
             value={filter}
             onChange={v => setFilter(v as FilterType)}
-            options={FILTER_OPTIONS}
+            options={filterOptions}
           />
           <button
             id="inventory-new-btn"
@@ -447,7 +466,7 @@ export function AdminInventoryPage() {
             className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 cursor-pointer"
           >
             <Plus size={13} />
-            Tạo phiếu mới
+            {t('adminInventory.createBtn')}
           </button>
         </div>
 
@@ -456,13 +475,13 @@ export function AdminInventoryPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
-                <th className="px-5 py-3.5">Mã phiếu</th>
-                <th className="px-5 py-3.5">Loại</th>
-                <th className="px-5 py-3.5">Người tạo</th>
-                <th className="px-5 py-3.5">Sản phẩm</th>
-                <th className="px-5 py-3.5">Ghi chú</th>
-                <th className="px-5 py-3.5">Ngày tạo</th>
-                <th className="px-5 py-3.5 text-right">Chi tiết</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colCode')}</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colType')}</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colCreatedBy')}</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colItems')}</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colNote')}</th>
+                <th className="px-5 py-3.5">{t('adminInventory.colDate')}</th>
+                <th className="px-5 py-3.5 text-right">{t('adminInventory.colDetail')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -475,12 +494,12 @@ export function AdminInventoryPage() {
                       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">
                         <Package size={24} className="text-gray-300 dark:text-white/20" />
                       </div>
-                      <p className="text-sm font-medium text-gray-400 dark:text-gray-500">Chưa có phiếu kho nào</p>
+                      <p className="text-sm font-medium text-gray-400 dark:text-gray-500">{t('adminInventory.emptyTitle')}</p>
                       <button
                         onClick={() => setShowCreate(true)}
                         className="text-xs text-orange-500 hover:underline cursor-pointer"
                       >
-                        Tạo phiếu đầu tiên
+                        {t('adminInventory.emptyCreate')}
                       </button>
                     </div>
                   </td>
@@ -497,8 +516,8 @@ export function AdminInventoryPage() {
                     </td>
                     <td className="px-5 py-3.5"><TypeBadge type={r.type} /></td>
                     <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{r.createdByName}</td>
-                    <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{r.items.length} sản phẩm</td>
-                    <td className="px-5 py-3.5 text-xs text-gray-400 max-w-[140px] truncate">{r.note ?? '—'}</td>
+                    <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{t('adminInventory.itemsCount', { count: r.items.length })}</td>
+                    <td className="px-5 py-3.5 text-xs text-gray-400 max-w-[140px] truncate">{r.note ?? t('adminInventory.noNote')}</td>
                     <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">{fmtDate(r.createdAt)}</td>
                     <td className="px-5 py-3.5 text-right whitespace-nowrap">
                       <button
@@ -530,7 +549,7 @@ export function AdminInventoryPage() {
       {showCreate && (
         <CreateReceiptModal
           onClose={() => setShowCreate(false)}
-          onSaved={() => { setShowCreate(false); loadReceipts() }}
+          onSaved={() => { setShowCreate(false); loadReceipts(); loadStats() }}
         />
       )}
 

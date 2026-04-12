@@ -7,6 +7,7 @@
  * ui-ux-pro-max: đồng bộ design system với AdminUsersPage
  */
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Zap, Plus, Edit2, Trash2, Clock, Circle,
   Loader2, AlertCircle, TrendingUp,
@@ -32,19 +33,16 @@ function toLocalInput(iso: string) {
 function toIso(local: string) { return new Date(local).toISOString() }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<FlashSaleStatus, { label: string; dot: string; badge: string }> = {
+const STATUS_STYLE: Record<FlashSaleStatus, { dot: string; badge: string }> = {
   SCHEDULED: {
-    label: 'Chờ mở',
     dot:   'bg-blue-500',
     badge: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400',
   },
   ACTIVE: {
-    label: 'Đang diễn',
     dot:   'bg-emerald-500',
     badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   },
   ENDED: {
-    label: 'Đã kết thúc',
     dot:   'bg-gray-400',
     badge: 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400',
   },
@@ -52,14 +50,15 @@ const STATUS_CONFIG: Record<FlashSaleStatus, { label: string; dot: string; badge
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: FlashSaleStatus }) {
-  const cfg = STATUS_CONFIG[status]
+  const { t } = useTranslation()
+  const cfg = STATUS_STYLE[status]
   return (
     <span className={cn(
       'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
       cfg.badge,
     )}>
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
-      {cfg.label}
+      {t(`adminFlashSales.status.${status}`)}
     </span>
   )
 }
@@ -103,6 +102,7 @@ interface FormModalProps {
 const inputCls = 'w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:text-gray-400'
 
 function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
+  const { t } = useTranslation()
   const isEdit = !!initial
   const [form, setForm] = useState<FlashSaleRequest>({
     productId:  initial?.productId  ?? '',
@@ -116,13 +116,13 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
 
   const handleSubmit = useCallback(async () => {
     const errs: string[] = []
-    if (!form.productId.trim()) errs.push('Product ID là bắt buộc')
-    if (form.salePrice <= 0)    errs.push('Giá sale phải > 0')
-    if (form.stockLimit < 1)    errs.push('Tồn kho tối thiểu 1')
-    if (!form.startTime)        errs.push('Thời gian bắt đầu bắt buộc')
-    if (!form.endTime)          errs.push('Thời gian kết thúc bắt buộc')
+    if (!form.productId.trim()) errs.push(t('adminFlashSales.validation.productIdRequired'))
+    if (form.salePrice <= 0)    errs.push(t('adminFlashSales.validation.salePriceMin'))
+    if (form.stockLimit < 1)    errs.push(t('adminFlashSales.validation.stockMin'))
+    if (!form.startTime)        errs.push(t('adminFlashSales.validation.startRequired'))
+    if (!form.endTime)          errs.push(t('adminFlashSales.validation.endRequired'))
     if (form.startTime && form.endTime && form.endTime <= form.startTime)
-      errs.push('Thời gian kết thúc phải sau thời gian bắt đầu')
+      errs.push(t('adminFlashSales.validation.endAfterStart'))
     if (errs.length) { setErrors(errs); return }
     setErrors([])
     setSaving(true)
@@ -135,18 +135,18 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
     try {
       if (isEdit && initial) {
         await flashSaleApi.updateFlashSale(initial.id, payload)
-        toast.success('Flash sale đã được cập nhật')
+        toast.success(t('adminFlashSales.toast.updated'))
       } else {
         await flashSaleApi.createFlashSale(payload)
-        toast.success('Flash sale đã được tạo')
+        toast.success(t('adminFlashSales.toast.created'))
       }
       onSaved()
     } catch {
-      toast.error('Có lỗi xảy ra. Vui lòng thử lại.')
+      toast.error(t('adminFlashSales.toast.error'))
     } finally {
       setSaving(false)
     }
-  }, [form, isEdit, initial, onSaved])
+  }, [form, isEdit, initial, onSaved, t])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
@@ -160,7 +160,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
             <Zap size={15} className="text-orange-500" />
           </div>
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-            {isEdit ? 'Cập nhật Flash Sale' : 'Tạo Flash Sale mới'}
+            {isEdit ? t('adminFlashSales.form.editTitle') : t('adminFlashSales.form.createTitle')}
           </h2>
         </div>
 
@@ -177,18 +177,18 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Product ID *</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminFlashSales.form.productId')}</label>
             <input
               value={form.productId}
               onChange={e => setForm(f => ({ ...f, productId: e.target.value }))}
-              placeholder="UUID của sản phẩm"
+              placeholder={t('adminFlashSales.form.productIdPh')}
               className={inputCls}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Giá sale (₫) *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminFlashSales.form.salePrice')}</label>
               <input
                 type="number" min={0}
                 value={form.salePrice}
@@ -197,7 +197,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Giới hạn tồn *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminFlashSales.form.stockLimit')}</label>
               <input
                 type="number" min={1}
                 value={form.stockLimit}
@@ -209,7 +209,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Bắt đầu *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminFlashSales.form.startTime')}</label>
               <input
                 type="datetime-local"
                 value={form.startTime}
@@ -218,7 +218,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kết thúc *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('adminFlashSales.form.endTime')}</label>
               <input
                 type="datetime-local"
                 value={form.endTime}
@@ -235,7 +235,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
             onClick={onClose}
             className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition"
           >
-            Huỷ
+            {t('adminFlashSales.form.cancel')}
           </button>
           <button
             id="flash-sale-save-btn"
@@ -244,7 +244,7 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
             className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition disabled:opacity-50 shadow-sm shadow-orange-500/20"
           >
             {saving && <Loader2 size={13} className="animate-spin" />}
-            {isEdit ? 'Cập nhật' : 'Tạo Flash Sale'}
+            {isEdit ? t('adminFlashSales.form.updateBtn') : t('adminFlashSales.form.saveBtn')}
           </button>
         </div>
       </div>
@@ -253,19 +253,20 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-const FILTER_OPTIONS = [
-  { value: 'ALL',       label: 'Tất cả trạng thái' },
-  { value: 'ACTIVE',    label: 'Đang diễn' },
-  { value: 'SCHEDULED', label: 'Chờ mở' },
-  { value: 'ENDED',     label: 'Đã kết thúc' },
-]
-
 export function AdminFlashSalesPage() {
+  const { t } = useTranslation()
   const [sales,        setSales]    = useState<FlashSaleDto[]>([])
   const [loading,      setLoading]  = useState(true)
   const [filterStatus, setFilter]   = useState<FlashSaleStatus | 'ALL'>('ALL')
   const [modal,        setModal]    = useState<{ mode: 'create' | 'edit'; target?: FlashSaleDto } | null>(null)
   const [deleting,     setDeleting] = useState<string | null>(null)
+
+  const FILTER_OPTIONS = [
+    { value: 'ALL',       label: t('adminFlashSales.filter.all') },
+    { value: 'ACTIVE',    label: t('adminFlashSales.filter.ACTIVE') },
+    { value: 'SCHEDULED', label: t('adminFlashSales.filter.SCHEDULED') },
+    { value: 'ENDED',     label: t('adminFlashSales.filter.ENDED') },
+  ]
 
   const loadSales = useCallback(async () => {
     setLoading(true)
@@ -273,27 +274,27 @@ export function AdminFlashSalesPage() {
       const res = await flashSaleApi.listFlashSales(filterStatus === 'ALL' ? undefined : filterStatus)
       setSales(res.data ?? [])
     } catch {
-      toast.error('Không thể tải danh sách flash sale')
+      toast.error(t('adminFlashSales.toast.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [filterStatus])
+  }, [filterStatus, t])
 
   useEffect(() => { loadSales() }, [loadSales])
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('Xóa flash sale này?')) return
+    if (!confirm(t('adminFlashSales.deleteConfirm'))) return
     setDeleting(id)
     try {
       await flashSaleApi.deleteFlashSale(id)
-      toast.success('Đã xóa flash sale')
+      toast.success(t('adminFlashSales.toast.deleted'))
       setSales(prev => prev.filter(s => s.id !== id))
     } catch {
-      toast.error('Chỉ có thể xóa flash sale ở trạng thái SCHEDULED')
+      toast.error(t('adminFlashSales.toast.deleteFailed'))
     } finally {
       setDeleting(null)
     }
-  }, [])
+  }, [t])
 
   // Computed stats
   const activeCount    = sales.filter(s => s.status === 'ACTIVE').length
@@ -305,18 +306,18 @@ export function AdminFlashSalesPage() {
       {/* Page title */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-          Quản lý Flash Sale
+          {t('adminFlashSales.title')}
         </h1>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-          Khuyến mãi thời hạn — tự động kích hoạt theo lịch
+          {t('adminFlashSales.subtitle')}
         </p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Zap}       label="Đang diễn"   value={activeCount}    color="bg-emerald-500" />
-        <StatCard icon={Clock}     label="Chờ mở"      value={scheduledCount} color="bg-blue-500" />
-        <StatCard icon={TrendingUp} label="Tổng đã bán" value={totalSold}      color="bg-orange-500" />
+        <StatCard icon={Zap}        label={t('adminFlashSales.statActive')}    value={activeCount}    color="bg-emerald-500" />
+        <StatCard icon={Clock}       label={t('adminFlashSales.statScheduled')} value={scheduledCount} color="bg-blue-500" />
+        <StatCard icon={TrendingUp}  label={t('adminFlashSales.statSold')}      value={totalSold}      color="bg-orange-500" />
       </div>
 
       {/* Table card */}
@@ -325,7 +326,7 @@ export function AdminFlashSalesPage() {
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
           <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">
-            Flash Sales
+            {t('adminFlashSales.tableTitle')}
           </p>
           <AdminFilterSelect
             value={filterStatus}
@@ -338,7 +339,7 @@ export function AdminFlashSalesPage() {
             className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 cursor-pointer"
           >
             <Plus size={13} />
-            Tạo Flash Sale
+            {t('adminFlashSales.createBtn')}
           </button>
         </div>
 
@@ -347,13 +348,13 @@ export function AdminFlashSalesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
-                <th className="px-5 py-3.5">Sản phẩm</th>
-                <th className="px-5 py-3.5">Giá sale</th>
-                <th className="px-5 py-3.5">Giảm</th>
-                <th className="px-5 py-3.5">Tồn / Bán</th>
-                <th className="px-5 py-3.5">Thời gian</th>
-                <th className="px-5 py-3.5">Trạng thái</th>
-                <th className="px-5 py-3.5 text-right">Hành động</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colProduct')}</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colSalePrice')}</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colDiscount')}</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colStock')}</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colTime')}</th>
+                <th className="px-5 py-3.5">{t('adminFlashSales.colStatus')}</th>
+                <th className="px-5 py-3.5 text-right">{t('adminFlashSales.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -367,13 +368,13 @@ export function AdminFlashSalesPage() {
                         <Zap size={24} className="text-gray-300 dark:text-white/20" />
                       </div>
                       <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
-                        Chưa có flash sale nào
+                        {t('adminFlashSales.emptyTitle')}
                       </p>
                       <button
                         onClick={() => setModal({ mode: 'create' })}
                         className="text-xs text-orange-500 hover:underline cursor-pointer"
                       >
-                        Tạo flash sale đầu tiên
+                        {t('adminFlashSales.emptyCreate')}
                       </button>
                     </div>
                   </td>
@@ -424,7 +425,7 @@ export function AdminFlashSalesPage() {
                     {/* Stock progress */}
                     <td className="px-5 py-3.5">
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {sale.remaining} còn · {sale.soldCount} bán
+                        {t('adminFlashSales.remaining', { remaining: sale.remaining, sold: sale.soldCount })}
                       </p>
                       <div className="mt-1.5 h-1.5 w-24 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
                         <div

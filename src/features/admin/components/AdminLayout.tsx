@@ -53,31 +53,35 @@ const NAV_SECTIONS: NavSection[] = [
     groupKey: 'admin.nav.management',
     items: [
       { to: '/admin',       icon: LayoutDashboard, labelKey: 'admin.nav.dashboard' },
-      { to: '/admin/users', icon: Users,           labelKey: 'admin.nav.users' },
+      { to: '/admin/users', icon: Users,            labelKey: 'admin.nav.users' },
     ],
   },
   {
     groupKey: 'admin.nav.catalog',
     items: [
-      { to: '/admin/products',   icon: Package,     labelKey: 'admin.nav.products' },
-      { to: '/admin/categories', icon: Tag,         labelKey: 'admin.nav.categories' },
-      { to: '/admin/brands',     icon: Bookmark,    labelKey: 'admin.nav.brands' },
-      { to: '/admin/blog',       icon: FileText,    labelKey: 'admin.nav.blog' },
-      { to: '/admin/banners',    icon: Image,       labelKey: 'admin.nav.banners' },
+      { to: '/admin/products',   icon: Package,  labelKey: 'admin.nav.products' },
+      { to: '/admin/categories', icon: Tag,      labelKey: 'admin.nav.categories' },
+      { to: '/admin/brands',     icon: Bookmark, labelKey: 'admin.nav.brands' },
+      { to: '/admin/blog',       icon: FileText, labelKey: 'admin.nav.blog' },
+      { to: '/admin/banners',    icon: Image,    labelKey: 'admin.nav.banners' },
     ],
   },
-
   {
-    groupKey: 'admin.nav.sales',
+    groupKey: 'admin.nav.commerce',
     items: [
-      { to: '/admin/orders',   icon: ShoppingBag, labelKey: 'admin.nav.orders' },
-      { to: '/admin/vouchers', icon: Ticket,       labelKey: 'admin.nav.vouchers' },
-      { to: '/admin/returns',  icon: RotateCcw,    labelKey: 'admin.nav.returns' },
-      { to: '/admin/messages', icon: Mail,          labelKey: 'admin.nav.messages' },
+      { to: '/admin/orders',      icon: ShoppingBag, labelKey: 'admin.nav.orders' },
+      { to: '/admin/vouchers',    icon: Ticket,      labelKey: 'admin.nav.vouchers' },
+      { to: '/admin/returns',     icon: RotateCcw,   labelKey: 'admin.nav.returns' },
+      { to: '/admin/flash-sales', icon: Zap,         labelKey: 'admin.nav.flashSales' },
+      { to: '/admin/inventory',   icon: Archive,     labelKey: 'admin.nav.inventory' },
+    ],
+  },
+  {
+    groupKey: 'admin.nav.customer',
+    items: [
       { to: '/admin/reviews',  icon: Star,          labelKey: 'admin.nav.reviews' },
-      { to: '/admin/chat',        icon: MessageCircle, labelKey: 'admin.nav.chat' },
-      { to: '/admin/flash-sales', icon: Zap,           labelKey: 'admin.nav.flashSales' },
-      { to: '/admin/inventory',   icon: Archive,       labelKey: 'admin.nav.inventory' },
+      { to: '/admin/messages', icon: Mail,          labelKey: 'admin.nav.messages' },
+      { to: '/admin/chat',     icon: MessageCircle, labelKey: 'admin.nav.chat' },
     ],
   },
 ]

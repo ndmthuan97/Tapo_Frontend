@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   FileText, Eye, Trash2, Search, X, ImageOff,
   Globe, Clock, CheckCircle2,
@@ -94,6 +95,7 @@ function BlogFormModal({
   onClose: () => void
   isSubmitting: boolean
 }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<BlogPostRequest>({
     title:           initial?.title           ?? '',
     slug:            initial?.slug            ?? '',
@@ -143,7 +145,7 @@ function BlogFormModal({
           <div className="flex items-center gap-2">
             <FileText size={15} className="text-orange-500" />
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              {initial ? 'Chỉnh sửa bài viết' : 'Thêm bài viết mới'}
+              {initial ? t('adminBlog.form.editTitle') : t('adminBlog.form.createTitle')}
             </h3>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
@@ -156,26 +158,26 @@ function BlogFormModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Title */}
             <div className="col-span-2">
-              <label className={labelCls}>Tiêu đề *</label>
+              <label className={labelCls}>{t('adminBlog.form.titleLabel')}</label>
               <input required className={inputCls} value={form.title}
                 onChange={e => handleTitleChange(e.target.value)}
-                placeholder="Tiêu đề bài viết..." />
+                placeholder={t('adminBlog.form.titlePh')} />
             </div>
 
             {/* Slug */}
             <div className="col-span-2">
-              <label className={labelCls}>Slug *</label>
+              <label className={labelCls}>{t('adminBlog.form.slug')}</label>
               <input required className={cn(inputCls, 'font-mono text-[11px]')} value={form.slug}
                 onChange={e => setForm(p => ({ ...p, slug: e.target.value }))}
-                placeholder="duong-dan-url" />
+                placeholder={t('adminBlog.form.slugPh')} />
             </div>
 
             {/* Category */}
             <div>
-              <label className={labelCls}>Danh mục *</label>
+              <label className={labelCls}>{t('adminBlog.form.category')}</label>
               <select required className={inputCls} value={form.categoryId}
                 onChange={e => setForm(p => ({ ...p, categoryId: e.target.value }))}>
-                <option value="">— Chọn danh mục —</option>
+                <option value="">{t('adminBlog.form.selectCat')}</option>
                 {categories.map(c => (
                   <option key={String(c.id)} value={String(c.id)}>{c.name}</option>
                 ))}
@@ -184,42 +186,42 @@ function BlogFormModal({
 
             {/* Thumbnail URL */}
             <div>
-              <label className={labelCls}>URL ảnh bìa</label>
+              <label className={labelCls}>{t('adminBlog.form.thumbnail')}</label>
               <input type="url" className={inputCls} value={form.thumbnailUrl}
                 onChange={e => setForm(p => ({ ...p, thumbnailUrl: e.target.value }))}
-                placeholder="https://..." />
+                placeholder={t('adminBlog.form.thumbnailPh')} />
             </div>
 
             {/* Excerpt */}
             <div className="col-span-2">
-              <label className={labelCls}>Tóm tắt</label>
+              <label className={labelCls}>{t('adminBlog.form.excerpt')}</label>
               <textarea rows={2} className={cn(inputCls, 'resize-none')} value={form.excerpt}
                 onChange={e => setForm(p => ({ ...p, excerpt: e.target.value }))}
-                placeholder="Mô tả ngắn hiển thị trên trang danh sách..." />
+                placeholder={t('adminBlog.form.excerptPh')} />
             </div>
 
             {/* Content */}
             <div className="col-span-2">
-              <label className={labelCls}>Nội dung *</label>
+              <label className={labelCls}>{t('adminBlog.form.content')}</label>
               <textarea required rows={6} className={cn(inputCls, 'resize-y')} value={form.content}
                 onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-                placeholder="Nội dung bài viết..." />
+                placeholder={t('adminBlog.form.contentPh')} />
             </div>
 
             {/* Meta Title */}
             <div>
-              <label className={labelCls}>Meta Title (SEO)</label>
+              <label className={labelCls}>{t('adminBlog.form.metaTitle')}</label>
               <input className={inputCls} value={form.metaTitle}
                 onChange={e => setForm(p => ({ ...p, metaTitle: e.target.value }))}
-                placeholder="Tiêu đề SEO..." />
+                placeholder={t('adminBlog.form.metaTitlePh')} />
             </div>
 
             {/* Meta Desc */}
             <div>
-              <label className={labelCls}>Meta Description (SEO)</label>
+              <label className={labelCls}>{t('adminBlog.form.metaDesc')}</label>
               <input className={inputCls} value={form.metaDescription}
                 onChange={e => setForm(p => ({ ...p, metaDescription: e.target.value }))}
-                placeholder="Mô tả SEO..." />
+                placeholder={t('adminBlog.form.metaDescPh')} />
             </div>
 
             {/* Publish toggle */}
@@ -234,10 +236,10 @@ function BlogFormModal({
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-700 dark:text-gray-200">
-                  {form.publish ? 'Xuất bản ngay' : 'Lưu nháp'}
+                  {form.publish ? t('adminBlog.form.publishNow') : t('adminBlog.form.saveDraft')}
                 </p>
                 <p className="text-[10px] text-gray-400">
-                  {form.publish ? 'Bài viết sẽ hiển thị công khai' : 'Bài viết chỉ hiển thị với admin'}
+                  {form.publish ? t('adminBlog.form.pubDesc') : t('adminBlog.form.draftDesc')}
                 </p>
               </div>
             </div>
@@ -247,12 +249,12 @@ function BlogFormModal({
           <div className="flex gap-2.5 pt-1 shrink-0">
             <button type="button" onClick={onClose}
               className="flex-1 rounded-lg border border-gray-200 dark:border-white/10 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
-              Hủy
+              {t('adminBlog.form.cancel')}
             </button>
             <button type="submit" disabled={isSubmitting}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-orange-500 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition">
               {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-              {initial ? 'Lưu thay đổi' : 'Tạo bài viết'}
+              {initial ? t('adminBlog.form.save') : t('adminBlog.form.create')}
             </button>
           </div>
         </form>
@@ -264,6 +266,7 @@ function BlogFormModal({
 // ── Blog Detail Modal ─────────────────────────────────────────────────────────
 
 function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => void }) {
+  const { t } = useTranslation()
   const isPublished = !!post.publishedAt
   return (
     <div
@@ -277,7 +280,7 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
         <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 px-5 py-4 shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={15} className="text-orange-500" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Chi tiết bài viết</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('adminBlog.detail.title')}</h3>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition">
             <X size={15} />
@@ -308,7 +311,7 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
                   : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
               )}>
                 {isPublished ? <CheckCircle2 size={10} /> : <Clock size={10} />}
-                {isPublished ? 'Đã xuất bản' : 'Bản nháp'}
+                {isPublished ? t('adminBlog.detail.published') : t('adminBlog.detail.draft')}
               </span>
               {post.categoryName && (
                 <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-500/15 px-2.5 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400">
@@ -316,19 +319,19 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
                 </span>
               )}
               {post.authorName && (
-                <span className="text-xs text-gray-400">Tác giả: <span className="font-medium text-gray-600 dark:text-gray-300">{post.authorName}</span></span>
+                <span className="text-xs text-gray-400">{t('adminBlog.detail.author')}<span className="font-medium text-gray-600 dark:text-gray-300">{post.authorName}</span></span>
               )}
               <span className="ml-auto flex items-center gap-1 text-xs text-gray-400">
-                <EyeIcon size={12} /> {post.viewCount.toLocaleString()} lượt xem
+                <EyeIcon size={12} /> {t('adminBlog.detail.views', { count: post.viewCount.toLocaleString() })}
               </span>
             </div>
             {post.excerpt && (
               <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed italic border-l-2 border-orange-400 pl-3">{post.excerpt}</p>
             )}
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Nội dung</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">{t('adminBlog.detail.content')}</p>
               <div className="rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 p-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-h-52 overflow-y-auto">
-                {post.content || <span className="text-gray-300 italic">Không có nội dung</span>}
+                {post.content || <span className="text-gray-300 italic">{t('adminBlog.detail.noContent')}</span>}
               </div>
             </div>
             <div className="flex flex-col gap-1 text-[11px] text-gray-400 font-mono">
@@ -341,12 +344,12 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
           {post.slug && (
             <a href={`/blog/${post.slug}`} target="_blank" rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-600 transition">
-              <Globe size={12} /> Xem trên website
+              <Globe size={12} /> {t('adminBlog.detail.viewSite')}
             </a>
           )}
           <button onClick={onClose}
             className="ml-auto rounded-lg border border-gray-200 dark:border-white/10 px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition">
-            Đóng
+            {t('adminBlog.detail.close')}
           </button>
         </div>
       </div>
@@ -357,16 +360,17 @@ function BlogDetailModal({ post, onClose }: { post: BlogPostDto; onClose: () => 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ publishedAt }: { publishedAt: string | null }) {
+  const { t } = useTranslation()
   if (publishedAt) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-        <CheckCircle2 size={10} /> Đã đăng
+        <CheckCircle2 size={10} /> {t('adminBlog.status.published')}
       </span>
     )
   }
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-      <Clock size={10} /> Nháp
+      <Clock size={10} /> {t('adminBlog.status.draft')}
     </span>
   )
 }
@@ -376,6 +380,7 @@ function StatusBadge({ publishedAt }: { publishedAt: string | null }) {
 const PAGE_SIZE = 10
 
 function AdminBlogPage() {
+  const { t } = useTranslation()
   const [posts, setPosts]           = useState<BlogPostDto[]>([])
   const [categories, setCategories] = useState<BlogCategoryDto[]>([])
   const [totalPages, setTotalPages] = useState(1)
@@ -383,12 +388,34 @@ function AdminBlogPage() {
   const [page, setPage]             = useState(0)
   const [search, setSearch]         = useState('')
   const [isLoading, setIsLoading]   = useState(true)
+  // ── Global stat totals ──────────────────────────────────────────────────
+  const [statPublished, setStatPublished] = useState(0)
+  const [statDrafts,    setStatDrafts]    = useState(0)
+  const [statViews,     setStatViews]     = useState(0)
 
   const [detailPost,   setDetailPost]   = useState<BlogPostDto | null>(null)
   const [editingPost,  setEditingPost]  = useState<BlogPostDto | undefined>(undefined)
   const [showForm,     setShowForm]     = useState(false)
   const [deletingId,   setDeletingId]   = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const loadStats = useCallback(async () => {
+    try {
+      // Fetch published and draft counts in one page-1 call each
+      // Blog API supports ?published=true filter if available; otherwise fetch all
+      const [publishedRes, draftRes] = await Promise.all([
+        blogAdminApi.getAllAdmin(0, 1000), // fetch up to 1000 for now; replace with dedicated endpoint if available
+        Promise.resolve(null),
+      ])
+      if (publishedRes.data) {
+        const allPosts   = publishedRes.data.content
+        setStatPublished(allPosts.filter(p => !!p.publishedAt).length)
+        setStatDrafts(allPosts.filter(p => !p.publishedAt).length)
+        setStatViews(allPosts.reduce((sum, p) => sum + p.viewCount, 0))
+      }
+      void draftRes
+    } catch { /* ignore */ }
+  }, [])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -405,7 +432,8 @@ function AdminBlogPage() {
     setIsLoading(false)
   }, [page])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => { loadData()  }, [loadData])
 
   const filtered = search.trim()
     ? posts.filter(p =>
@@ -414,10 +442,6 @@ function AdminBlogPage() {
       )
     : posts
 
-  const published  = posts.filter(p => !!p.publishedAt)
-  const drafts     = posts.filter(p => !p.publishedAt)
-  const totalViews = posts.reduce((sum, p) => sum + p.viewCount, 0)
-
   async function handleSubmit(data: BlogPostRequest): Promise<boolean> {
     setIsSubmitting(true)
     let success = false
@@ -425,20 +449,21 @@ function AdminBlogPage() {
       const res = await blogAdminApi.updatePost(String(editingPost.id), data)
       if (res.success && res.data) {
         setPosts(prev => prev.map(p => String(p.id) === String(editingPost.id) ? res.data! : p))
-        toast.success('Đã cập nhật bài viết')
+        toast.success(t('adminBlog.toast.updated'))
         success = true
       } else {
-        toast.error('Cập nhật thất bại')
+        toast.error(t('adminBlog.toast.updateFailed'))
       }
     } else {
       const res = await blogAdminApi.createPost(data)
       if (res.success && res.data) {
         setPosts(prev => [res.data!, ...prev])
         setTotalItems(n => n + 1)
-        toast.success('Đã tạo bài viết')
+        toast.success(t('adminBlog.toast.created'))
+        loadStats()
         success = true
       } else {
-        toast.error('Tạo bài viết thất bại')
+        toast.error(t('adminBlog.toast.createFailed'))
       }
     }
     setIsSubmitting(false)
@@ -449,20 +474,22 @@ function AdminBlogPage() {
     const res = await blogAdminApi.togglePublish(String(post.id))
     if (res.success && res.data) {
       setPosts(prev => prev.map(p => String(p.id) === String(post.id) ? res.data! : p))
-      toast.success(post.publishedAt ? 'Đã chuyển về nháp' : 'Đã xuất bản')
+      toast.success(post.publishedAt ? t('adminBlog.toast.drafted') : t('adminBlog.toast.published'))
+      loadStats()
     }
   }
 
   async function handleDelete(post: BlogPostDto) {
-    if (!window.confirm(`Xóa bài viết "${post.title}"?`)) return
+    if (!window.confirm(t('adminBlog.confirm.delete', { title: post.title }))) return
     setDeletingId(String(post.id))
     const res = await blogAdminApi.deletePost(String(post.id))
     if (res.success) {
-      toast.success('Đã xóa bài viết')
+      toast.success(t('adminBlog.toast.deleted'))
       setPosts(prev => prev.filter(p => String(p.id) !== String(post.id)))
       setTotalItems(n => n - 1)
+      loadStats()
     } else {
-      toast.error('Xóa thất bại — kiểm tra quyền admin')
+      toast.error(t('adminBlog.toast.deleteFailed'))
     }
     setDeletingId(null)
   }
@@ -476,23 +503,23 @@ function AdminBlogPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Quản lý Blog</h1>
-          <p className="mt-0.5 text-sm text-gray-400">Tạo, chỉnh sửa và quản lý các bài viết</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t('adminBlog.title')}</h1>
+          <p className="mt-0.5 text-sm text-gray-400">{t('adminBlog.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={openCreate}
             className="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 shadow-sm shadow-orange-200/50 transition">
-            <Plus size={14} /> Thêm bài viết
+            <Plus size={14} /> {t('adminBlog.addBtn')}
           </button>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Tổng bài viết" value={totalItems}        icon={FileText}     color="bg-orange-500" />
-        <StatCard label="Đã xuất bản"   value={published.length}  icon={CheckCircle2} color="bg-emerald-500" />
-        <StatCard label="Bản nháp"       value={drafts.length}     icon={Clock}        color="bg-amber-500" />
-        <StatCard label="Lượt xem"       value={totalViews}        icon={EyeIcon}      color="bg-blue-500" />
+        <StatCard label={t('adminBlog.statTotal')}     value={totalItems}    icon={FileText}     color="bg-orange-500" />
+        <StatCard label={t('adminBlog.statPublished')} value={statPublished} icon={CheckCircle2} color="bg-emerald-500" />
+        <StatCard label={t('adminBlog.statDrafts')}    value={statDrafts}    icon={Clock}        color="bg-amber-500" />
+        <StatCard label={t('adminBlog.statViews')}     value={statViews}    icon={EyeIcon}      color="bg-blue-500" />
       </div>
 
       {/* Table card */}
@@ -504,7 +531,7 @@ function AdminBlogPage() {
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Tìm tiêu đề hoặc tác giả..."
+              placeholder={t('adminBlog.searchPh')}
               className="h-9 w-full rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 pl-9 pr-9 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 transition"
             />
             {search && (
@@ -519,10 +546,14 @@ function AdminBlogPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px]">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
-                {['Bài viết', 'Danh mục', 'Tác giả', 'Lượt xem', 'Trạng thái', 'Ngày đăng', ''].map(h => (
-                  <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{h}</th>
-                ))}
+                 <tr className="border-b border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/[0.02]">
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.post')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.category')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.author')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.views')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.status')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400">{t('adminBlog.col.publishedAt')}</th>
+                <th className="px-5 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-400"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -532,11 +563,11 @@ function AdminBlogPage() {
                 <tr>
                   <td colSpan={7} className="py-16 text-center">
                     <FileText size={28} className="mx-auto mb-2 text-gray-200 dark:text-white/10" />
-                    <p className="text-sm text-gray-400">{search ? 'Không tìm thấy bài viết phù hợp' : 'Chưa có bài viết nào'}</p>
+                    <p className="text-sm text-gray-400">{search ? t('adminBlog.empty.noMatch') : t('adminBlog.empty.noPosts')}</p>
                     {!search && (
                       <button onClick={openCreate}
                         className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-600 transition">
-                        <Plus size={13} /> Thêm bài viết đầu tiên
+                        <Plus size={13} /> {t('adminBlog.addFirst')}
                       </button>
                     )}
                   </td>

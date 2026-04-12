@@ -17,6 +17,7 @@ import SockJS from 'sockjs-client'
 import { chatApi, type ChatRoomDto, type ChatMessageDto } from '@/lib/http/chat.api'
 import { useAuthContext } from '@/lib/context/auth-context'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const WS_URL   = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/ws`
 const ADMIN_CHAT_TOPIC = '/topic/admin/chat'
@@ -32,6 +33,7 @@ function formatTime(iso: string) {
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation()
   const isOpen = status === 'OPEN'
   return (
     <span className={cn(
@@ -41,7 +43,7 @@ function StatusBadge({ status }: { status: string }) {
         : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400',
     )}>
       <Circle size={6} fill="currentColor" />
-      {isOpen ? 'Đang mở' : 'Đã đóng'}
+      {t(isOpen ? 'adminChat.status.OPEN' : 'adminChat.status.CLOSED')}
     </span>
   )
 }
@@ -114,6 +116,7 @@ function Bubble({ msg, adminId }: { msg: ChatMessageDto; adminId: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function AdminChatPage() {
+  const { t }   = useTranslation()
   const { user }  = useAuthContext()
 
   const [rooms,       setRooms]       = useState<ChatRoomDto[]>([])
@@ -140,7 +143,7 @@ export function AdminChatPage() {
       const res = await chatApi.listRooms()
       setRooms(res.data ?? [])
     } catch {
-      toast.error('Không thể tải danh sách chat')
+      toast.error(t('adminChat.toast.loadFailed'))
     } finally {
       setLoadingRooms(false)
     }
@@ -198,7 +201,7 @@ export function AdminChatPage() {
       chatApi.markAsRead(room.id).catch(() => undefined)
       setRooms(prev => prev.map(r => r.id === room.id ? { ...r, unreadCount: 0 } : r))
     } catch {
-      toast.error('Không thể tải tin nhắn')
+      toast.error(t('adminChat.toast.msgLoadFailed'))
     } finally {
       setLoadingMsgs(false)
     }
@@ -240,7 +243,7 @@ export function AdminChatPage() {
       }
     } catch {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
-      toast.error('Gửi thất bại')
+      toast.error(t('adminChat.toast.sendFailed'))
     } finally {
       setSending(false)
     }
@@ -254,26 +257,26 @@ export function AdminChatPage() {
       const updated = res.data!
       setActiveRoom(updated)
       setRooms(prev => prev.map(r => r.id === updated.id ? updated : r))
-      toast.success('Đã đóng phòng chat')
+      toast.success(t('adminChat.toast.closedSuccess'))
     } catch {
-      toast.error('Không thể đóng phòng chat')
+      toast.error(t('adminChat.toast.closeFailed'))
     }
   }, [activeRoom])
 
   return (
     <div className="p-6 space-y-4 flex flex-col h-full min-h-0">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight shrink-0">Live Chat</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight shrink-0">{t('adminChat.title')}</h1>
       <div className="flex flex-1 min-h-0 rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden bg-white dark:bg-[#21232d] shadow-sm">
       {/* Left panel: room list */}
       <div className="w-72 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm flex items-center gap-2">
             <MessageCircle size={16} className="text-orange-500" />
-            Hộp chat ({rooms.length})
+            {t('adminChat.inbox', { count: rooms.length })}
           </h2>
           <div className="flex items-center gap-2">
             {!isConnected && <WifiOff size={14} className="text-gray-400" aria-label="Mất kết nối WS" />}
-            <button onClick={loadRooms} aria-label="Làm mới danh sách" className="rounded-lg p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition cursor-pointer">
+            <button onClick={loadRooms} aria-label={t('adminChat.refresh')} className="rounded-lg p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition cursor-pointer">
               <RefreshCw size={14} />
             </button>
           </div>
@@ -286,7 +289,7 @@ export function AdminChatPage() {
           {!loadingRooms && rooms.length === 0 && (
             <div className="flex flex-col items-center justify-center h-32 text-gray-400 text-sm">
               <MessageCircle size={28} className="mb-2 text-gray-300" />
-              Chưa có chat nào
+              {t('adminChat.empty')}
             </div>
           )}
           {rooms.map(room => (
@@ -305,7 +308,7 @@ export function AdminChatPage() {
         {!activeRoom ? (
           <div className="flex h-full flex-col items-center justify-center text-gray-400">
             <MessageCircle size={48} className="mb-3 text-gray-200 dark:text-white/10" />
-            <p className="text-sm">Chọn một cuộc hội thoại để bắt đầu</p>
+            <p className="text-sm">{t('adminChat.selectConversation')}</p>
           </div>
         ) : (
           <>
@@ -327,7 +330,7 @@ export function AdminChatPage() {
                   className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/20 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   <XCircle size={13} />
-                  Đóng phòng
+                  {t('adminChat.closeRoom')}
                 </button>
               )}
             </div>
@@ -339,7 +342,7 @@ export function AdminChatPage() {
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-32 text-gray-400 text-sm">
                   <MessageCircle size={28} className="mb-2 text-gray-300" />
-                  Chưa có tin nhắn
+                  {t('adminChat.noMessages')}
                 </div>
               ) : (
                 messages.map(msg => (
@@ -359,7 +362,7 @@ export function AdminChatPage() {
                   onKeyDown={e => {
                     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
                   }}
-                  placeholder="Trả lời khách hàng..."
+                  placeholder={t('adminChat.inputPh')}
                   disabled={sending}
                   className="flex-1 resize-none bg-gray-100 dark:bg-white/5 rounded-xl px-3 py-2 text-sm
                              text-gray-800 dark:text-gray-100 outline-none min-h-[36px] max-h-[90px]
@@ -377,7 +380,7 @@ export function AdminChatPage() {
               </div>
             ) : (
               <div className="px-4 py-3 border-t border-gray-100 dark:border-white/5 text-center">
-                <p className="text-xs text-gray-400">Phòng chat đã đóng</p>
+                <p className="text-xs text-gray-400">{t('adminChat.roomClosed')}</p>
               </div>
             )}
           </>

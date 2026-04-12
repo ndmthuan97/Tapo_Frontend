@@ -144,14 +144,18 @@ function AdminOrdersPage() {
   const lang = i18n.language
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [totalElements, setTotalElements] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [activeStatus, setActiveStatus] = useState<OrderStatus | 'ALL'>('ALL')
-  const [page, setPage] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [totalPages,    setTotalPages]    = useState(0)
+  const [activeStatus, setActiveStatus]   = useState<OrderStatus | 'ALL'>('ALL')
+  const [page, setPage]                   = useState(0)
+  const [isLoading, setIsLoading]         = useState(true)
+  const [searchQuery, setSearchQuery]     = useState('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
   const [isBulkLoading, setIsBulkLoading] = useState(false)
+  // ── Global stat totals (independent of table filter) ──────────────────────
+  const [statTotal,     setStatTotal]     = useState(0)
+  const [statPending,   setStatPending]   = useState(0)
+  const [statDelivered, setStatDelivered] = useState(0)
 
   const STATUS_OPTIONS = useMemo(() => [
     { value: 'ALL',        label: t('orders.statusFilter.ALL')        },
@@ -164,6 +168,22 @@ function AdminOrdersPage() {
     { value: 'RETURNED',   label: t('orders.statusFilter.RETURNED')   },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [lang])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const [total, pending, confirmed, delivered] = await Promise.all([
+        orderApi.adminGetAllOrders({ page: 0, size: 1 }),
+        orderApi.adminGetAllOrders({ page: 0, size: 1, status: 'PENDING' }),
+        orderApi.adminGetAllOrders({ page: 0, size: 1, status: 'CONFIRMED' }),
+        orderApi.adminGetAllOrders({ page: 0, size: 1, status: 'DELIVERED' }),
+      ])
+      if (total.data)     setStatTotal(total.data.totalElements)
+      if (delivered.data) setStatDelivered(delivered.data.totalElements)
+      const pendingN   = pending.data?.totalElements   ?? 0
+      const confirmedN = confirmed.data?.totalElements ?? 0
+      setStatPending(pendingN + confirmedN)
+    } catch { /* ignore */ }
+  }, [])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -180,13 +200,14 @@ function AdminOrdersPage() {
     }
   }, [page, activeStatus])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => { loadData()  }, [loadData])
 
   async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
     const result = await orderApi.adminUpdateStatus(orderId, newStatus)
     if (result.success) {
       toast.success(t('adminOrders.statusUpdated'))
-      loadData()
+      loadData(); loadStats()
     } else {
       toast.error(t('adminOrders.errorUpdate'), { description: result.error?.message })
     }
@@ -197,9 +218,6 @@ function AdminOrdersPage() {
     ? orders.filter(o => o.orderCode?.toLowerCase().includes(q) || o.firstProductName?.toLowerCase().includes(q))
     : orders
 
-  const pendingCount  = orders.filter(o => o.status === 'PENDING' || o.status === 'CONFIRMED').length
-  const deliveredCount = orders.filter(o => o.status === 'DELIVERED').length
-
   async function handleBulkStatus(newStatus: OrderStatus) {
     if (selectedIds.size === 0) return
     setIsBulkLoading(true)
@@ -208,7 +226,7 @@ function AdminOrdersPage() {
     if (res.success) {
       toast.success(`Đã cập nhật ${res.data?.length ?? 0} đơn hàng → ${newStatus}`)
       setSelectedIds(new Set())
-      loadData()
+      loadData(); loadStats()
     } else {
       toast.error('Có lỗi khi bulk update', { description: res.error?.message })
     }
@@ -242,9 +260,9 @@ function AdminOrdersPage() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard icon={ShoppingBag}  label={t('adminOrders.statAll')}      value={totalElements}  color="bg-orange-500"  />
-          <StatCard icon={Clock}        label={t('adminOrders.statPending')}   value={pendingCount}   color="bg-amber-500"   />
-          <StatCard icon={PackageCheck} label={t('adminOrders.statDelivered')} value={deliveredCount} color="bg-emerald-500" />
+          <StatCard icon={ShoppingBag}  label={t('adminOrders.statAll')}      value={statTotal}     color="bg-orange-500"  />
+          <StatCard icon={Clock}        label={t('adminOrders.statPending')}   value={statPending}   color="bg-amber-500"   />
+          <StatCard icon={PackageCheck} label={t('adminOrders.statDelivered')} value={statDelivered} color="bg-emerald-500" />
         </div>
 
         {/* Table card */}

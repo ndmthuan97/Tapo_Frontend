@@ -48,10 +48,10 @@ export const voucherApi = {
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────────
-  adminListAll(page = 0, size = 20) {
+  adminListAll(page = 0, size = 20, status?: 'ACTIVE' | 'INACTIVE') {
     return apiCall<PageResponse<VoucherDto>>(
       httpClient.get<ApiResponse<PageResponse<VoucherDto>>>('/api/admin/vouchers', {
-        params: { page, size },
+        params: { page, size, ...(status ? { status } : {}) },
       }),
     )
   },

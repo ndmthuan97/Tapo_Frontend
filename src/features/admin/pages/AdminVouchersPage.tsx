@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
   Plus, ToggleLeft, ToggleRight, Tag,
@@ -38,6 +39,7 @@ function VoucherSkeleton() {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
+  const { t } = useTranslation()
   return (
     <span className={cn(
       'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold',
@@ -46,7 +48,7 @@ function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
         : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400',
     )}>
       <span className={cn('h-1.5 w-1.5 rounded-full', status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-400')} />
-      {status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm dừng'}
+      {status === 'ACTIVE' ? t('adminVouchers.status.ACTIVE') : t('adminVouchers.status.INACTIVE')}
     </span>
   )
 }
@@ -83,6 +85,7 @@ const INITIAL_FORM: CreateVoucherRequest = {
 }
 
 function CreateVoucherModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState<CreateVoucherRequest>(INITIAL_FORM)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof CreateVoucherRequest, string>>>({})
@@ -94,13 +97,13 @@ function CreateVoucherModal({ onClose, onCreated }: { onClose: () => void; onCre
 
   function validate(): boolean {
     const e: typeof errors = {}
-    if (!form.code.trim()) e.code = 'Vui lòng nhập mã voucher'
-    if (!form.name.trim()) e.name = 'Vui lòng nhập tên voucher'
-    if (form.discountValue <= 0) e.discountValue = 'Giá trị giảm phải > 0'
-    if (form.discountType === 'PERCENTAGE' && form.discountValue > 100) e.discountValue = 'Phần trăm không vượt quá 100'
-    if (!form.startDate) e.startDate = 'Vui lòng chọn ngày bắt đầu'
-    if (!form.endDate) e.endDate = 'Vui lòng chọn ngày kết thúc'
-    if (form.startDate && form.endDate && form.startDate >= form.endDate) e.endDate = 'Ngày kết thúc phải sau ngày bắt đầu'
+    if (!form.code.trim()) e.code = t('adminVouchers.validation.codeRequired')
+    if (!form.name.trim()) e.name = t('adminVouchers.validation.nameRequired')
+    if (form.discountValue <= 0) e.discountValue = t('adminVouchers.validation.valueMin')
+    if (form.discountType === 'PERCENTAGE' && form.discountValue > 100) e.discountValue = t('adminVouchers.validation.valuePctMax')
+    if (!form.startDate) e.startDate = t('adminVouchers.validation.startRequired')
+    if (!form.endDate) e.endDate = t('adminVouchers.validation.endRequired')
+    if (form.startDate && form.endDate && form.startDate >= form.endDate) e.endDate = t('adminVouchers.validation.endAfterStart')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -117,8 +120,8 @@ function CreateVoucherModal({ onClose, onCreated }: { onClose: () => void; onCre
     }
     const res = await voucherApi.adminCreate(payload)
     setSaving(false)
-    if (res.success) { toast.success('Tạo voucher thành công!'); onCreated() }
-    else toast.error('Lỗi', { description: res.error?.message })
+    if (res.success) { toast.success(t('adminVouchers.toast.created')); onCreated() }
+    else toast.error(t('adminVouchers.toast.error'), { description: res.error?.message })
   }
 
   return (
@@ -129,7 +132,7 @@ function CreateVoucherModal({ onClose, onCreated }: { onClose: () => void; onCre
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-500/10">
               <Tag size={16} className="text-orange-500" />
             </div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">Tạo Voucher mới</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('adminVouchers.form.createTitle')}</h2>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
             <X size={15} />
@@ -146,55 +149,55 @@ function CreateVoucherModal({ onClose, onCreated }: { onClose: () => void; onCre
             </Field>
           </div>
 
-          <Field label="Loại giảm giá">
+          <Field label={t('adminVouchers.form.discountType')}>
             <div className="grid grid-cols-2 gap-2">
-              {(['PERCENTAGE', 'FIXED_AMOUNT'] as DiscountType[]).map(t => (
-                <button key={t} type="button" onClick={() => set('discountType', t)}
+              {(['PERCENTAGE', 'FIXED_AMOUNT'] as DiscountType[]).map(discType => (
+                <button key={discType} type="button" onClick={() => set('discountType', discType)}
                   className={cn('flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all',
-                    form.discountType === t
+                    form.discountType === discType
                       ? 'border-orange-400 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
                       : 'border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400')}>
-                  {t === 'PERCENTAGE' ? <Percent size={14} /> : <DollarSign size={14} />}
-                  {t === 'PERCENTAGE' ? 'Phần trăm (%)' : 'Số tiền cố định'}
+                  {discType === 'PERCENTAGE' ? <Percent size={14} /> : <DollarSign size={14} />}
+                  {discType === 'PERCENTAGE' ? t('adminVouchers.form.pct') : t('adminVouchers.form.fixed')}
                 </button>
               ))}
             </div>
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label={form.discountType === 'PERCENTAGE' ? 'Giảm (%) *' : 'Giảm (₫) *'} error={errors.discountValue}>
+            <Field label={form.discountType === 'PERCENTAGE' ? t('adminVouchers.form.valuePct') : t('adminVouchers.form.valueFixed')} error={errors.discountValue}>
               <input type="number" min={0} value={form.discountValue || ''} onChange={e => set('discountValue', Number(e.target.value))} className={inputCls(!!errors.discountValue)} />
             </Field>
             {form.discountType === 'PERCENTAGE' && (
-              <Field label="Giảm tối đa (₫)">
-                <input type="number" min={0} value={form.maxDiscountAmount ?? ''} onChange={e => set('maxDiscountAmount', e.target.value ? Number(e.target.value) : null)} placeholder="Không giới hạn" className={inputCls(false)} />
+              <Field label={t('adminVouchers.form.maxAmount')}>
+                <input type="number" min={0} value={form.maxDiscountAmount ?? ''} onChange={e => set('maxDiscountAmount', e.target.value ? Number(e.target.value) : null)} placeholder={t('adminVouchers.form.maxAmountPh')} className={inputCls(false)} />
               </Field>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Đơn tối thiểu (₫)">
+            <Field label={t('adminVouchers.form.minOrder')}>
               <input type="number" min={0} value={form.minimumOrderValue || ''} onChange={e => set('minimumOrderValue', Number(e.target.value))} className={inputCls(false)} />
             </Field>
-            <Field label="Số lượt dùng tối đa">
-              <input type="number" min={0} value={form.usageLimit ?? ''} onChange={e => set('usageLimit', e.target.value ? Number(e.target.value) : null)} placeholder="Không giới hạn" className={inputCls(false)} />
+            <Field label={t('adminVouchers.form.usageLimit')}>
+              <input type="number" min={0} value={form.usageLimit ?? ''} onChange={e => set('usageLimit', e.target.value ? Number(e.target.value) : null)} placeholder={t('adminVouchers.form.usageLimitPh')} className={inputCls(false)} />
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Ngày bắt đầu *" error={errors.startDate}>
+            <Field label={t('adminVouchers.form.startDate')} error={errors.startDate}>
               <input type="datetime-local" value={form.startDate} onChange={e => set('startDate', e.target.value)} className={inputCls(!!errors.startDate)} />
             </Field>
-            <Field label="Ngày kết thúc *" error={errors.endDate}>
+            <Field label={t('adminVouchers.form.endDate')} error={errors.endDate}>
               <input type="datetime-local" value={form.endDate} onChange={e => set('endDate', e.target.value)} className={inputCls(!!errors.endDate)} />
             </Field>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-            <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Hủy</button>
+            <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">{t('adminVouchers.form.cancel')}</button>
             <button type="submit" disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-              Tạo voucher
+              {t('adminVouchers.form.create')}
             </button>
           </div>
         </form>
@@ -212,6 +215,7 @@ function EditVoucherModal({
   onClose: () => void
   onUpdated: () => void
 }) {
+  const { t } = useTranslation()
   const toLocalDT = (iso: string) => iso ? iso.slice(0, 16) : ''
 
   const [form, setForm] = useState<CreateVoucherRequest>({
@@ -235,13 +239,13 @@ function EditVoucherModal({
 
   function validate(): boolean {
     const e: typeof errors = {}
-    if (!form.code.trim()) e.code = 'Vui lòng nhập mã voucher'
-    if (!form.name.trim()) e.name = 'Vui lòng nhập tên voucher'
-    if (form.discountValue <= 0) e.discountValue = 'Giá trị giảm phải > 0'
-    if (form.discountType === 'PERCENTAGE' && form.discountValue > 100) e.discountValue = 'Phần trăm không vượt quá 100'
-    if (!form.startDate) e.startDate = 'Vui lòng chọn ngày bắt đầu'
-    if (!form.endDate) e.endDate = 'Vui lòng chọn ngày kết thúc'
-    if (form.startDate && form.endDate && form.startDate >= form.endDate) e.endDate = 'Ngày kết thúc phải sau ngày bắt đầu'
+    if (!form.code.trim()) e.code = t('adminVouchers.validation.codeRequired')
+    if (!form.name.trim()) e.name = t('adminVouchers.validation.nameRequired')
+    if (form.discountValue <= 0) e.discountValue = t('adminVouchers.validation.valueMin')
+    if (form.discountType === 'PERCENTAGE' && form.discountValue > 100) e.discountValue = t('adminVouchers.validation.valuePctMax')
+    if (!form.startDate) e.startDate = t('adminVouchers.validation.startRequired')
+    if (!form.endDate) e.endDate = t('adminVouchers.validation.endRequired')
+    if (form.startDate && form.endDate && form.startDate >= form.endDate) e.endDate = t('adminVouchers.validation.endAfterStart')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -258,8 +262,8 @@ function EditVoucherModal({
     }
     const res = await voucherApi.adminUpdate(voucher.id, payload)
     setSaving(false)
-    if (res.success) { toast.success('Cập nhật voucher thành công!'); onUpdated() }
-    else toast.error('Lỗi', { description: res.error?.message })
+    if (res.success) { toast.success(t('adminVouchers.toast.updated')); onUpdated() }
+    else toast.error(t('adminVouchers.toast.error'), { description: res.error?.message })
   }
 
   return (
@@ -270,7 +274,7 @@ function EditVoucherModal({
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10">
               <Pencil size={16} className="text-blue-500" />
             </div>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-white">Chỉnh sửa Voucher</h2>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-white">{t('adminVouchers.form.editTitle')}</h2>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
             <X size={15} />
@@ -332,10 +336,10 @@ function EditVoucherModal({
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-white/5">
-            <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">Hủy</button>
+            <button type="button" onClick={onClose} className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">{t('adminVouchers.form.cancel')}</button>
             <button type="submit" disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-60 transition-colors">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />}
-              Lưu thay đổi
+              {t('adminVouchers.form.save')}
             </button>
           </div>
         </form>
@@ -346,24 +350,44 @@ function EditVoucherModal({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-const STATUS_FILTER_OPTIONS = [
-  { value: 'ALL',      label: 'Tất cả trạng thái' },
-  { value: 'ACTIVE',   label: 'Đang hoạt động'    },
-  { value: 'INACTIVE', label: 'Tạm dừng'          },
-]
 
 function AdminVouchersPage() {
-  const [vouchers, setVouchers] = useState<VoucherDto[]>([])
-  const [totalPages, setTotalPages] = useState(0)
+  const { t } = useTranslation()
+  const [vouchers, setVouchers]         = useState<VoucherDto[]>([])
+  const [totalPages, setTotalPages]     = useState(0)
   const [totalElements, setTotalElements] = useState(0)
-  const [page, setPage] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
+  const [page, setPage]                 = useState(0)
+  const [isLoading, setIsLoading]       = useState(true)
+  const [showCreate, setShowCreate]     = useState(false)
   const [editingVoucher, setEditingVoucher] = useState<VoucherDto | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [togglingId, setTogglingId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [deletingId, setDeletingId]     = useState<string | null>(null)
+  const [togglingId, setTogglingId]     = useState<string | null>(null)
+  const [searchQuery, setSearchQuery]   = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL')
+  // ── Global stat totals (not from page data) ───────────────────────────────
+  const [statTotal,    setStatTotal]    = useState(0)
+  const [statActive,   setStatActive]   = useState(0)
+  const [statInactive, setStatInactive] = useState(0)
+
+  const STATUS_FILTER_OPTIONS = useMemo(() => [
+    { value: 'ALL',      label: t('adminVouchers.filter.ALL')      },
+    { value: 'ACTIVE',   label: t('adminVouchers.filter.ACTIVE')   },
+    { value: 'INACTIVE', label: t('adminVouchers.filter.INACTIVE') },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [t])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const [total, active, inactive] = await Promise.all([
+        voucherApi.adminListAll(0, 1),
+        voucherApi.adminListAll(0, 1, 'ACTIVE'),
+        voucherApi.adminListAll(0, 1, 'INACTIVE'),
+      ])
+      if (total.data)    setStatTotal(total.data.totalElements)
+      if (active.data)   setStatActive(active.data.totalElements)
+      if (inactive.data) setStatInactive(inactive.data.totalElements)
+    } catch { /* ignore */ }
+  }, [])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -376,30 +400,32 @@ function AdminVouchersPage() {
     }
   }, [page])
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => { loadData()  }, [loadData])
 
   async function handleToggle(id: string) {
     setTogglingId(id)
     const res = await voucherApi.adminToggleStatus(id)
     setTogglingId(null)
     if (res.success) {
-      toast.success('Đã cập nhật trạng thái voucher')
+      toast.success(t('adminVouchers.toast.toggled'))
+      loadStats()
       setVouchers(vs => vs.map(v => v.id === id ? { ...v, status: res.data!.status } : v))
     } else {
-      toast.error('Lỗi', { description: res.error?.message })
+      toast.error(t('adminVouchers.toast.error'), { description: res.error?.message })
     }
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm('Bạn có chắc muốn xóa voucher này? Hành động không thể hoàn tác.')) return
+    if (!window.confirm(t('adminVouchers.deleteConfirm'))) return
     setDeletingId(id)
     const res = await voucherApi.adminDelete(id)
     setDeletingId(null)
     if (res.success) {
-      toast.success('Đã xóa voucher')
-      loadData()
+      toast.success(t('adminVouchers.toast.deleted'))
+      loadData(); loadStats()
     } else {
-      toast.error('Lỗi khi xóa', { description: res.error?.message })
+      toast.error(t('adminVouchers.toast.errorDel'), { description: res.error?.message })
     }
   }
 
@@ -412,35 +438,32 @@ function AdminVouchersPage() {
     .filter(v => statusFilter === 'ALL' || v.status === statusFilter)
     .filter(v => !q || v.code.toLowerCase().includes(q) || v.name.toLowerCase().includes(q))
 
-  const activeCount   = vouchers.filter(v => v.status === 'ACTIVE').length
-  const inactiveCount = vouchers.filter(v => v.status === 'INACTIVE').length
-
   return (
     <div className="p-6 space-y-6">
       {/* Title */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Quản lý Voucher</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">{t('adminVouchers.title')}</h1>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Tag}         label="Tổng voucher"    value={totalElements} color="bg-orange-500"  />
-        <StatCard icon={CheckCircle} label="Đang hoạt động"  value={activeCount}   color="bg-emerald-500" />
-        <StatCard icon={PauseCircle} label="Tạm dừng"        value={inactiveCount} color="bg-gray-400"    />
+        <StatCard icon={Tag}         label={t('adminVouchers.statTotal')}    value={statTotal}    color="bg-orange-500"  />
+        <StatCard icon={CheckCircle} label={t('adminVouchers.statActive')}   value={statActive}   color="bg-emerald-500" />
+        <StatCard icon={PauseCircle} label={t('adminVouchers.statInactive')} value={statInactive} color="bg-gray-400"    />
       </div>
 
       {/* Table card */}
       <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden transition-colors">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
-          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">Danh sách voucher</p>
-          <AdminSearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Tìm theo mã, tên voucher..." />
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">{t('adminVouchers.tableTitle')}</p>
+          <AdminSearchInput value={searchQuery} onChange={setSearchQuery} placeholder={t('adminVouchers.searchPh')} />
           <AdminFilterSelect value={statusFilter} onChange={v => setStatusFilter(v as 'ALL' | 'ACTIVE' | 'INACTIVE')} options={STATUS_FILTER_OPTIONS} />
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
           >
-            <Plus size={15} /> Tạo voucher
+            <Plus size={15} /> {t('adminVouchers.createBtn')}
           </button>
         </div>
 
@@ -449,9 +472,14 @@ function AdminVouchersPage() {
           <table className="w-full min-w-[800px] text-sm">
             <thead>
               <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
-                {['Mã voucher', 'Tên', 'Giảm giá', 'Điều kiện', 'Thời hạn', 'Lượt dùng', 'Trạng thái', ''].map(h => (
-                  <th key={h} className="px-4 py-3.5">{h}</th>
-                ))}
+                <th className="px-4 py-3.5">{t('adminVouchers.col.code')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.name')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.discount')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.condition')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.validity')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.usage')}</th>
+                <th className="px-4 py-3.5">{t('adminVouchers.col.status')}</th>
+                <th className="px-4 py-3.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
@@ -461,8 +489,8 @@ function AdminVouchersPage() {
                     <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-500/10">
                       <Tag size={24} className="text-orange-400" />
                     </div>
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chưa có voucher nào</p>
-                    <p className="mt-1 text-xs text-gray-400">Nhấn "+ Tạo voucher" để thêm voucher mới</p>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('adminVouchers.empty.title')}</p>
+                    <p className="mt-1 text-xs text-gray-400">{t('adminVouchers.empty.desc')}</p>
                   </div>
                 </td></tr>
               ) : filteredVouchers.map(v => (
@@ -482,11 +510,11 @@ function AdminVouchersPage() {
                         {v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : formatCurrency(v.discountValue)}
                       </span>
                     </div>
-                    {v.maxDiscountAmount && <p className="text-[10px] text-gray-400 mt-0.5">tối đa {formatCurrency(v.maxDiscountAmount)}</p>}
+                    {v.maxDiscountAmount && <p className="text-[10px] text-gray-400 mt-0.5">{t('adminVouchers.maxAmount', { amount: formatCurrency(v.maxDiscountAmount) })}</p>}
                   </td>
                   <td className="px-4 py-3.5">
                     <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {v.minimumOrderValue > 0 ? `≥ ${formatCurrency(v.minimumOrderValue)}` : 'Không giới hạn'}
+                    {v.minimumOrderValue > 0 ? `≥ ${formatCurrency(v.minimumOrderValue)}` : t('adminVouchers.noLimit')}
                     </p>
                   </td>
                   <td className="px-4 py-3.5">
