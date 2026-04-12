@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Star, CheckCircle2, XCircle, Clock, Search, ChevronLeft,
-  ChevronRight, Package, MessageSquare, SendHorizonal, Pencil, Trash2,
+  Star, CheckCircle2, XCircle, Clock,
+  Package, MessageSquare, SendHorizonal, Pencil, Trash2,
   CheckSquare, ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { adminReviewApi, type AdminReviewDto, type ReviewStatus, type BulkReviewAction } from '@/lib/http/admin-review.api'
+import { AdminSearchInput, AdminTablePagination } from '@/features/admin/components/AdminShared'
 
 // ── Star display ──────────────────────────────────────────────────────────────
 
@@ -488,34 +489,22 @@ function AdminReviewsPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto">
-      {/* Header */}
+      {/* Header + Search */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/10">
-            <Star size={18} className="text-orange-500" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Quản lý Đánh giá</h1>
-            {pendingCount > 0 && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                {pendingCount} đánh giá đang chờ duyệt
-              </p>
-            )}
-          </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Quản lý Đánh giá</h1>
+          {pendingCount > 0 && (
+            <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400 font-medium">
+              {pendingCount} đánh giá đang chờ duyệt
+            </p>
+          )}
         </div>
-
-        {/* Search */}
-        <div className="relative flex-shrink-0 w-full sm:w-72">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            id="review-search"
-            type="text"
-            placeholder="Tìm theo tên, sản phẩm, nội dung..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#21232d] pl-9 pr-4 py-2 text-sm placeholder:text-gray-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/20 transition"
-          />
-        </div>
+        <AdminSearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Tìm theo tên, sản phẩm, nội dung..."
+          className="w-full sm:w-72"
+        />
       </div>
 
       {/* Status tabs */}
@@ -623,27 +612,11 @@ function AdminReviewsPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
-            disabled={page === 0}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-            Trang {page + 1} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
-      )}
+      <AdminTablePagination
+        page={page + 1}
+        totalPages={totalPages}
+        onPageChange={p => setPage(p - 1)}
+      />
 
       {/* Floating bulk action bar — §6 animate-in (ui-ux-pro-max) */}
       <BulkBar

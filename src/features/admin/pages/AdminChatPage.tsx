@@ -54,7 +54,7 @@ function RoomItem({
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-gray-100 dark:border-zinc-800',
+        'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b border-gray-100 dark:border-white/5',
         isActive
           ? 'bg-orange-50 dark:bg-orange-500/10'
           : 'hover:bg-gray-50 dark:hover:bg-white/5',
@@ -76,7 +76,7 @@ function RoomItem({
           </p>
         )}
         {room.lastMessageAt && (
-          <p className="text-xs text-gray-400 dark:text-zinc-500 mt-0.5 flex items-center gap-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-1">
             <Clock size={10} />
             {formatTime(room.lastMessageAt)}
           </p>
@@ -100,11 +100,11 @@ function Bubble({ msg, adminId }: { msg: ChatMessageDto; adminId: string }) {
         'max-w-[75%] rounded-2xl px-3 py-2 text-sm shadow-sm',
         isAdmin
           ? 'bg-orange-500 text-white rounded-br-sm'
-          : 'bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-zinc-700 rounded-bl-sm',
+          : 'bg-white dark:bg-white/5 text-gray-800 dark:text-gray-100 border border-gray-100 dark:border-white/10 rounded-bl-sm',
       )}>
         <p className="leading-snug break-words">{msg.content}</p>
         <p className={cn('text-[10px] mt-1 text-right',
-          isAdmin ? 'text-orange-100' : 'text-gray-400 dark:text-zinc-500')}>
+          isAdmin ? 'text-orange-100' : 'text-gray-400 dark:text-gray-500')}>
           {formatTime(msg.createdAt)}
         </p>
       </div>
@@ -261,17 +261,19 @@ export function AdminChatPage() {
   }, [activeRoom])
 
   return (
-    <div className="flex h-full rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900">
+    <div className="p-6 space-y-4 flex flex-col h-full min-h-0">
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight shrink-0">Live Chat</h1>
+      <div className="flex flex-1 min-h-0 rounded-2xl border border-gray-100 dark:border-white/5 overflow-hidden bg-white dark:bg-[#21232d] shadow-sm">
       {/* Left panel: room list */}
-      <div className="w-72 shrink-0 flex flex-col border-r border-gray-200 dark:border-zinc-800">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+      <div className="w-72 shrink-0 flex flex-col border-r border-gray-100 dark:border-white/5">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm flex items-center gap-2">
             <MessageCircle size={16} className="text-orange-500" />
             Hộp chat ({rooms.length})
           </h2>
           <div className="flex items-center gap-2">
             {!isConnected && <WifiOff size={14} className="text-gray-400" aria-label="Mất kết nối WS" />}
-            <button onClick={loadRooms} className="text-gray-400 hover:text-gray-600" title="Làm mới">
+            <button onClick={loadRooms} aria-label="Làm mới danh sách" className="rounded-lg p-1 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition cursor-pointer">
               <RefreshCw size={14} />
             </button>
           </div>
@@ -302,13 +304,13 @@ export function AdminChatPage() {
       <div className="flex flex-1 flex-col min-w-0">
         {!activeRoom ? (
           <div className="flex h-full flex-col items-center justify-center text-gray-400">
-            <MessageCircle size={48} className="mb-3 text-gray-200 dark:text-zinc-700" />
+            <MessageCircle size={48} className="mb-3 text-gray-200 dark:text-white/10" />
             <p className="text-sm">Chọn một cuộc hội thoại để bắt đầu</p>
           </div>
         ) : (
           <>
             {/* Thread header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-white/5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="h-8 w-8 shrink-0 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600">
                   <User size={14} />
@@ -322,7 +324,7 @@ export function AdminChatPage() {
                 <button
                   id="admin-chat-close-btn"
                   onClick={handleClose}
-                  className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-500/20 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                 >
                   <XCircle size={13} />
                   Đóng phòng
@@ -349,7 +351,7 @@ export function AdminChatPage() {
 
             {/* Input */}
             {activeRoom.status === 'OPEN' ? (
-              <div className="flex items-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-zinc-800">
+              <div className="flex items-end gap-2 px-4 py-3 border-t border-gray-100 dark:border-white/5">
                 <textarea
                   rows={1}
                   value={input}
@@ -359,9 +361,9 @@ export function AdminChatPage() {
                   }}
                   placeholder="Trả lời khách hàng..."
                   disabled={sending}
-                  className="flex-1 resize-none bg-gray-100 dark:bg-zinc-800 rounded-xl px-3 py-2 text-sm
+                  className="flex-1 resize-none bg-gray-100 dark:bg-white/5 rounded-xl px-3 py-2 text-sm
                              text-gray-800 dark:text-gray-100 outline-none min-h-[36px] max-h-[90px]
-                             placeholder:text-gray-400 disabled:opacity-50"
+                             placeholder:text-gray-400 disabled:opacity-50 border border-gray-200 dark:border-white/10 focus:border-orange-400 focus:outline-none"
                 />
                 <button
                   id="admin-chat-send-btn"
@@ -374,12 +376,13 @@ export function AdminChatPage() {
                 </button>
               </div>
             ) : (
-              <div className="px-4 py-3 border-t border-gray-200 dark:border-zinc-800 text-center">
+              <div className="px-4 py-3 border-t border-gray-100 dark:border-white/5 text-center">
                 <p className="text-xs text-gray-400">Phòng chat đã đóng</p>
               </div>
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   )

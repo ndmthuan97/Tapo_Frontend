@@ -2,32 +2,21 @@
  * AdminFlashSalesPage — Flash sale CRUD management for Admin.
  *
  * react skill §1: compound component (list + modal form)
- * react skill §4: loading/error/empty + button disabled during async
+ * react skill §4: loading/error/empty + skeleton + button disabled during async
  * react skill §5: useCallback for stable handlers
+ * ui-ux-pro-max: đồng bộ design system với AdminUsersPage
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
   Zap, Plus, Edit2, Trash2, Clock, Circle,
-  Loader2, AlertCircle,
+  Loader2, AlertCircle, TrendingUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { flashSaleApi, type FlashSaleDto, type FlashSaleStatus, type FlashSaleRequest } from '@/lib/http/flash-sale.api'
 import { cn } from '@/lib/utils'
+import { StatCard, AdminFilterSelect } from '@/features/admin/components/AdminShared'
 
-// ── Config ─────────────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<FlashSaleStatus, { label: string; color: string; bg: string }> = {
-  SCHEDULED: { label: 'Chờ mở',    color: 'text-blue-700 dark:text-blue-400',    bg: 'bg-blue-50 dark:bg-blue-500/10' },
-  ACTIVE:    { label: 'Đang diễn', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-  ENDED:     { label: 'Đã kết thúc', color: 'text-gray-500',                        bg: 'bg-gray-100 dark:bg-white/10' },
-}
-
-const STATUS_FILTERS: Array<{ key: FlashSaleStatus | 'ALL'; label: string }> = [
-  { key: 'ALL',       label: 'Tất cả' },
-  { key: 'ACTIVE',    label: 'Đang diễn' },
-  { key: 'SCHEDULED', label: 'Chờ mở' },
-  { key: 'ENDED',     label: 'Đã kết thúc' },
-]
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -35,24 +24,83 @@ function fmtDate(iso: string) {
   })
 }
 function fmtVND(n: number) { return n.toLocaleString('vi-VN') + '₫' }
+function toLocalInput(iso: string) {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function toIso(local: string) { return new Date(local).toISOString() }
 
-// ── Status Badge ────────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<FlashSaleStatus, { label: string; dot: string; badge: string }> = {
+  SCHEDULED: {
+    label: 'Chờ mở',
+    dot:   'bg-blue-500',
+    badge: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+  ACTIVE: {
+    label: 'Đang diễn',
+    dot:   'bg-emerald-500',
+    badge: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  },
+  ENDED: {
+    label: 'Đã kết thúc',
+    dot:   'bg-gray-400',
+    badge: 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400',
+  },
+}
+
+// ── Status Badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: FlashSaleStatus }) {
   const cfg = STATUS_CONFIG[status]
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', cfg.color, cfg.bg)}>
-      <Circle size={6} fill="currentColor" />
+    <span className={cn(
+      'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+      cfg.badge,
+    )}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
   )
 }
 
-// ── Form Modal ────────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+function FlashSaleSkeleton() {
+  return (
+    <>
+      {[...Array(5)].map((_, i) => (
+        <tr key={i} className="animate-pulse border-b border-gray-50 dark:border-white/5">
+          <td className="px-5 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-white/5 shrink-0" />
+              <div className="h-4 w-36 rounded bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+          <td className="px-5 py-3.5"><div className="h-4 w-24 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-5 w-14 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-4 w-28 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-4 w-32 rounded bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5"><div className="h-5 w-20 rounded-full bg-gray-100 dark:bg-white/5" /></td>
+          <td className="px-5 py-3.5 text-right">
+            <div className="inline-flex justify-end gap-1.5">
+              <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
+              <div className="h-7 w-7 rounded-lg bg-gray-100 dark:bg-white/5" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
+// ── Form Modal ─────────────────────────────────────────────────────────────────
 interface FormModalProps {
   initial?: FlashSaleDto | null
   onClose: () => void
   onSaved: () => void
 }
+
+const inputCls = 'w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 transition placeholder:text-gray-400'
 
 function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
   const isEdit = !!initial
@@ -65,13 +113,6 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
   })
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
-
-  function toLocalInput(iso: string) {
-    const d = new Date(iso)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
-  function toIso(local: string) { return new Date(local).toISOString() }
 
   const handleSubmit = useCallback(async () => {
     const errs: string[] = []
@@ -91,7 +132,6 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
       startTime: toIso(form.startTime),
       endTime:   toIso(form.endTime),
     }
-
     try {
       if (isEdit && initial) {
         await flashSaleApi.updateFlashSale(initial.id, payload)
@@ -110,87 +150,100 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-200 dark:border-zinc-800">
-          <Zap size={18} className="text-orange-500" />
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+      <div
+        className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#21232d] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/10">
+            <Zap size={15} className="text-orange-500" />
+          </div>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Cập nhật Flash Sale' : 'Tạo Flash Sale mới'}
           </h2>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        {/* Body */}
+        <div className="px-5 py-5 space-y-4">
           {errors.length > 0 && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-800 p-3">
+            <div className="rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-3 space-y-1">
               {errors.map((e, i) => (
-                <p key={i} className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                  <AlertCircle size={12} />{e}
+                <p key={i} className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                  <AlertCircle size={11} />{e}
                 </p>
               ))}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product ID *</label>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Product ID *</label>
             <input
               value={form.productId}
               onChange={e => setForm(f => ({ ...f, productId: e.target.value }))}
               placeholder="UUID của sản phẩm"
-              className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-400 transition"
+              className={inputCls}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Giá sale (₫) *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Giá sale (₫) *</label>
               <input
                 type="number" min={0}
                 value={form.salePrice}
                 onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-400"
+                className={inputCls}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Giới hạn tồn *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Giới hạn tồn *</label>
               <input
                 type="number" min={1}
                 value={form.stockLimit}
                 onChange={e => setForm(f => ({ ...f, stockLimit: +e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-400"
+                className={inputCls}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bắt đầu *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Bắt đầu *</label>
               <input
                 type="datetime-local"
                 value={form.startTime}
                 onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-400"
+                className={inputCls}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kết thúc *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Kết thúc *</label>
               <input
                 type="datetime-local"
                 value={form.endTime}
                 onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))}
-                className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-400"
+                className={inputCls}
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-zinc-800">
-          <button onClick={onClose} className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">Huỷ</button>
+        {/* Footer */}
+        <div className="flex justify-end gap-3 border-t border-gray-100 dark:border-white/5 px-5 py-4">
+          <button
+            onClick={onClose}
+            className="rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition"
+          >
+            Huỷ
+          </button>
           <button
             id="flash-sale-save-btn"
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition disabled:opacity-50 shadow-sm shadow-orange-500/20"
           >
-            {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+            {saving && <Loader2 size={13} className="animate-spin" />}
             {isEdit ? 'Cập nhật' : 'Tạo Flash Sale'}
           </button>
         </div>
@@ -199,13 +252,20 @@ function FlashSaleFormModal({ initial, onClose, onSaved }: FormModalProps) {
   )
 }
 
-// ── Main Page ───────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
+const FILTER_OPTIONS = [
+  { value: 'ALL',       label: 'Tất cả trạng thái' },
+  { value: 'ACTIVE',    label: 'Đang diễn' },
+  { value: 'SCHEDULED', label: 'Chờ mở' },
+  { value: 'ENDED',     label: 'Đã kết thúc' },
+]
+
 export function AdminFlashSalesPage() {
-  const [sales,       setSales]       = useState<FlashSaleDto[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [filterStatus, setFilter]     = useState<FlashSaleStatus | 'ALL'>('ALL')
-  const [modal,        setModal]      = useState<{ mode: 'create' | 'edit'; target?: FlashSaleDto } | null>(null)
-  const [deleting,     setDeleting]   = useState<string | null>(null)
+  const [sales,        setSales]    = useState<FlashSaleDto[]>([])
+  const [loading,      setLoading]  = useState(true)
+  const [filterStatus, setFilter]   = useState<FlashSaleStatus | 'ALL'>('ALL')
+  const [modal,        setModal]    = useState<{ mode: 'create' | 'edit'; target?: FlashSaleDto } | null>(null)
+  const [deleting,     setDeleting] = useState<string | null>(null)
 
   const loadSales = useCallback(async () => {
     setLoading(true)
@@ -235,141 +295,193 @@ export function AdminFlashSalesPage() {
     }
   }, [])
 
+  // Computed stats
+  const activeCount    = sales.filter(s => s.status === 'ACTIVE').length
+  const scheduledCount = sales.filter(s => s.status === 'SCHEDULED').length
+  const totalSold      = sales.reduce((a, s) => a + s.soldCount, 0)
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            <Zap size={22} className="text-orange-500" />
+    <div className="p-6 space-y-6">
+      {/* Page title */}
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+          Quản lý Flash Sale
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+          Khuyến mãi thời hạn — tự động kích hoạt theo lịch
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard icon={Zap}       label="Đang diễn"   value={activeCount}    color="bg-emerald-500" />
+        <StatCard icon={Clock}     label="Chờ mở"      value={scheduledCount} color="bg-blue-500" />
+        <StatCard icon={TrendingUp} label="Tổng đã bán" value={totalSold}      color="bg-orange-500" />
+      </div>
+
+      {/* Table card */}
+      <div className="rounded-2xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] shadow-sm overflow-hidden transition-colors">
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-white/5 px-5 py-4">
+          <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-auto">
             Flash Sales
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Quản lý khuyến mãi thời hạn — tự động kích hoạt theo lịch
           </p>
-        </div>
-        <button
-          id="flash-sale-create-btn"
-          onClick={() => setModal({ mode: 'create' })}
-          className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 transition-colors shadow-sm"
-        >
-          <Plus size={16} />
-          Tạo Flash Sale
-        </button>
-      </div>
-
-      {/* Status filter */}
-      <div className="flex gap-2 flex-wrap">
-        {STATUS_FILTERS.map(f => (
+          <AdminFilterSelect
+            value={filterStatus}
+            onChange={v => setFilter(v as FlashSaleStatus | 'ALL')}
+            options={FILTER_OPTIONS}
+          />
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={cn(
-              'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-              filterStatus === f.key
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-zinc-700',
-            )}
+            id="flash-sale-create-btn"
+            onClick={() => setModal({ mode: 'create' })}
+            className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600 transition shadow-sm shadow-orange-500/20 cursor-pointer"
           >
-            {f.label}
+            <Plus size={13} />
+            Tạo Flash Sale
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900">
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 size={28} className="animate-spin text-orange-400" />
-          </div>
-        ) : sales.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <Zap size={40} className="mb-3 text-gray-200 dark:text-zinc-700" />
-            <p className="text-sm">Chưa có flash sale nào</p>
-            <button onClick={() => setModal({ mode: 'create' })} className="mt-3 text-sm text-orange-500 hover:underline">
-              Tạo flash sale đầu tiên
-            </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50">
-                  {['Sản phẩm', 'Giá sale', 'Giảm', 'Tồn / Bán', 'Thời gian', 'Trạng thái', ''].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{h}</th>
-                  ))}
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5">
+                <th className="px-5 py-3.5">Sản phẩm</th>
+                <th className="px-5 py-3.5">Giá sale</th>
+                <th className="px-5 py-3.5">Giảm</th>
+                <th className="px-5 py-3.5">Tồn / Bán</th>
+                <th className="px-5 py-3.5">Thời gian</th>
+                <th className="px-5 py-3.5">Trạng thái</th>
+                <th className="px-5 py-3.5 text-right">Hành động</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+              {loading ? (
+                <FlashSaleSkeleton />
+              ) : sales.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5">
+                        <Zap size={24} className="text-gray-300 dark:text-white/20" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
+                        Chưa có flash sale nào
+                      </p>
+                      <button
+                        onClick={() => setModal({ mode: 'create' })}
+                        className="text-xs text-orange-500 hover:underline cursor-pointer"
+                      >
+                        Tạo flash sale đầu tiên
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
-                {sales.map(sale => (
-                  <tr key={sale.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3">
+              ) : (
+                sales.map(sale => (
+                  <tr
+                    key={sale.id}
+                    className="group transition-colors hover:bg-orange-50/60 dark:hover:bg-white/[0.03]"
+                  >
+                    {/* Product */}
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        {sale.thumbnailUrl && (
-                          <img src={sale.thumbnailUrl} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />
+                        {sale.thumbnailUrl ? (
+                          <img
+                            src={sale.thumbnailUrl}
+                            alt={sale.productName}
+                            className="h-10 w-10 rounded-xl object-cover shrink-0 bg-gray-100 dark:bg-white/5"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-white/5 shrink-0 flex items-center justify-center">
+                            <Zap size={14} className="text-gray-300 dark:text-white/20" />
+                          </div>
                         )}
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-800 dark:text-gray-100 truncate max-w-[180px]">{sale.productName}</p>
-                        </div>
+                        <span className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[160px]">
+                          {sale.productName}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="font-semibold text-orange-600 dark:text-orange-400">{fmtVND(sale.salePrice)}</span>
-                      <p className="text-xs text-gray-400 line-through">{fmtVND(sale.originalPrice)}</p>
+
+                    {/* Price */}
+                    <td className="px-5 py-3.5">
+                      <span className="font-semibold text-orange-600 dark:text-orange-400">
+                        {fmtVND(sale.salePrice)}
+                      </span>
+                      <p className="text-xs text-gray-400 line-through mt-0.5">
+                        {fmtVND(sale.originalPrice)}
+                      </p>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 text-xs font-bold px-2 py-0.5">
+
+                    {/* Discount */}
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 text-[11px] font-bold px-2.5 py-0.5">
                         -{sale.discountPercent}%
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      <span>{sale.remaining} còn / {sale.soldCount} bán</span>
-                      <div className="mt-1 h-1.5 w-24 rounded-full bg-gray-200 dark:bg-zinc-700">
+
+                    {/* Stock progress */}
+                    <td className="px-5 py-3.5">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {sale.remaining} còn · {sale.soldCount} bán
+                      </p>
+                      <div className="mt-1.5 h-1.5 w-24 rounded-full bg-gray-200 dark:bg-white/10 overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-orange-400"
+                          className="h-full rounded-full bg-orange-400 transition-all"
                           style={{ width: `${Math.min(100, (sale.soldCount / sale.stockLimit) * 100)}%` }}
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
-                      <p className="flex items-center gap-1"><Clock size={11} /> {fmtDate(sale.startTime)}</p>
-                      <p className="text-gray-400">→ {fmtDate(sale.endTime)}</p>
+
+                    {/* Time */}
+                    <td className="px-5 py-3.5">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <Clock size={11} className="shrink-0" />{fmtDate(sale.startTime)}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">→ {fmtDate(sale.endTime)}</p>
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={sale.status} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {sale.status === 'SCHEDULED' && (
-                          <>
-                            <button
-                              onClick={() => setModal({ mode: 'edit', target: sale })}
-                              className="rounded-lg p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
-                              title="Sửa"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(sale.id)}
-                              disabled={deleting === sale.id}
-                              className="rounded-lg p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors disabled:opacity-40"
-                              title="Xóa"
-                            >
-                              {deleting === sale.id
-                                ? <Loader2 size={14} className="animate-spin" />
-                                : <Trash2 size={14} />}
-                            </button>
-                          </>
-                        )}
-                      </div>
+
+                    {/* Status */}
+                    <td className="px-5 py-3.5">
+                      <StatusBadge status={sale.status} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                      {sale.status === 'SCHEDULED' && (
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setModal({ mode: 'edit', target: sale })}
+                            aria-label="Sửa flash sale"
+                            title="Sửa"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 dark:border-white/10 text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-300 transition cursor-pointer"
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(sale.id)}
+                            disabled={deleting === sale.id}
+                            aria-label="Xóa flash sale"
+                            title="Xóa"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition cursor-pointer disabled:opacity-50"
+                          >
+                            {deleting === sale.id
+                              ? <Loader2 size={13} className="animate-spin" />
+                              : <Trash2 size={13} />}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal */}
+      {/* Form modal */}
       {modal && (
         <FlashSaleFormModal
           initial={modal.target ?? null}
