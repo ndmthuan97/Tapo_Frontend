@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Zap,
   Archive,
+  Menu,
 } from 'lucide-react'
 
 import { useTranslation } from 'react-i18next'
@@ -95,6 +96,7 @@ function AdminLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
   const [hovered, setHovered] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const avatarRef = useRef<HTMLDivElement>(null)
 
@@ -113,13 +115,26 @@ function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-[#1a1c23] text-gray-900 dark:text-gray-100 transition-colors duration-300">
 
+      {/* ══ OVERLAY FOR MOBILE ═════════════════════════════════════════════ */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-gray-900/50 backdrop-blur-sm lg:hidden transition-opacity duration-300',
+          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setMobileOpen(false)}
+      />
+
       {/* ══ SIDEBAR ═══════════════════════════════════════════════════════ */}
       <aside
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         className={cn(
-          'relative flex shrink-0 flex-col bg-white dark:bg-[#21232d] border-r border-gray-100 dark:border-white/5 transition-all duration-300 ease-in-out overflow-hidden',
+          'fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col bg-white dark:bg-[#21232d] border-r border-gray-100 dark:border-white/5 transition-all duration-300 ease-in-out overflow-hidden',
+          'lg:relative',
+          // Desktop width control
           isExpanded ? 'w-60' : 'w-[68px]',
+          // Mobile translation
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         {/* Logo + collapse toggle — same row */}
@@ -163,6 +178,7 @@ function AdminLayout({ children }: { children: ReactNode }) {
                     to={to}
                     end={to === '/admin'}
                     title={!isExpanded ? t(labelKey) : undefined}
+                    onClick={() => setMobileOpen(false)}
                     className={({ isActive }) =>
                       cn(
                         'flex items-center gap-3 rounded-lg transition-all duration-150 overflow-hidden',
@@ -235,18 +251,28 @@ function AdminLayout({ children }: { children: ReactNode }) {
       <div className="flex flex-1 flex-col overflow-hidden">
 
         {/* TOP BAR */}
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] px-6 transition-colors duration-300">
-          {/* Search */}
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 max-w-xs">
-            <Search size={14} className="text-gray-400 shrink-0" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent flex-1 outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 text-sm min-w-0"
-            />
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#21232d] px-4 sm:px-6 transition-colors duration-300 relative z-30">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 dark:text-gray-400 transition"
+            >
+              <Menu size={18} />
+            </button>
+
+            {/* Search - Hidden on smallest mobile screens */}
+            <div className="hidden sm:flex flex-1 items-center gap-2 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-2 max-w-xs transition">
+              <Search size={14} className="text-gray-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-transparent flex-1 outline-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 text-sm min-w-0"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
