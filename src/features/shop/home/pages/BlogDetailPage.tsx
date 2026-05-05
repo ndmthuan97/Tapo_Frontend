@@ -12,6 +12,15 @@ import { blogApi, type BlogPostDto } from '@/lib/http/blog.api'
 
 // ── Markdown-lite renderer ────────────────────────────────────────────────────
 
+export function renderBold(text: string, boldClassName?: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g)
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} className={boldClassName ?? ''}>{part}</strong>
+      : part
+  )
+}
+
 function MarkdownContent({ content }: { content: string }) {
   const lines = content.trim().split('\n')
   return (
@@ -29,14 +38,15 @@ function MarkdownContent({ content }: { content: string }) {
         )
         if (line.startsWith('- ')) return (
           <li key={i} className="ml-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-            <span dangerouslySetInnerHTML={{ __html: line.replace('- ', '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+            {renderBold(line.replace('- ', ''))}
           </li>
         )
         if (line.startsWith('```')) return <div key={i} className="h-0" />
         if (line === '') return <div key={i} className="h-3" />
         return (
-          <p key={i} className="text-sm leading-relaxed text-gray-600 dark:text-gray-300"
-            dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-800 dark:text-gray-100">$1</strong>') }} />
+          <p key={i} className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+            {renderBold(line, 'text-gray-800 dark:text-gray-100')}
+          </p>
         )
       })}
     </div>

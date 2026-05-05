@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Star, ShoppingCart, Heart, ImageOff, ArrowLeftRight, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/utils/formatCurrency'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, memo } from 'react'
 import { useCart } from '@/features/shop/cart/hooks/use-cart'
 import { wishlistApi } from '@/lib/http/wishlist.api'
 import { useAuthContext } from '@/lib/context/auth-context'
@@ -50,7 +50,7 @@ function Stars({ rating, size = 11 }: { rating: number; size?: number }) {
 
 // ── ProductCard ───────────────────────────────────────────────────────────────
 
-function ProductCard({
+function ProductCardComponent({
   id,
   name,
   price,
@@ -232,6 +232,8 @@ function ProductCard({
     </div>
   )
 }
+
+const ProductCard = memo(ProductCardComponent)
 
 export { ProductCard }
 export type { ProductCardProps }
