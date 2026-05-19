@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react'
 
-/**
- * Debounce a value by specified delay (ms).
- * Extracted as a reusable hook to avoid inline setTimeout patterns.
- *
- * @example
- * const debouncedSearch = useDebounce(searchInput, 350)
- * useEffect(() => { fetchData(debouncedSearch) }, [debouncedSearch])
- */
+/** Debounce a value — resets the timer whenever value or delay changes. */
 export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
 

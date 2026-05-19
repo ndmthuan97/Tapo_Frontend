@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/lib/context/auth-context'
@@ -55,9 +56,6 @@ const AdminChatPage       = lazy(() => import('@/features/admin/pages/AdminChatP
 const AdminFlashSalesPage = lazy(() => import('@/features/admin/pages/AdminFlashSalesPage').then(m => ({ default: m.AdminFlashSalesPage })))
 const AdminInventoryPage  = lazy(() => import('@/features/admin/pages/AdminInventoryPage').then(m => ({ default: m.AdminInventoryPage })))
 
-
-
-
 // ── Route guards ─────────────────────────────────────────────────────────────
 import { PrivateRoute } from '@/components/guards/PrivateRoute'
 import { AdminRoute }   from '@/components/guards/AdminRoute'
@@ -72,7 +70,7 @@ function PageLoader() {
 }
 
 /** Wrap a page with the shared AdminRoute + AdminLayout */
-function AdminPage({ children }: { children: React.ReactNode }) {
+function AdminPage({ children }: { children: ReactNode }) {
   return (
     <AdminRoute>
       <Suspense fallback={<PageLoader />}>

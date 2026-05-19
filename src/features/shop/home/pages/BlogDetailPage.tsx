@@ -12,6 +12,10 @@ import { blogApi, type BlogPostDto } from '@/lib/http/blog.api'
 
 // ── Markdown-lite renderer ────────────────────────────────────────────────────
 
+function stripHtml(text: string): string {
+  return text.replace(/<[^>]*>/g, '')
+}
+
 export function renderBold(text: string, boldClassName?: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g)
   return parts.map((part, i) =>
@@ -22,7 +26,7 @@ export function renderBold(text: string, boldClassName?: string) {
 }
 
 function MarkdownContent({ content }: { content: string }) {
-  const lines = content.trim().split('\n')
+  const lines = stripHtml(content).trim().split('\n')
   return (
     <div className="prose prose-sm dark:prose-invert max-w-none">
       {lines.map((line, i) => {

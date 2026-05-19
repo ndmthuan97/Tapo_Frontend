@@ -1,13 +1,7 @@
 /**
- * useAdminNotifications — WebSocket STOMP hook (react skill §2: custom hook).
- *
- * Subscribes to /topic/admin/notifications and surfaces realtime events as:
- * - Toast notifications (via sonner)
- * - Unread count badge (incremented per notification)
- * - Notification history list (latest 50)
- *
- * Cleanup: client disconnected in useEffect cleanup (react skill §2: clean up effects).
- * Stable ref: avoids stale closure in STOMP callback (react skill §5: advanced-event-handler-refs).
+ * STOMP WebSocket hook for admin notifications.
+ * Subscribes to /topic/admin/notifications; surfaces realtime events as toasts,
+ * unread count badge, and notification history (latest 50).
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
@@ -34,7 +28,7 @@ const WS_URL = `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'}/
 const TOPIC   = '/topic/admin/notifications'
 const MAX_HISTORY = 50
 
-// Static map — react skill §5: js-index-maps for O(1) lookup
+// O(1) lookup map: notification type → icon + color config
 export const TYPE_CONFIG: Record<NotificationType, {
   icon: React.ElementType
   color: string
@@ -52,7 +46,7 @@ export function useAdminNotifications() {
   const [unreadCount,   setUnreadCount]   = useState(0)
   const [isConnected,   setIsConnected]   = useState(false)
 
-  // stable ref — avoids stale closure inside STOMP frame callback
+  // Stable ref — avoids stale closure inside STOMP frame callback
   const onMessageRef = useRef<(raw: AdminNotification) => void>(() => undefined)
 
   onMessageRef.current = useCallback((data: AdminNotification) => {
@@ -112,7 +106,6 @@ export function useAdminNotifications() {
 
     client.activate()
 
-    // Cleanup on unmount — react skill §2: clean up effects
     return () => { client.deactivate() }
   }, []) // connect once per component lifecycle
 

@@ -14,11 +14,7 @@ export interface RecentlyViewedItem {
   slug?: string
 }
 
-/**
- * React hook — Recently Viewed Products (localStorage).
- * react-skill §2: custom hook for reusable logic.
- * §5: all functions are stable (useCallback, no deps change).
- */
+/** Manages the recently-viewed product list persisted in localStorage. */
 export function useRecentlyViewed() {
   const getItems = useCallback((): RecentlyViewedItem[] => {
     try {

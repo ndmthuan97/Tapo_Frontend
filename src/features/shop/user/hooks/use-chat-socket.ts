@@ -1,11 +1,6 @@
 /**
- * useChatSocket — STOMP WebSocket hook for live chat.
- *
- * Subscribes to /user/queue/chat/{roomId} for incoming messages.
- * Sends messages to /app/chat/{roomId}/send via STOMP.
- *
- * Pattern: mirrors useUserNotifications (react skill §2: custom hook)
- * Cleanup: client.deactivate() in useEffect cleanup
+ * STOMP WebSocket hook for live chat.
+ * Subscribes to /user/queue/chat/{roomId}; sends to /app/chat/{roomId}/send.
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
@@ -24,7 +19,7 @@ export function useChatSocket({ roomId, onMessage }: UseChatSocketOptions) {
   const clientRef   = useRef<Client | null>(null)
   const onMsgRef    = useRef(onMessage)
 
-  // Keep ref in sync — avoids stale closure in STOMP callback (react skill §5)
+  // Keep ref in sync — avoids stale closure in STOMP frame callback
   onMsgRef.current = onMessage
 
   useEffect(() => {

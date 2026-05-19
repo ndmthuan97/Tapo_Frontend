@@ -52,7 +52,7 @@ httpClient.interceptors.response.use(
         // No tokens at all — hard logout
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
+        localStorage.removeItem('auth_user')
         window.location.href = '/login'
         return Promise.reject(normalizeError(error))
       }
@@ -95,7 +95,7 @@ httpClient.interceptors.response.use(
           // Token truly invalid → hard logout
           localStorage.removeItem('accessToken')
           localStorage.removeItem('refreshToken')
-          localStorage.removeItem('user')
+          localStorage.removeItem('auth_user')
           window.location.href = '/login'
         }
         // 5xx / network error → do NOT logout, just reject the original request

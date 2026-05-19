@@ -1,14 +1,7 @@
 /**
- * useUserNotifications — WebSocket STOMP hook for shop customers.
- *
- * Subscribes to /user/queue/notifications (user-specific queue).
- * Surfaces realtime order status updates as:
- * - Toast notification (sonner)
- * - Unread count badge
- * - Notification history list (latest 20)
- *
- * Pattern: mirrors useAdminNotifications (react skill §2: custom hook)
- * Cleanup: client.deactivate() in useEffect cleanup (react skill §2)
+ * STOMP WebSocket hook for shop customers.
+ * Subscribes to /user/queue/notifications; surfaces realtime events as toasts,
+ * unread count badge, and notification history (latest 20).
  */
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Client } from '@stomp/stompjs'
@@ -51,7 +44,7 @@ export function useUserNotifications() {
   const [unreadCount,   setUnreadCount]   = useState(0)
   const [isConnected,   setIsConnected]   = useState(false)
 
-  // stable ref — avoids stale closure in STOMP callback (react skill §5)
+  // stable ref — avoids stale closure in STOMP frame callback
   const onMessageRef = useRef<(raw: Omit<UserNotification, 'id' | 'read'>) => void>(() => undefined)
 
   onMessageRef.current = useCallback((raw: Omit<UserNotification, 'id' | 'read'>) => {
@@ -75,7 +68,7 @@ export function useUserNotifications() {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken') ?? ''
-    if (!token) return // không connect nếu chưa login
+    if (!token) return // skip connection if user is not logged in
 
     const client = new Client({
       webSocketFactory: () => new SockJS(WS_URL, null, {
