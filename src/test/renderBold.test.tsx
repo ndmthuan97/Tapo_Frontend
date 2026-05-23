@@ -39,7 +39,7 @@ describe('renderBold', () => {
     // No actual <script> element in DOM
     expect(container.querySelector('script')).toBeNull()
     // Global side-effect must not have run
-    expect((window as Record<string, unknown>).__xss).toBeUndefined()
+    expect((window as unknown as Record<string, unknown>).__xss).toBeUndefined()
     // The text should appear literally inside <strong>
     const strong = container.querySelector('strong')
     expect(strong).not.toBeNull()

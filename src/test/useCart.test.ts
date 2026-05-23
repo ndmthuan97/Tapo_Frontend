@@ -35,15 +35,18 @@ function makeCart(items: CartItemDto[] = []): CartResponse {
 
 function makeItem(productId: string, quantity = 1, price = 50_000): CartItemDto {
   return {
+    id: productId,
     productId,
     productName: `Product ${productId}`,
-    quantity,
-    price,
-    lineTotal: price * quantity,
-    imageUrl: '',
-    inStock: true,
-    stockQuantity: 10,
+    productSlug: productId,
+    thumbnailUrl: null,
     brandName: null,
+    categoryName: null,
+    price,
+    originalPrice: price,
+    quantity,
+    stock: 10,
+    lineTotal: price * quantity,
   }
 }
 

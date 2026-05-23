@@ -1,20 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios from 'axios'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function makeAxiosError(status: number) {
-  const err = new Error('Request failed') as Error & {
-    isAxiosError: boolean
-    response: { status: number; data: unknown }
-    config: { url: string; headers: Record<string, string>; _retry?: boolean }
-  }
-  err.isAxiosError = true
-  err.response = { status, data: {} }
-  err.config = { url: '/api/some-endpoint', headers: {} }
-  return err
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('httpClient — refresh token queue (AUTH-024 / AUTH-025 / FE-010)', () => {
@@ -40,7 +26,7 @@ describe('httpClient — refresh token queue (AUTH-024 / AUTH-025 / FE-010)', ()
     })
 
     // Import AFTER mocks are set up so interceptors see the mocked axios.post
-    const { httpClient } = await import('@/lib/http/http-client')
+    await import('@/lib/http/http-client')
 
     // Simulate a retry by the interceptor: after refresh, localStorage should be updated
     // We trigger the interceptor by calling the response error handler indirectly.
